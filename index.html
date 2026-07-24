@@ -8677,19 +8677,42 @@ function renderRigoristiEditor() {
   if (countEl) countEl.textContent = lines.length + ' rigorist' + (lines.length === 1 ? 'a' : 'i') + ' designat' + (lines.length === 1 ? 'o' : 'i');
 }
 
-function parseRigoristiInput(text) {
-  const map = {}; // normTeamName -> Set di rosterNormalizeName
-  text.split(/\r?\n/).forEach(line => {
-    const idx = line.indexOf(':');
-    if (idx === -1) return;
-    const team = line.slice(0, idx).trim();
-    const name = line.slice(idx + 1).trim();
-    if (!team || !name) return;
-    const t = normTeamName(team);
-    if (!map[t]) map[t] = new Set();
-    map[t].add(rosterNormalizeName(name));
-  });
-  return map;
+// Estrae il "cognome" (ultima parola valida) di un nome, stessa euristica
+// usata in findRosterMentions per il match giocatori dalle news.
+function extractCognome(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(w => w.length > 2);
+  const last = parts.length > 0 ? parts[parts.length - 1] : (name || '');
+  return rosterNormalizeName(last);
+}
+
+// Il nome scritto dall'admin nel pannello (spesso nome completo, es. "Lautaro
+// Martinez") va confrontato col nome nel listone, che può essere in formati
+// diversi (solo cognome, "Cognome Nome", abbreviazioni...). Match esatto sul
+// nome intero, altrimenti confronto per cognome (con soglia minima di 4
+// caratteri per evitare falsi positivi su cognomi troppo corti).
+function rigoristaNameMatches(listinoName, inputName) {
+  const a = rosterNormalizeName(listinoName);
+  const b = rosterNormalizeName(inputName);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const cogA = extractCognome(listinoName);
+  const cogB = extractCognome(inputName);
+  if (cogA.length >= 4 && b.includes(cogA)) return true;
+  if (cogB.length >= 4 && a.includes(cogB)) return true;
+  return false;
+}
+
+function parseRigoristiLines(text) {
+  return (text || '').split(/\r?\n/)
+    .map(line => {
+      const idx = line.indexOf(':');
+      if (idx === -1) return null;
+      const team = line.slice(0, idx).trim();
+      const name = line.slice(idx + 1).trim();
+      if (!team || !name) return null;
+      return { team: normTeamName(team), name, matched: false };
+    })
+    .filter(Boolean);
 }
 
 async function saveRigoristi() {
@@ -8699,11 +8722,14 @@ async function saveRigoristi() {
   }
   const btn = document.getElementById('adminRigoristiSaveBtn');
   const textEl = document.getElementById('adminRigoristiInput');
-  const map = parseRigoristiInput(textEl ? textEl.value : '');
-  const updatedPlayers = adminState.activeListinoFull.players.map(p => ({
-    ...p,
-    rigorista: !!(map[normTeamName(p.team)] && map[normTeamName(p.team)].has(rosterNormalizeName(p.name))),
-  }));
+  const lines = parseRigoristiLines(textEl ? textEl.value : '');
+  const updatedPlayers = adminState.activeListinoFull.players.map(p => {
+    const t = normTeamName(p.team);
+    const hit = lines.find(l => !l.matched && l.team === t && rigoristaNameMatches(p.name, l.name));
+    if (hit) hit.matched = true;
+    return { ...p, rigorista: !!hit };
+  });
+  const unmatched = lines.filter(l => !l.matched);
   if (btn) { btn.disabled = true; btn.textContent = '⏳ SALVATAGGIO...'; }
   const client = await ensureSupabaseReady();
   if (!client) {
@@ -8718,7 +8744,13 @@ async function saveRigoristi() {
     if (error) throw error;
     adminState.activeListinoFull.players = updatedPlayers;
     const count = updatedPlayers.filter(p => p.rigorista).length;
-    showAdminFeedback('Listino', `✓ ${count} rigoristi salvati.`, 'success');
+    let msg = `✓ ${count} rigoristi salvati.`;
+    let type = 'success';
+    if (unmatched.length > 0) {
+      msg += ` ⚠️ Non trovati nel listone: ${unmatched.map(l => l.name).join(', ')}`;
+      type = 'info';
+    }
+    showAdminFeedback('Listino', msg, type);
     renderRigoristiEditor();
     try { await applyGlobalListinoAndCalendar(); } catch(e) {}
   } catch(e) {
