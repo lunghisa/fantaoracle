@@ -3500,7 +3500,7 @@
   <nav>
     <div style="display:flex;align-items:center;gap:14px;min-width:0;flex-shrink:1">
       <div class="nav-logo">FantaOracle</div>
-      <div class="league-switcher">
+      <div class="league-switcher" id="leagueSwitcherWrap">
         <button id="leagueSwitcherTrigger" class="league-switcher-trigger" onclick="toggleLeagueMenu(event)">
           <span style="color:var(--gold);font-weight:700;letter-spacing:0.5px">+ Nuova lega</span>
         </button>
@@ -4185,7 +4185,15 @@ function slugifyLeague(name) {
 
 // Chiave storage namespaced per la lega attiva
 function nsKey(baseKey) {
-  if (!activeLeagueId) return baseKey; // fallback senza namespace
+  if (!activeLeagueId) {
+    // Admin senza lega attiva: namespace dedicato e sempre vuoto. La migrazione
+    // one-shot verso il multi-lega COPIA i vecchi dati "flat" nella chiave con
+    // namespace ma non li cancella mai da quella originale — quindi il fallback
+    // senza namespace resusciterebbe dati vecchi (es. l'ultima lega di test
+    // usata prima del multi-lega) anche per l'admin.
+    if (currentUser && currentUser.is_admin) return baseKey + '__admin_empty';
+    return baseKey; // fallback senza namespace (onboarding utente normale)
+  }
   return baseKey + '__' + activeLeagueId;
 }
 
@@ -4297,7 +4305,16 @@ function renderLeagueSwitcher() {
   const trigger = document.getElementById('leagueSwitcherTrigger');
   const menu = document.getElementById('leagueSwitcherMenu');
   if (!trigger || !menu) return;
-  
+
+  // Admin: nessuna lega/switcher in pagina principale. Solo nascosto in UI,
+  // i dati delle leghe (anche di test) restano intatti e intoccati.
+  const wrap = document.getElementById('leagueSwitcherWrap');
+  if (currentUser && currentUser.is_admin) {
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  if (wrap) wrap.style.display = '';
+
   const active = leagues.find(l => l.id === activeLeagueId);
   
   // Punto 4: quando non c'è nessuna lega, trigger diventa "+ Nuova lega" (cliccabile)
@@ -8245,10 +8262,17 @@ async function pullFromCloud(cloudLeagues) {
     }
     activeLeagueId = prevActive;
   }
-  // Se la lega attiva non esiste più, prendi la prima
+  // Se la lega attiva non esiste più, prendi la prima — ma mai per l'admin
+  // (stessa regola di loadLeaguesRegistry: l'admin non deve avere una lega
+  // auto-attiva. Senza questo, il pull da cloud dopo il login ripristinerebbe
+  // subito la prima lega e vanificherebbe quel fix).
   if (!leagues.find(l => l.id === activeLeagueId)) {
-    activeLeagueId = leagues.length > 0 ? leagues[0].id : null;
-    saveActiveLeague();
+    if (currentUser && currentUser.is_admin) {
+      activeLeagueId = null;
+    } else {
+      activeLeagueId = leagues.length > 0 ? leagues[0].id : null;
+      saveActiveLeague();
+    }
   }
   return true;
 }
