@@ -80,6 +80,17 @@ L'Oracle è passato da mockup a motore reale, in più passi:
    pubblici instabili (whitelist host, cache edge 5min). I proxy pubblici restano
    come fallback. Rende robusti news / allerte infortuni / titolarità.
 
+9. **Clean sheet (P/D).** L'Oracle confronta il rating difensivo della propria
+   squadra con quello offensivo dell'avversario (già calcolati in
+   `computeTeamRatings`) e modula il punteggio atteso di conseguenza, con nota
+   esplicita tra i motivi ("🛡️ clean sheet probabile..." / "difesa a rischio...").
+
+10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
+    DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
+    attivo su Supabase (flag `rigorista` dentro il campo `players` già
+    sincronizzato, nessuna tabella nuova); l'Oracle applica un bonus (+0.35)
+    ai giocatori marcati.
+
 ---
 
 ## Stato / cose da ricordare
@@ -88,16 +99,13 @@ L'Oracle è passato da mockup a motore reale, in più passi:
   `feed.js` (→ va in `~/Desktop/fantaoracle/api/feed.js`).
 - `fantaoracle.html` nel Project è OBSOLETO: la fonte di verità è `index.html`.
 - Leghe reali: *Fagioli per Tutti* (test) e *Premier Ticino League*.
+- Sync del listone globale su cloud: verificato funzionante in produzione
+  (530 giocatori sincronizzati) — nessun lavoro ulteriore necessario qui.
 
 ## Prossimi passi (candidati, in ordine)
 
 1. **TEST SUL CAMPO** (priorità reale): caricare calendario + listone nell'Admin,
    importare la rosa, e dopo ogni giornata inserire i voti reali. Serve a far
    partire davvero l'auto-correzione e a vedere dove il modello sbaglia.
-2. **Clean sheet / modificatore difesa**: modellare la porta inviolata per
-   migliorare le previsioni su difensori e portieri (ruolo oggi più debole).
-3. **Rigoristi**: bonus al soffitto per i rigoristi designati.
-4. **Sync del listone su cloud**: oggi si sincronizzano solo rose + storico, non
-   il listone completo → cold-start cross-device perde i metadati ricchi.
-5. **Rating squadra dinamici**: oggi statici dal listone preseason; farli evolvere
+2. **Rating squadra dinamici**: oggi statici dal listone preseason; farli evolvere
    coi risultati reali (più complesso, dopo la validazione sul campo).
