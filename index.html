@@ -5243,6 +5243,22 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   }
   exp += oppAdj + homeAdj;
 
+  // 2b. CLEAN SHEET (P/D): difesa propria vs attacco avversario.
+  // Segnale distinto dall'oppAdj sopra: qui pesa quanto è forte la MIA difesa,
+  // non solo quanto è debole l'attacco avversario rispetto alla media lega.
+  let csAdj = 0;
+  if (ctx && (p.role === 'P' || p.role === 'D')) {
+    const myRating = ratings[normTeamName(p.team)];
+    const oppRating = ratings[ctx.oppNorm];
+    if (myRating && oppRating) {
+      const csRel = myRating.def - oppRating.att;
+      csAdj = Math.max(-0.4, Math.min(0.4, csRel * 0.8));
+      exp += csAdj;
+      if (csAdj >= 0.15) factors.push('🛡️ clean sheet probabile: difesa solida vs ' + ctx.opponent);
+      else if (csAdj <= -0.15) factors.push('difesa a rischio contro ' + ctx.opponent);
+    }
+  }
+
   // 3. BIAS APPRESO per ruolo (auto-correzione)
   const bias = (oracleState.calib.biasByRole && oracleState.calib.biasByRole[p.role]) || 0;
   exp += bias;
@@ -5295,9 +5311,15 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
     factors.push('rendimento costante, pochi picchi');
   }
 
+  // 7. RIGORISTA DESIGNATO (da listone, marcato dall'admin)
+  if (p.rigorista) {
+    exp += 0.35;
+    factors.push('🎯 rigorista designato (+0.35)');
+  }
+
   exp = Math.max(4, Math.min(9.5, exp));
   conf = Math.max(5, Math.min(95, Math.round(conf)));
-  return { expected: parseFloat(exp.toFixed(2)), confidence: conf, factors, risk, titStatus, bonusProp, ctx, oppAdj, base };
+  return { expected: parseFloat(exp.toFixed(2)), confidence: conf, factors, risk, titStatus, bonusProp, ctx, oppAdj, csAdj, base };
 }
 
 // ---- ARRICCHIMENTO: ripristina i metadati ricchi dal listone ----
@@ -5315,9 +5337,13 @@ function enrichRosterFromListone() {
   });
   [...players.starters, ...players.bench].forEach(p => {
     if (!p || !p.name || p.name === '---' || p.isEmpty) return;
-    if ((p.fmReal && p.fmReal > 0) && (p.pgv && p.pgv > 0)) return; // già ricco
     const lp = byKey[rosterNormalizeName(p.name) + '|' + normTeamName(p.team)]
       || byName[rosterNormalizeName(p.name)];
+    // Il flag rigorista va risincronizzato ad ogni run (può cambiare in corsa
+    // d'opera), quindi va aggiornato *prima* dello short-circuit "già ricco"
+    // qui sotto, altrimenti i titolari con storico voti non lo riceverebbero mai.
+    p.rigorista = !!(lp && lp.rigorista);
+    if ((p.fmReal && p.fmReal > 0) && (p.pgv && p.pgv > 0)) return; // già ricco
     if (!lp) return;
     if (!p.fmReal || p.fmReal <= 0) p.fmReal = lp.fmReal || 0;
     if (!p.mv || p.mv <= 0) p.mv = lp.mv || 0;
@@ -8297,6 +8323,7 @@ let adminState = {
   pendingCalendar: null,   // { season, matches: [...] }
   activeListino: null,     // record cloud attivo
   activeCalendar: null,    // record cloud attivo
+  activeListinoFull: null, // record cloud attivo con players completo (per editor rigoristi)
   historyListino: [],
   historyCalendar: [],
 };
@@ -8361,6 +8388,7 @@ async function refreshAdminListino() {
     // Badge tab
     const badge = document.getElementById('adminListinoBadge');
     if (badge) badge.textContent = adminState.activeListino ? adminState.activeListino.players_count : '—';
+    refreshAdminRigoristi();
   } catch(e) {
     console.error('[Admin] Listino fetch error:', e);
     showAdminFeedback('Listino', 'Errore caricamento listoni: ' + (e.message || ''), 'error');
@@ -8595,6 +8623,75 @@ async function deleteListino(id) {
   } catch(e) {
     showAdminFeedback('Listino', '❌ Errore: ' + e.message, 'error');
   }
+}
+
+// ============ RIGORISTI DESIGNATI ============
+// Nessuna nuova tabella: il flag `rigorista` viaggia dentro il campo `players`
+// (jsonb) già sincronizzato su global_listino, stesso meccanismo di publishGlobalListino.
+async function refreshAdminRigoristi() {
+  const data = await fetchGlobalListinoForUser();
+  adminState.activeListinoFull = data || null;
+  renderRigoristiEditor();
+}
+
+function renderRigoristiEditor() {
+  const el = document.getElementById('adminRigoristiInput');
+  if (!el) return;
+  const players = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
+  const lines = players.filter(p => p.rigorista).map(p => (p.team || '') + ': ' + (p.name || ''));
+  el.value = lines.join('\n');
+  const countEl = document.getElementById('adminRigoristiCount');
+  if (countEl) countEl.textContent = lines.length + ' rigorist' + (lines.length === 1 ? 'a' : 'i') + ' designat' + (lines.length === 1 ? 'o' : 'i');
+}
+
+function parseRigoristiInput(text) {
+  const map = {}; // normTeamName -> Set di rosterNormalizeName
+  text.split(/\r?\n/).forEach(line => {
+    const idx = line.indexOf(':');
+    if (idx === -1) return;
+    const team = line.slice(0, idx).trim();
+    const name = line.slice(idx + 1).trim();
+    if (!team || !name) return;
+    const t = normTeamName(team);
+    if (!map[t]) map[t] = new Set();
+    map[t].add(rosterNormalizeName(name));
+  });
+  return map;
+}
+
+async function saveRigoristi() {
+  if (!adminState.activeListinoFull || !adminState.activeListinoFull.id) {
+    showAdminFeedback('Listino', '❌ Nessun listone attivo caricato.', 'error');
+    return;
+  }
+  const btn = document.getElementById('adminRigoristiSaveBtn');
+  const textEl = document.getElementById('adminRigoristiInput');
+  const map = parseRigoristiInput(textEl ? textEl.value : '');
+  const updatedPlayers = adminState.activeListinoFull.players.map(p => ({
+    ...p,
+    rigorista: !!(map[normTeamName(p.team)] && map[normTeamName(p.team)].has(rosterNormalizeName(p.name))),
+  }));
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ SALVATAGGIO...'; }
+  const client = await ensureSupabaseReady();
+  if (!client) {
+    showAdminFeedback('Listino', '❌ Servizio non disponibile.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA RIGORISTI'; }
+    return;
+  }
+  try {
+    const { error } = await client.from('global_listino')
+      .update({ players: updatedPlayers })
+      .eq('id', adminState.activeListinoFull.id);
+    if (error) throw error;
+    adminState.activeListinoFull.players = updatedPlayers;
+    const count = updatedPlayers.filter(p => p.rigorista).length;
+    showAdminFeedback('Listino', `✓ ${count} rigoristi salvati.`, 'success');
+    renderRigoristiEditor();
+    try { await applyGlobalListinoAndCalendar(); } catch(e) {}
+  } catch(e) {
+    showAdminFeedback('Listino', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA RIGORISTI'; }
 }
 
 // ============ CALENDARIO GLOBALE ============
@@ -9166,6 +9263,7 @@ async function applyGlobalListinoAndCalendar() {
           score: typeof p.fanta_media === 'number' ? p.fanta_media : 6.0,
           oracle: typeof p.fanta_media === 'number' ? +(p.fanta_media + 0.2).toFixed(1) : 6.2,
           media_voto: typeof p.media_voto === 'number' ? p.media_voto : 0,
+          rigorista: !!p.rigorista,
           color: ({P:'#ff8c1a', D:'#7bc043', C:'#3d9bff', A:'#e63946', T:'#c77dff'})[p.role] || '#999'
         }));
         listone = {
@@ -10200,6 +10298,20 @@ function togglePill(el) {
 
         <!-- Storico versioni -->
         <div class="admin-history" id="adminListinoHistory"></div>
+
+        <!-- Rigoristi designati -->
+        <div class="admin-field" style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">
+          <label class="admin-field-label">🎯 RIGORISTI DESIGNATI</label>
+          <p class="section-desc" style="margin-top:0">
+            Una riga per giocatore, formato <code>Squadra: Nome Giocatore</code> (es. <code>Inter: Lautaro Martinez</code>).
+            Al salvataggio aggiorna il listone attivo; l'Oracle applica un bonus (+0.35) ai giocatori marcati.
+          </p>
+          <textarea class="admin-field-input" id="adminRigoristiInput" rows="8"
+            style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
+            placeholder="Inter: Lautaro Martinez&#10;Napoli: Kvaratskhelia&#10;Roma: Dybala"></textarea>
+          <div style="font-size:11px;color:var(--muted);margin:6px 0 12px" id="adminRigoristiCount"></div>
+          <button class="admin-btn" id="adminRigoristiSaveBtn" onclick="saveRigoristi()">💾 SALVA RIGORISTI</button>
+        </div>
       </div>
 
       <!-- ============ SECTION: CALENDARIO ============ -->
