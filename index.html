@@ -6328,6 +6328,13 @@ function parseCalendarioWithSheetJS(data, fileName) {
 }
 
 function parseDateIT(str) {
+  if (!str) return null;
+  // Formato ISO (yyyy-mm-dd), es. da export JSON non italiani
+  const iso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) {
+    const dt = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+    return isNaN(dt) ? null : dt;
+  }
   // formati possibili: dd/mm/yyyy, dd-mm-yyyy
   const m = str.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
   if (!m) return null;
@@ -9187,8 +9194,11 @@ async function applyGlobalListinoAndCalendar() {
         if (!byGiornata[num]) byGiornata[num] = { num, date: null, dateStr: '', matches: [] };
         if (m.data && !byGiornata[num].dateStr) {
           byGiornata[num].dateStr = m.data;
-          const d = new Date(m.data);
-          if (!isNaN(d.getTime())) byGiornata[num].date = d;
+          // parseDateIT (non new Date()) perché le date arrivano in gg/mm/aaaa:
+          // il costruttore Date interpreta "dd/mm/yyyy" come mm/dd/yyyy (US),
+          // producendo date sbagliate o Invalid Date.
+          const d = parseDateIT(m.data);
+          if (d) byGiornata[num].date = d;
         }
         byGiornata[num].matches.push({
           home: (m.casa || '').trim(),
