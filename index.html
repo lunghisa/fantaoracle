@@ -3861,6 +3861,9 @@
       <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')">
         👥 UTENTI <span class="tab-badge" id="adminUsersBadge">—</span>
       </button>
+      <button class="admin-tab" data-tab="asta" onclick="switchAdminTab('asta')">
+        🎯 ASTA <span class="tab-badge" id="adminAstaBadge">—</span>
+      </button>
     </div>
 
     <!-- Body -->
@@ -4019,6 +4022,76 @@
             ⏳ Caricamento utenti...
           </div>
         </div>
+      </div>
+
+      <!-- ============ SECTION: ASTA ============ -->
+      <div class="admin-section" id="adminSecAsta">
+        <h3>PIANO ASTA</h3>
+        <p class="section-desc">
+          Consigli live durante l'asta: per il ruolo in corso, i migliori giocatori per rapporto fantamedia/quotazione,
+          escludendo chi hai già preso. Registra ogni acquisto (anche se diverso dal consigliato) e la classifica si
+          ricalcola subito sul budget rimasto. Dati salvati solo su questo browser, non condivisi con la lega.
+        </p>
+
+        <div class="admin-feedback" id="adminAstaFeedback"></div>
+
+        <!-- Config -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
+          <div class="admin-field" style="margin-bottom:0">
+            <label class="admin-field-label">Budget totale</label>
+            <input class="admin-field-input" id="astaBudgetInput" type="number" min="1" value="500" onchange="updateAstaConfig()">
+          </div>
+          <div class="admin-field" style="margin-bottom:0">
+            <label class="admin-field-label">Portieri</label>
+            <input class="admin-field-input" id="astaNeedP" type="number" min="0" value="3" onchange="updateAstaConfig()">
+          </div>
+          <div class="admin-field" style="margin-bottom:0">
+            <label class="admin-field-label">Difensori</label>
+            <input class="admin-field-input" id="astaNeedD" type="number" min="0" value="8" onchange="updateAstaConfig()">
+          </div>
+          <div class="admin-field" style="margin-bottom:0">
+            <label class="admin-field-label">Centrocampisti</label>
+            <input class="admin-field-input" id="astaNeedC" type="number" min="0" value="8" onchange="updateAstaConfig()">
+          </div>
+          <div class="admin-field" style="margin-bottom:0">
+            <label class="admin-field-label">Attaccanti</label>
+            <input class="admin-field-input" id="astaNeedA" type="number" min="0" value="6" onchange="updateAstaConfig()">
+          </div>
+        </div>
+
+        <!-- Stato -->
+        <div id="astaStatusBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between"></div>
+
+        <!-- Form aggiungi acquisto -->
+        <div class="admin-field">
+          <label class="admin-field-label">Registra acquisto</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input class="admin-field-input" id="astaBuyName" type="text" placeholder="Nome giocatore" style="flex:2;min-width:140px">
+            <input class="admin-field-input" id="astaBuyTeam" type="text" placeholder="Squadra" style="flex:1;min-width:100px">
+            <select class="admin-field-input" id="astaBuyRole" style="flex:0 0 90px">
+              <option value="P">P</option>
+              <option value="D">D</option>
+              <option value="C">C</option>
+              <option value="A">A</option>
+            </select>
+            <input class="admin-field-input" id="astaBuyPrice" type="number" min="1" placeholder="Crediti" style="flex:0 0 100px">
+            <button class="admin-btn" onclick="addAstaAcquisto()" style="flex:0 0 auto">➕ AGGIUNGI</button>
+          </div>
+        </div>
+
+        <!-- Classifica ruolo corrente -->
+        <div style="margin-top:20px">
+          <div class="admin-field-label" style="margin-bottom:10px">CONSIGLIATI ORA</div>
+          <div id="astaRecommendations"></div>
+        </div>
+
+        <!-- Acquisti fatti -->
+        <div style="margin-top:24px">
+          <div class="admin-field-label" style="margin-bottom:10px">I TUOI ACQUISTI</div>
+          <div id="astaAcquistiList"></div>
+        </div>
+
+        <button class="admin-btn admin-btn-secondary" onclick="resetPianoAsta()" style="margin-top:20px">🔄 RICOMINCIA ASTA</button>
       </div>
 
     </div>
@@ -8544,13 +8617,14 @@ let adminState = {
 
 function switchAdminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  ['listino','calendar','stats','users'].forEach(t => {
+  ['listino','calendar','stats','users','asta'].forEach(t => {
     const el = document.getElementById('adminSec' + t.charAt(0).toUpperCase() + t.slice(1));
     if (el) el.classList.toggle('active', t === tab);
   });
   // Lazy-load dei dati del tab selezionato
   if (tab === 'stats') refreshAdminStats();
   else if (tab === 'users') refreshAdminUsers();
+  else if (tab === 'asta') renderPianoAsta();
 }
 
 function showAdminFeedback(section, msg, type) {
@@ -8991,6 +9065,184 @@ async function saveFormaPreseason() {
     showAdminFeedback('Listino', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
   }
   if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA FORMA PRESEASON'; }
+}
+
+// ============ PIANO ASTA ============
+// Tool live per l'asta: stato solo locale (localStorage), non su Supabase —
+// è personale dell'admin durante l'asta, non un dato di lega da condividere.
+const ASTA_STATE_KEY = 'fantaoracle_piano_asta_v1';
+const ASTA_ROLE_ORDER = ['P', 'D', 'C', 'A'];
+const ASTA_ROLE_LABELS = { P: 'PORTIERI', D: 'DIFENSORI', C: 'CENTROCAMPISTI', A: 'ATTACCANTI' };
+let astaState = {
+  budget: 500,
+  needs: { P: 3, D: 8, C: 8, A: 6 },
+  acquisti: [], // { name, team, role, prezzo }
+};
+
+function loadAstaState() {
+  try {
+    const raw = localStorage.getItem(ASTA_STATE_KEY);
+    if (raw) astaState = Object.assign({}, astaState, JSON.parse(raw));
+  } catch(e) {}
+}
+function saveAstaState() {
+  try { localStorage.setItem(ASTA_STATE_KEY, JSON.stringify(astaState)); } catch(e) {}
+}
+
+function astaCountByRole(role) {
+  return astaState.acquisti.filter(a => a.role === role).length;
+}
+function astaCurrentPhase() {
+  for (const r of ASTA_ROLE_ORDER) {
+    if (astaCountByRole(r) < (astaState.needs[r] || 0)) return r;
+  }
+  return null; // rosa completa
+}
+function astaBudgetSpeso() {
+  return astaState.acquisti.reduce((sum, a) => sum + (a.prezzo || 0), 0);
+}
+function astaBudgetRimanente() {
+  return astaState.budget - astaBudgetSpeso();
+}
+function astaSlotRimanentiTotali() {
+  return ASTA_ROLE_ORDER.reduce((sum, r) => sum + Math.max(0, (astaState.needs[r] || 0) - astaCountByRole(r)), 0);
+}
+
+// Classifica per il ruolo dato: fantamedia/quotazione (punti per credito),
+// esclude chi è già stato acquistato (match per squadra + nome, stesso
+// matching per cognome usato per rigoristi/forma preseason).
+function astaRankCandidates(role, limit) {
+  const bought = astaState.acquisti;
+  const candidates = (listone.players || [])
+    .filter(p => p.role === role)
+    .filter(p => !bought.some(b => normTeamName(b.team) === normTeamName(p.team) && rigoristaNameMatches(p.name, b.name)))
+    .map(p => {
+      const fm = p.fanta_media || p.fmReal || 0;
+      const q = Math.max(1, p.quotazione || p.quotation || 1);
+      return Object.assign({}, p, { _fm: fm, _q: q, _value: fm / q });
+    })
+    .filter(p => p._fm > 0)
+    .sort((a, b) => b._value - a._value);
+  return candidates.slice(0, limit || 10);
+}
+
+function updateAstaConfig() {
+  astaState.budget = parseInt(document.getElementById('astaBudgetInput').value, 10) || 500;
+  astaState.needs = {
+    P: parseInt(document.getElementById('astaNeedP').value, 10) || 0,
+    D: parseInt(document.getElementById('astaNeedD').value, 10) || 0,
+    C: parseInt(document.getElementById('astaNeedC').value, 10) || 0,
+    A: parseInt(document.getElementById('astaNeedA').value, 10) || 0,
+  };
+  saveAstaState();
+  renderPianoAsta();
+}
+
+function addAstaAcquisto() {
+  const name = (document.getElementById('astaBuyName').value || '').trim();
+  const team = (document.getElementById('astaBuyTeam').value || '').trim();
+  const role = document.getElementById('astaBuyRole').value;
+  const prezzo = parseInt(document.getElementById('astaBuyPrice').value, 10);
+  if (!name || !team || !prezzo || prezzo <= 0) {
+    showAdminFeedback('Asta', '❌ Compila nome, squadra e crediti pagati.', 'error');
+    return;
+  }
+  astaState.acquisti.push({ name, team, role, prezzo });
+  saveAstaState();
+  document.getElementById('astaBuyName').value = '';
+  document.getElementById('astaBuyTeam').value = '';
+  document.getElementById('astaBuyPrice').value = '';
+  showAdminFeedback('Asta', `✓ ${name} aggiunto (${prezzo} crediti).`, 'success');
+  renderPianoAsta();
+}
+
+function removeAstaAcquisto(idx) {
+  astaState.acquisti.splice(idx, 1);
+  saveAstaState();
+  renderPianoAsta();
+}
+
+function resetPianoAsta() {
+  if (!confirm("Ricominciare l'asta da zero? Verranno cancellati tutti gli acquisti registrati.")) return;
+  astaState.acquisti = [];
+  saveAstaState();
+  renderPianoAsta();
+}
+
+function renderPianoAsta() {
+  loadAstaState();
+  const bEl = document.getElementById('astaBudgetInput');
+  if (bEl) bEl.value = astaState.budget;
+  const pEl = document.getElementById('astaNeedP'), dEl = document.getElementById('astaNeedD'),
+        cEl = document.getElementById('astaNeedC'), aEl = document.getElementById('astaNeedA');
+  if (pEl) pEl.value = astaState.needs.P;
+  if (dEl) dEl.value = astaState.needs.D;
+  if (cEl) cEl.value = astaState.needs.C;
+  if (aEl) aEl.value = astaState.needs.A;
+
+  const phase = astaCurrentPhase();
+  const remaining = astaBudgetRimanente();
+  const slotsLeft = astaSlotRimanentiTotali();
+  const avgPerSlot = slotsLeft > 0 ? (remaining / slotsLeft) : 0;
+
+  const statusBar = document.getElementById('astaStatusBar');
+  if (statusBar) {
+    statusBar.innerHTML = `
+      <div><div style="font-size:10px;color:var(--muted);letter-spacing:1px">FASE ATTUALE</div><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold)">${phase ? ASTA_ROLE_LABELS[phase] : '✅ COMPLETATA'}</div></div>
+      <div><div style="font-size:10px;color:var(--muted);letter-spacing:1px">BUDGET</div><div style="font-size:16px">${remaining} / ${astaState.budget} crediti</div></div>
+      <div><div style="font-size:10px;color:var(--muted);letter-spacing:1px">SLOT RIMASTI</div><div style="font-size:16px">${slotsLeft}</div></div>
+      <div><div style="font-size:10px;color:var(--muted);letter-spacing:1px">MEDIA PER SLOT</div><div style="font-size:16px">${avgPerSlot.toFixed(1)}</div></div>
+    `;
+  }
+
+  const recEl = document.getElementById('astaRecommendations');
+  if (recEl) {
+    if (!phase) {
+      recEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted)">Rosa completa 🎉</div>`;
+    } else {
+      const cands = astaRankCandidates(phase, 10);
+      if (cands.length === 0) {
+        recEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Nessun candidato trovato nel listone per questo ruolo (carica/aggiorna il listone ufficiale in alto).</div>`;
+      } else {
+        const medal = i => i === 0 ? ' 🎯' : (i === 1 ? ' 🥈' : (i === 2 ? ' 🥉' : ''));
+        recEl.innerHTML = cands.map((p, i) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;background:${i===0?'rgba(245,197,66,0.08)':'var(--surface2)'};border:1px solid ${i===0?'rgba(245,197,66,0.3)':'var(--border)'};margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:12px;width:26px">${i+1}${medal(i)}</span>
+              <div>
+                <div style="font-weight:600">${escapeHtmlSafe(p.name)}</div>
+                <div style="font-size:11px;color:var(--muted)">${escapeHtmlSafe(p.team)}</div>
+              </div>
+            </div>
+            <div style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">
+              <div>FM ${p._fm.toFixed(1)} · ${p._q} cr</div>
+              <div style="color:var(--gold)">val ${p._value.toFixed(3)}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+  }
+
+  const listEl = document.getElementById('astaAcquistiList');
+  if (listEl) {
+    if (astaState.acquisti.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">Nessun acquisto ancora</div>`;
+    } else {
+      listEl.innerHTML = astaState.acquisti.map((a, i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)">
+          <div><strong>${escapeHtmlSafe(a.name)}</strong> <span style="color:var(--muted);font-size:12px">${escapeHtmlSafe(a.team)} · ${a.role}</span></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-family:'DM Mono',monospace">${a.prezzo} cr</span>
+            <button class="micro-btn danger" onclick="removeAstaAcquisto(${i})">×</button>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  const badge = document.getElementById('adminAstaBadge');
+  if (badge) badge.textContent = astaState.acquisti.length + '/' + (astaState.needs.P + astaState.needs.D + astaState.needs.C + astaState.needs.A);
 }
 
 // ============ CALENDARIO GLOBALE ============
