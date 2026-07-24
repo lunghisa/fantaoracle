@@ -3836,6 +3836,179 @@
       </div>
     </div>
   </div>
+
+<div class="page" id="page-admin">
+  <div class="admin-card">
+    <!-- Header -->
+    <div class="admin-header">
+      <div class="admin-title">
+        <span class="crown">👑</span>
+        <span>ADMIN PANEL</span>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="listino" onclick="switchAdminTab('listino')">
+        📦 LISTONE <span class="tab-badge" id="adminListinoBadge">—</span>
+      </button>
+      <button class="admin-tab" data-tab="calendar" onclick="switchAdminTab('calendar')">
+        📅 CALENDARIO <span class="tab-badge" id="adminCalendarBadge">—</span>
+      </button>
+      <button class="admin-tab" data-tab="stats" onclick="switchAdminTab('stats')">
+        📊 STATS <span class="tab-badge" id="adminStatsBadge">—</span>
+      </button>
+      <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')">
+        👥 UTENTI <span class="tab-badge" id="adminUsersBadge">—</span>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="admin-body">
+
+      <!-- ============ SECTION: LISTONE ============ -->
+      <div class="admin-section active" id="adminSecListino">
+        <h3>LISTONE SERIE A GLOBALE</h3>
+        <p class="section-desc">
+          Carica il listone ufficiale aggiornato. Tutti gli utenti dell'app lo vedranno disponibile al prossimo refresh.
+          Puoi sostituirlo in qualsiasi momento (es. dopo il mercato di gennaio).
+        </p>
+
+        <div class="admin-feedback" id="adminListinoFeedback"></div>
+
+        <!-- Stato attuale -->
+        <div id="adminListinoCurrent"></div>
+
+        <!-- Form caricamento -->
+        <div class="admin-field">
+          <label class="admin-field-label">Nome versione</label>
+          <input class="admin-field-input" id="adminListinoVersion" type="text" placeholder="es. Listone 2025-2026 · Gennaio" value="">
+        </div>
+
+        <div class="admin-upload-zone" id="adminListinoUploadZone"
+          onclick="document.getElementById('adminListinoFile').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');handleAdminListinoDrop(event)">
+          <div class="icon" id="adminListinoIcon">📊</div>
+          <div class="title" id="adminListinoUploadTitle">CARICA FILE .XLSX</div>
+          <div class="desc" id="adminListinoUploadDesc">Excel del listone con colonne: Ruolo, Nome, Squadra, Quotazione, Fantamedia</div>
+        </div>
+        <input type="file" id="adminListinoFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleAdminListinoFile(event)">
+
+        <button class="admin-btn" id="adminListinoPublishBtn" onclick="publishGlobalListino()" disabled>
+          🚀 PUBBLICA PER TUTTI GLI UTENTI
+        </button>
+
+        <!-- Storico versioni -->
+        <div class="admin-history" id="adminListinoHistory"></div>
+
+        <!-- Rigoristi designati -->
+        <div class="admin-field" style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">
+          <label class="admin-field-label">🎯 RIGORISTI DESIGNATI</label>
+          <p class="section-desc" style="margin-top:0">
+            Una riga per giocatore, formato <code>Squadra: Nome Giocatore</code> (es. <code>Inter: Lautaro Martinez</code>).
+            Al salvataggio aggiorna il listone attivo; l'Oracle applica un bonus (+0.35) ai giocatori marcati.
+          </p>
+          <textarea class="admin-field-input" id="adminRigoristiInput" rows="8"
+            style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
+            placeholder="Inter: Lautaro Martinez&#10;Napoli: Kvaratskhelia&#10;Roma: Dybala"></textarea>
+          <div style="font-size:11px;color:var(--muted);margin:6px 0 12px" id="adminRigoristiCount"></div>
+          <button class="admin-btn" id="adminRigoristiSaveBtn" onclick="saveRigoristi()">💾 SALVA RIGORISTI</button>
+        </div>
+      </div>
+
+      <!-- ============ SECTION: CALENDARIO ============ -->
+      <div class="admin-section" id="adminSecCalendar">
+        <h3>CALENDARIO SERIE A GLOBALE</h3>
+        <p class="section-desc">
+          Carica il calendario delle giornate. Formato accettato: CSV o JSON con campi giornata, data, casa, ospite.
+        </p>
+
+        <div class="admin-feedback" id="adminCalendarFeedback"></div>
+
+        <!-- Stato attuale -->
+        <div id="adminCalendarCurrent"></div>
+
+        <!-- Form -->
+        <div class="admin-field">
+          <label class="admin-field-label">Stagione</label>
+          <input class="admin-field-input" id="adminCalendarSeason" type="text" placeholder="es. 2025-2026" value="2025-2026">
+        </div>
+
+        <div class="admin-upload-zone" id="adminCalendarUploadZone"
+          onclick="document.getElementById('adminCalendarFile').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');handleAdminCalendarDrop(event)">
+          <div class="icon" id="adminCalendarIcon">📅</div>
+          <div class="title" id="adminCalendarUploadTitle">CARICA CALENDARIO</div>
+          <div class="desc" id="adminCalendarUploadDesc">CSV / JSON con: giornata, data, squadra_casa, squadra_ospite</div>
+        </div>
+        <input type="file" id="adminCalendarFile" accept=".csv,.json,.xlsx" style="display:none" onchange="handleAdminCalendarFile(event)">
+
+        <button class="admin-btn" id="adminCalendarPublishBtn" onclick="publishGlobalCalendar()" disabled>
+          🚀 PUBBLICA CALENDARIO
+        </button>
+
+        <!-- Storico -->
+        <div class="admin-history" id="adminCalendarHistory"></div>
+      </div>
+
+      <!-- ============ SECTION: STATS ============ -->
+      <div class="admin-section" id="adminSecStats">
+        <h3>STATISTICHE SITO</h3>
+        <p class="section-desc">
+          Panoramica dell'attività su FantaOracle. I dati si aggiornano in tempo reale.
+        </p>
+
+        <div class="admin-feedback" id="adminStatsFeedback"></div>
+
+        <!-- Grid metriche -->
+        <div class="admin-stats-grid" id="adminStatsGrid">
+          <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">
+            ⏳ Caricamento statistiche...
+          </div>
+        </div>
+
+        <!-- Grafico signup ultimi 30gg -->
+        <div class="admin-chart-card" id="adminSignupsChart" style="display:none">
+          <div class="admin-chart-title">📈 Nuovi signup · ultimi 30 giorni</div>
+          <div id="adminSignupsChartBody"></div>
+        </div>
+
+        <button class="admin-btn admin-btn-secondary" onclick="refreshAdminStats()" style="margin-top:16px">
+          🔄 Aggiorna
+        </button>
+      </div>
+
+      <!-- ============ SECTION: USERS ============ -->
+      <div class="admin-section" id="adminSecUsers">
+        <h3>GESTIONE UTENTI</h3>
+        <p class="section-desc">
+          Tutti gli utenti registrati su FantaOracle. Cerca, promuovi ad admin, disabilita.
+        </p>
+
+        <div class="admin-feedback" id="adminUsersFeedback"></div>
+
+        <!-- Search bar -->
+        <div style="margin-bottom:14px">
+          <input class="admin-field-input" id="adminUsersSearch" type="text"
+            placeholder="🔍 Cerca per email o username..."
+            oninput="filterAdminUsers()">
+        </div>
+
+        <!-- Lista utenti -->
+        <div id="adminUsersList">
+          <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">
+            ⏳ Caricamento utenti...
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 </div>
 
 <!-- MODAL VOTI REALI -->
@@ -10266,180 +10439,6 @@ function togglePill(el) {
     <span class="bn-icon">⚙️</span>
     <span class="bn-label">Admin</span>
   </button>
-</div>
-
-<!-- ============ ADMIN PANEL (pagina) ============ -->
-<div class="page" id="page-admin">
-  <div class="admin-card">
-    <!-- Header -->
-    <div class="admin-header">
-      <div class="admin-title">
-        <span class="crown">👑</span>
-        <span>ADMIN PANEL</span>
-      </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="admin-tabs">
-      <button class="admin-tab active" data-tab="listino" onclick="switchAdminTab('listino')">
-        📦 LISTONE <span class="tab-badge" id="adminListinoBadge">—</span>
-      </button>
-      <button class="admin-tab" data-tab="calendar" onclick="switchAdminTab('calendar')">
-        📅 CALENDARIO <span class="tab-badge" id="adminCalendarBadge">—</span>
-      </button>
-      <button class="admin-tab" data-tab="stats" onclick="switchAdminTab('stats')">
-        📊 STATS <span class="tab-badge" id="adminStatsBadge">—</span>
-      </button>
-      <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')">
-        👥 UTENTI <span class="tab-badge" id="adminUsersBadge">—</span>
-      </button>
-    </div>
-
-    <!-- Body -->
-    <div class="admin-body">
-
-      <!-- ============ SECTION: LISTONE ============ -->
-      <div class="admin-section active" id="adminSecListino">
-        <h3>LISTONE SERIE A GLOBALE</h3>
-        <p class="section-desc">
-          Carica il listone ufficiale aggiornato. Tutti gli utenti dell'app lo vedranno disponibile al prossimo refresh.
-          Puoi sostituirlo in qualsiasi momento (es. dopo il mercato di gennaio).
-        </p>
-
-        <div class="admin-feedback" id="adminListinoFeedback"></div>
-
-        <!-- Stato attuale -->
-        <div id="adminListinoCurrent"></div>
-
-        <!-- Form caricamento -->
-        <div class="admin-field">
-          <label class="admin-field-label">Nome versione</label>
-          <input class="admin-field-input" id="adminListinoVersion" type="text" placeholder="es. Listone 2025-2026 · Gennaio" value="">
-        </div>
-
-        <div class="admin-upload-zone" id="adminListinoUploadZone"
-          onclick="document.getElementById('adminListinoFile').click()"
-          ondragover="event.preventDefault();this.classList.add('drag')"
-          ondragleave="this.classList.remove('drag')"
-          ondrop="event.preventDefault();this.classList.remove('drag');handleAdminListinoDrop(event)">
-          <div class="icon" id="adminListinoIcon">📊</div>
-          <div class="title" id="adminListinoUploadTitle">CARICA FILE .XLSX</div>
-          <div class="desc" id="adminListinoUploadDesc">Excel del listone con colonne: Ruolo, Nome, Squadra, Quotazione, Fantamedia</div>
-        </div>
-        <input type="file" id="adminListinoFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleAdminListinoFile(event)">
-
-        <button class="admin-btn" id="adminListinoPublishBtn" onclick="publishGlobalListino()" disabled>
-          🚀 PUBBLICA PER TUTTI GLI UTENTI
-        </button>
-
-        <!-- Storico versioni -->
-        <div class="admin-history" id="adminListinoHistory"></div>
-
-        <!-- Rigoristi designati -->
-        <div class="admin-field" style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">
-          <label class="admin-field-label">🎯 RIGORISTI DESIGNATI</label>
-          <p class="section-desc" style="margin-top:0">
-            Una riga per giocatore, formato <code>Squadra: Nome Giocatore</code> (es. <code>Inter: Lautaro Martinez</code>).
-            Al salvataggio aggiorna il listone attivo; l'Oracle applica un bonus (+0.35) ai giocatori marcati.
-          </p>
-          <textarea class="admin-field-input" id="adminRigoristiInput" rows="8"
-            style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
-            placeholder="Inter: Lautaro Martinez&#10;Napoli: Kvaratskhelia&#10;Roma: Dybala"></textarea>
-          <div style="font-size:11px;color:var(--muted);margin:6px 0 12px" id="adminRigoristiCount"></div>
-          <button class="admin-btn" id="adminRigoristiSaveBtn" onclick="saveRigoristi()">💾 SALVA RIGORISTI</button>
-        </div>
-      </div>
-
-      <!-- ============ SECTION: CALENDARIO ============ -->
-      <div class="admin-section" id="adminSecCalendar">
-        <h3>CALENDARIO SERIE A GLOBALE</h3>
-        <p class="section-desc">
-          Carica il calendario delle giornate. Formato accettato: CSV o JSON con campi giornata, data, casa, ospite.
-        </p>
-
-        <div class="admin-feedback" id="adminCalendarFeedback"></div>
-
-        <!-- Stato attuale -->
-        <div id="adminCalendarCurrent"></div>
-
-        <!-- Form -->
-        <div class="admin-field">
-          <label class="admin-field-label">Stagione</label>
-          <input class="admin-field-input" id="adminCalendarSeason" type="text" placeholder="es. 2025-2026" value="2025-2026">
-        </div>
-
-        <div class="admin-upload-zone" id="adminCalendarUploadZone"
-          onclick="document.getElementById('adminCalendarFile').click()"
-          ondragover="event.preventDefault();this.classList.add('drag')"
-          ondragleave="this.classList.remove('drag')"
-          ondrop="event.preventDefault();this.classList.remove('drag');handleAdminCalendarDrop(event)">
-          <div class="icon" id="adminCalendarIcon">📅</div>
-          <div class="title" id="adminCalendarUploadTitle">CARICA CALENDARIO</div>
-          <div class="desc" id="adminCalendarUploadDesc">CSV / JSON con: giornata, data, squadra_casa, squadra_ospite</div>
-        </div>
-        <input type="file" id="adminCalendarFile" accept=".csv,.json,.xlsx" style="display:none" onchange="handleAdminCalendarFile(event)">
-
-        <button class="admin-btn" id="adminCalendarPublishBtn" onclick="publishGlobalCalendar()" disabled>
-          🚀 PUBBLICA CALENDARIO
-        </button>
-
-        <!-- Storico -->
-        <div class="admin-history" id="adminCalendarHistory"></div>
-      </div>
-
-      <!-- ============ SECTION: STATS ============ -->
-      <div class="admin-section" id="adminSecStats">
-        <h3>STATISTICHE SITO</h3>
-        <p class="section-desc">
-          Panoramica dell'attività su FantaOracle. I dati si aggiornano in tempo reale.
-        </p>
-
-        <div class="admin-feedback" id="adminStatsFeedback"></div>
-
-        <!-- Grid metriche -->
-        <div class="admin-stats-grid" id="adminStatsGrid">
-          <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">
-            ⏳ Caricamento statistiche...
-          </div>
-        </div>
-
-        <!-- Grafico signup ultimi 30gg -->
-        <div class="admin-chart-card" id="adminSignupsChart" style="display:none">
-          <div class="admin-chart-title">📈 Nuovi signup · ultimi 30 giorni</div>
-          <div id="adminSignupsChartBody"></div>
-        </div>
-
-        <button class="admin-btn admin-btn-secondary" onclick="refreshAdminStats()" style="margin-top:16px">
-          🔄 Aggiorna
-        </button>
-      </div>
-
-      <!-- ============ SECTION: USERS ============ -->
-      <div class="admin-section" id="adminSecUsers">
-        <h3>GESTIONE UTENTI</h3>
-        <p class="section-desc">
-          Tutti gli utenti registrati su FantaOracle. Cerca, promuovi ad admin, disabilita.
-        </p>
-
-        <div class="admin-feedback" id="adminUsersFeedback"></div>
-
-        <!-- Search bar -->
-        <div style="margin-bottom:14px">
-          <input class="admin-field-input" id="adminUsersSearch" type="text"
-            placeholder="🔍 Cerca per email o username..."
-            oninput="filterAdminUsers()">
-        </div>
-
-        <!-- Lista utenti -->
-        <div id="adminUsersList">
-          <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">
-            ⏳ Caricamento utenti...
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
 </div>
 
 </body>
