@@ -929,21 +929,7 @@
   .user-menu-item.danger { color: var(--red); }
   .user-menu-item.danger:hover { background: rgba(255,76,76,0.08); }
 
-  /* ============ ADMIN PANEL MODAL ============ */
-  .admin-modal {
-    position: fixed; inset: 0;
-    background: rgba(2,4,10,0.95);
-    backdrop-filter: blur(20px);
-    z-index: 5000;
-    display: none;
-    align-items: stretch; justify-content: center;
-    padding: 20px;
-    padding-top: max(20px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
-    overflow-y: auto;
-    animation: authFadeIn 0.3s ease;
-  }
-  .admin-modal.show { display: flex; }
+  /* ============ ADMIN PANEL (pagina) ============ */
   .admin-card {
     width: 100%;
     max-width: 980px;
@@ -975,17 +961,6 @@
     display: flex; align-items: center; gap: 10px;
   }
   .admin-title .crown { font-size: 22px; }
-  .admin-close-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    width: 34px; height: 34px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 18px;
-    transition: all 0.2s;
-  }
-  .admin-close-btn:hover { color: var(--text); border-color: var(--gold); }
 
   .admin-tabs {
     display: flex;
@@ -1506,8 +1481,7 @@
   }
 
   @media (max-width: 699px) {
-    .admin-modal { padding: 0; }
-    .admin-card { max-height: 100vh; border-radius: 0; border: none; }
+    .admin-card { max-height: 100vh; }
     .admin-header { padding: 16px 18px 12px; }
     .admin-title { font-size: 20px; letter-spacing: 3px; }
     .admin-body { padding: 16px 18px 22px; }
@@ -3511,6 +3485,7 @@
       <button class="nav-tab active" id="tab-dashboard" onclick="showPage('dashboard', this)">Dashboard</button>
       <button class="nav-tab" id="tab-campo" onclick="showPage('campo', this)">Campo</button>
       <button class="nav-tab" id="tab-news" onclick="showPage('news', this)" id="newsNavTab">News <span class="news-dot" id="newsDot" style="display:none"></span></button>
+      <button class="nav-tab" id="tab-admin" onclick="showPage('admin', this)" style="display:none">⚙️ Admin</button>
     </div>
     <div class="cloud-dot" id="cloudPill" title="Cloud · in attesa"></div>
     <div id="userPillWrap" style="margin-left:8px"></div>
@@ -3528,7 +3503,7 @@
       <div class="user-menu-email" id="userMenuEmail">—</div>
     </div>
     <button class="user-menu-item" id="userMenuProfileBtn" onclick="openProfileModal()">👤 <span>Profilo</span></button>
-    <button class="user-menu-item" id="userMenuAdminBtn" style="display:none" onclick="openAdminPanel()">⚙️ <span>Admin Panel</span></button>
+    <button class="user-menu-item" id="userMenuAdminBtn" style="display:none" onclick="showPage('admin', document.getElementById('tab-admin'))">⚙️ <span>Admin Panel</span></button>
     <button class="user-menu-item" onclick="alert('Le tue leghe sono sincronizzate automaticamente nel cloud.')">☁️ <span>Sincronizzazione cloud</span></button>
     <button class="user-menu-item danger" onclick="doLogout()">🚪 <span>Esci</span></button>
   </div>
@@ -4628,7 +4603,7 @@ function showImportWrongFileTypeDialog(playersCount) {
   modal.id = 'wrongFileTypeModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:5500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.25s ease';
   const adminCta = isAdmin
-    ? `<button onclick="document.getElementById('wrongFileTypeModal').remove();openAdminPanel()" style="flex:1;padding:11px;background:var(--gold);color:#000;border:none;border-radius:8px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px">VAI AD ADMIN PANEL</button>`
+    ? `<button onclick="document.getElementById('wrongFileTypeModal').remove();showPage('admin', document.getElementById('tab-admin'))" style="flex:1;padding:11px;background:var(--gold);color:#000;border:none;border-radius:8px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px">VAI AD ADMIN PANEL</button>`
     : '';
   modal.innerHTML = `
     <div style="background:#0d1318;border:1px solid rgba(255,140,66,0.4);border-radius:18px;padding:28px;max-width:460px;width:100%;animation:slideUp 0.3s ease">
@@ -7194,9 +7169,13 @@ function enterApp(ev) {
     renderLeagueSwitcher();
     updateRosterStats();          // <- attiva onboarding hero se rosa vuota (punto 2)
     updateLeagueBanner();         // <- imposta saluto dinamico (punto 8)
+    updateUserPill();              // <- mostra il tab Admin per gli account admin, prima del routing sotto
+    // Admin: la prima pagina è l'Admin Panel, non la Dashboard
+    if (currentUser && currentUser.is_admin) {
+      showPage('admin', document.getElementById('tab-admin'));
+    }
     loadNews(false);
     setInterval(() => loadNews(true), AUTO_REFRESH_MIN * 60 * 1000);
-    updateUserPill();
     updateCloudIndicator();
     // Avvia sync cloud se loggato e profilo già caricato
     if (currentUser && !cloudSyncState.migrationDone) {
@@ -7376,6 +7355,11 @@ async function loadUserProfile(authUser) {
 function updateUserPill() {
   const wrap = document.getElementById('userPillWrap');
   if (!wrap) return;
+  const isAdmin = !!(currentUser && currentUser.is_admin);
+  const tabAdmin = document.getElementById('tab-admin');
+  const bnTabAdmin = document.getElementById('bnTabAdmin');
+  if (tabAdmin) tabAdmin.style.display = isAdmin ? '' : 'none';
+  if (bnTabAdmin) bnTabAdmin.style.display = isAdmin ? '' : 'none';
   if (!currentUser) {
     wrap.innerHTML = `
       <button class="user-pill" onclick="openAuthModal()" title="Accedi">
@@ -8360,28 +8344,6 @@ let adminState = {
   historyListino: [],
   historyCalendar: [],
 };
-
-function openAdminPanel() {
-  if (!currentUser || !currentUser.is_admin) {
-    showToast('⛔ Solo per admin');
-    return;
-  }
-  document.getElementById('adminModal').classList.add('show');
-  document.body.style.overflow = 'hidden';
-  // Reset state
-  adminState.pendingListino = null;
-  adminState.pendingCalendar = null;
-  // Carica dati dal cloud
-  refreshAdminListino();
-  refreshAdminCalendar();
-  // Default tab
-  switchAdminTab('listino');
-}
-
-function closeAdminPanel() {
-  document.getElementById('adminModal').classList.remove('show');
-  document.body.style.overflow = '';
-}
 
 function switchAdminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -9399,6 +9361,10 @@ async function applyGlobalListinoAndCalendar() {
 
 
 function showPage(id, btn) {
+  if (id === 'admin' && !(currentUser && currentUser.is_admin)) {
+    showToast('⛔ Solo per admin');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
@@ -9406,7 +9372,7 @@ function showPage(id, btn) {
   // Aggiorna titolo pagina (punto 10 UX)
   const pageTitleEl = document.getElementById('pageTitle');
   if (pageTitleEl) {
-    const titles = { dashboard: 'Dashboard', campo: 'Il tuo campo', news: 'News Fantacalcio', ai: 'Oracle' };
+    const titles = { dashboard: 'Dashboard', campo: 'Il tuo campo', news: 'News Fantacalcio', ai: 'Oracle', admin: 'Admin Panel' };
     pageTitleEl.textContent = titles[id] || '';
   }
   if (id === 'campo') renderField();
@@ -9415,6 +9381,13 @@ function showPage(id, btn) {
   if (id === 'news') {
     if (!newsState.lastUpdate || (Date.now() - newsState.lastUpdate.getTime()) > 10 * 60 * 1000) loadNews(false);
     else renderNews();
+  }
+  if (id === 'admin') {
+    adminState.pendingListino = null;
+    adminState.pendingCalendar = null;
+    refreshAdminListino();
+    refreshAdminCalendar();
+    switchAdminTab('listino');
   }
 }
 function setMode(mode) {
@@ -10290,10 +10263,14 @@ function togglePill(el) {
     <span class="bn-label">News</span>
     <span class="bn-dot" id="bnNewsDot" style="display:none"></span>
   </button>
+  <button class="bottom-nav-tab" id="bnTabAdmin" data-page="admin" onclick="showPage('admin', document.getElementById('tab-admin'))" style="display:none">
+    <span class="bn-icon">⚙️</span>
+    <span class="bn-label">Admin</span>
+  </button>
 </div>
 
-<!-- ============ ADMIN PANEL MODAL ============ -->
-<div class="admin-modal" id="adminModal">
+<!-- ============ ADMIN PANEL (pagina) ============ -->
+<div class="page" id="page-admin">
   <div class="admin-card">
     <!-- Header -->
     <div class="admin-header">
@@ -10301,7 +10278,6 @@ function togglePill(el) {
         <span class="crown">👑</span>
         <span>ADMIN PANEL</span>
       </div>
-      <button class="admin-close-btn" onclick="closeAdminPanel()" aria-label="Chiudi">✕</button>
     </div>
 
     <!-- Tabs -->
