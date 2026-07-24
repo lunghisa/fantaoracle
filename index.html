@@ -3500,7 +3500,7 @@
   <nav>
     <div style="display:flex;align-items:center;gap:14px;min-width:0;flex-shrink:1">
       <div class="nav-logo">FantaOracle</div>
-      <div class="league-switcher">
+      <div class="league-switcher" id="leagueSwitcherWrap">
         <button id="leagueSwitcherTrigger" class="league-switcher-trigger" onclick="toggleLeagueMenu(event)">
           <span style="color:var(--gold);font-weight:700;letter-spacing:0.5px">+ Nuova lega</span>
         </button>
@@ -4297,7 +4297,16 @@ function renderLeagueSwitcher() {
   const trigger = document.getElementById('leagueSwitcherTrigger');
   const menu = document.getElementById('leagueSwitcherMenu');
   if (!trigger || !menu) return;
-  
+
+  // Admin: nessuna lega/switcher in pagina principale. Solo nascosto in UI,
+  // i dati delle leghe (anche di test) restano intatti e intoccati.
+  const wrap = document.getElementById('leagueSwitcherWrap');
+  if (currentUser && currentUser.is_admin) {
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  if (wrap) wrap.style.display = '';
+
   const active = leagues.find(l => l.id === activeLeagueId);
   
   // Punto 4: quando non c'è nessuna lega, trigger diventa "+ Nuova lega" (cliccabile)
