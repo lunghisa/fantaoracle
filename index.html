@@ -3916,6 +3916,21 @@
           <div style="font-size:11px;color:var(--muted);margin:6px 0 12px" id="adminRigoristiCount"></div>
           <button class="admin-btn" id="adminRigoristiSaveBtn" onclick="saveRigoristi()">💾 SALVA RIGORISTI</button>
         </div>
+
+        <!-- Forma preseason (amichevoli) -->
+        <div class="admin-field" style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">
+          <label class="admin-field-label">📋 FORMA PRESEASON (AMICHEVOLI)</label>
+          <p class="section-desc" style="margin-top:0">
+            Una riga per giocatore, formato <code>Squadra: Nome Giocatore: valore</code>, valore da -0.5 a +0.5
+            (es. <code>Milan: Leao: +0.3</code>). Usata dall'Oracle come proxy della forma solo finché non ci sono
+            ancora voti reali di campionato (giornate iniziali): smette di applicarsi da sola non appena arrivano.
+          </p>
+          <textarea class="admin-field-input" id="adminFormaPreseasonInput" rows="8"
+            style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
+            placeholder="Milan: Leao: +0.3&#10;Napoli: Kvaratskhelia: +0.2&#10;Inter: Correa: -0.2"></textarea>
+          <div style="font-size:11px;color:var(--muted);margin:6px 0 12px" id="adminFormaPreseasonCount"></div>
+          <button class="admin-btn" id="adminFormaPreseasonSaveBtn" onclick="saveFormaPreseason()">💾 SALVA FORMA PRESEASON</button>
+        </div>
       </div>
 
       <!-- ============ SECTION: CALENDARIO ============ -->
@@ -5385,6 +5400,15 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
     const d = formAvg - base;
     if (d >= 0.3) factors.push('forma in crescita (' + formAvg.toFixed(1) + ' nelle ultime ' + recent.length + ')');
     else if (d <= -0.3) factors.push('forma in calo (' + formAvg.toFixed(1) + ' nelle ultime ' + recent.length + ')');
+  } else if (p.formaPreseason) {
+    // Nessun voto reale di campionato ancora (cold-start, giornate iniziali):
+    // uso la forma preseason dalle amichevoli, inserita dall'admin, come proxy
+    // temporaneo. Smette di applicarsi da solo appena ci sono >=2 voti reali.
+    const fp = Math.max(-0.5, Math.min(0.5, p.formaPreseason));
+    exp += fp;
+    conf += 5;
+    if (fp >= 0.15) factors.push('📋 forma preseason positiva (amichevoli)');
+    else if (fp <= -0.15) factors.push('📋 forma preseason opaca (amichevoli)');
   }
 
   // 2. AVVERSARIO + CASA/TRASFERTA dal calendario
@@ -5516,6 +5540,7 @@ function enrichRosterFromListone() {
     // d'opera), quindi va aggiornato *prima* dello short-circuit "già ricco"
     // qui sotto, altrimenti i titolari con storico voti non lo riceverebbero mai.
     p.rigorista = !!(lp && lp.rigorista);
+    p.formaPreseason = (lp && typeof lp.formaPreseason === 'number') ? lp.formaPreseason : 0;
     if ((p.fmReal && p.fmReal > 0) && (p.pgv && p.pgv > 0)) return; // già ricco
     if (!lp) return;
     if (!p.fmReal || p.fmReal <= 0) p.fmReal = lp.fmReal || 0;
@@ -8799,6 +8824,7 @@ async function refreshAdminRigoristi() {
   const data = await fetchGlobalListinoForUser();
   adminState.activeListinoFull = data || null;
   renderRigoristiEditor();
+  renderFormaPreseasonEditor();
 }
 
 function renderRigoristiEditor() {
@@ -8891,6 +8917,80 @@ async function saveRigoristi() {
     showAdminFeedback('Listino', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
   }
   if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA RIGORISTI'; }
+}
+
+// ============ FORMA PRESEASON (AMICHEVOLI) ============
+// Stesso meccanismo dei rigoristi: campo formaPreseason dentro players,
+// nessuna tabella nuova. Serve da proxy per la "forma" prima che esistano
+// voti reali di campionato (vedi oraclePredictPlayer, sezione 1).
+function renderFormaPreseasonEditor() {
+  const el = document.getElementById('adminFormaPreseasonInput');
+  if (!el) return;
+  const players = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
+  const lines = players
+    .filter(p => typeof p.formaPreseason === 'number' && p.formaPreseason !== 0)
+    .map(p => (p.team || '') + ': ' + (p.name || '') + ': ' + (p.formaPreseason > 0 ? '+' : '') + p.formaPreseason.toFixed(2));
+  el.value = lines.join('\n');
+  const countEl = document.getElementById('adminFormaPreseasonCount');
+  if (countEl) countEl.textContent = lines.length + ' giocator' + (lines.length === 1 ? 'e' : 'i') + ' con forma preseason impostata';
+}
+
+function parseFormaPreseasonLines(text) {
+  return (text || '').split(/\r?\n/)
+    .map(line => {
+      const parts = line.split(':');
+      if (parts.length < 3) return null;
+      const team = parts[0].trim();
+      const value = parseFloat(parts[parts.length - 1].trim().replace(',', '.'));
+      const name = parts.slice(1, -1).join(':').trim();
+      if (!team || !name || isNaN(value)) return null;
+      return { team: normTeamName(team), name, value: Math.max(-0.5, Math.min(0.5, value)), matched: false };
+    })
+    .filter(Boolean);
+}
+
+async function saveFormaPreseason() {
+  if (!adminState.activeListinoFull || !adminState.activeListinoFull.id) {
+    showAdminFeedback('Listino', '❌ Nessun listone attivo caricato.', 'error');
+    return;
+  }
+  const btn = document.getElementById('adminFormaPreseasonSaveBtn');
+  const textEl = document.getElementById('adminFormaPreseasonInput');
+  const lines = parseFormaPreseasonLines(textEl ? textEl.value : '');
+  const updatedPlayers = adminState.activeListinoFull.players.map(p => {
+    const t = normTeamName(p.team);
+    const hit = lines.find(l => !l.matched && l.team === t && rigoristaNameMatches(p.name, l.name));
+    if (hit) hit.matched = true;
+    return { ...p, formaPreseason: hit ? hit.value : 0 };
+  });
+  const unmatched = lines.filter(l => !l.matched);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ SALVATAGGIO...'; }
+  const client = await ensureSupabaseReady();
+  if (!client) {
+    showAdminFeedback('Listino', '❌ Servizio non disponibile.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA FORMA PRESEASON'; }
+    return;
+  }
+  try {
+    const { error } = await client.from('global_listino')
+      .update({ players: updatedPlayers })
+      .eq('id', adminState.activeListinoFull.id);
+    if (error) throw error;
+    adminState.activeListinoFull.players = updatedPlayers;
+    const count = updatedPlayers.filter(p => p.formaPreseason).length;
+    let msg = `✓ ${count} giocatori aggiornati.`;
+    let type = 'success';
+    if (unmatched.length > 0) {
+      msg += ` ⚠️ Non trovati nel listone: ${unmatched.map(l => l.name).join(', ')}`;
+      type = 'info';
+    }
+    showAdminFeedback('Listino', msg, type);
+    renderFormaPreseasonEditor();
+    try { await applyGlobalListinoAndCalendar(); } catch(e) {}
+  } catch(e) {
+    showAdminFeedback('Listino', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA FORMA PRESEASON'; }
 }
 
 // ============ CALENDARIO GLOBALE ============
@@ -9463,6 +9563,7 @@ async function applyGlobalListinoAndCalendar() {
           oracle: typeof p.fanta_media === 'number' ? +(p.fanta_media + 0.2).toFixed(1) : 6.2,
           media_voto: typeof p.media_voto === 'number' ? p.media_voto : 0,
           rigorista: !!p.rigorista,
+          formaPreseason: typeof p.formaPreseason === 'number' ? p.formaPreseason : 0,
           color: ({P:'#ff8c1a', D:'#7bc043', C:'#3d9bff', A:'#e63946', T:'#c77dff'})[p.role] || '#999'
         }));
         listone = {
