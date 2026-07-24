@@ -3628,7 +3628,7 @@
             Esporta il file della lega da <strong style="color:var(--text)">Fantacalcio.it</strong> e trascinalo qui, oppure scegli un file.
           </div>
         </div>
-        <span id="listinoBadge" class="listino-badge" style="display:none">LEGA · <span id="listinoCount">0</span> giocatori</span>
+        <span id="listinoBadge" class="listino-badge" style="display:none">LEGA · <span>0</span> giocatori</span>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button onclick="document.getElementById('listinoUploadInput').click()"
@@ -4437,13 +4437,13 @@ function updateListinoBadge() {
   if (!badge) return;
   if (listone.source === 'cloud_admin') {
     badge.className = 'listino-badge official';
-    badge.innerHTML = `👑 LISTONE UFFICIALE ADMIN · <span id="listinoCount">${listone.players.length}</span> giocatori`;
+    badge.innerHTML = `👑 LISTONE UFFICIALE ADMIN · <span>${listone.players.length}</span> giocatori`;
   } else if (listone.source === 'uploaded') {
     badge.className = 'listino-badge official';
-    badge.innerHTML = `✅ LISTONE UFFICIALE · <span id="listinoCount">${listone.players.length}</span> giocatori`;
+    badge.innerHTML = `✅ LISTONE UFFICIALE · <span>${listone.players.length}</span> giocatori`;
   } else {
     badge.className = 'listino-badge';
-    badge.innerHTML = `📋 LISTONE BUILT-IN · <span id="listinoCount">${listone.players.length}</span> giocatori`;
+    badge.innerHTML = `📋 LISTONE BUILT-IN · <span>${listone.players.length}</span> giocatori`;
   }
   updateLeagueBanner();
 }
