@@ -4147,6 +4147,16 @@ function loadLeaguesRegistry() {
     console.log('[FantaOracle] Pulite ' + fakeLeaguesFound.length + ' leghe fake dal registry:', fakeLeaguesFound.map(l => l.name));
   }
   
+  // Admin: mai una lega/fantasquadra auto-attiva sulla pagina principale.
+  // ACTIVE_LEAGUE_KEY è globale al browser (non legata all'account loggato):
+  // senza questo, uno stato locale residuo da test come utente normale sullo
+  // stesso dispositivo resterebbe agganciato alla sessione admin. Il registro
+  // leghe resta intatto: l'admin può comunque passarci a mano dal selettore.
+  if (currentUser && currentUser.is_admin) {
+    activeLeagueId = null;
+    return;
+  }
+
   // Se non c'è una lega attiva ma ce ne sono di registrate, prendo la prima
   if (!activeLeagueId && leagues.length > 0) {
     activeLeagueId = leagues[0].id;
