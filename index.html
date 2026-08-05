@@ -4066,7 +4066,8 @@
         <div class="admin-field">
           <label class="admin-field-label">Registra acquisto</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <input class="admin-field-input" id="astaBuyName" type="text" placeholder="Nome giocatore" style="flex:2;min-width:140px">
+            <input class="admin-field-input" id="astaBuyName" type="text" placeholder="Nome giocatore" style="flex:2;min-width:140px" list="astaBuyDatalist" autocomplete="off" oninput="onAstaBuyNameInput()">
+            <datalist id="astaBuyDatalist"></datalist>
             <input class="admin-field-input" id="astaBuyTeam" type="text" placeholder="Squadra" style="flex:1;min-width:100px">
             <select class="admin-field-input" id="astaBuyRole" style="flex:0 0 90px">
               <option value="P">P</option>
@@ -9275,6 +9276,35 @@ function updateAstaConfig() {
   renderPianoAsta();
 }
 
+// Autocomplete del form acquisto: la datalist contiene i candidati del ruolo
+// in corso come "NOME · Squadra". Alla selezione, nome/squadra/ruolo si
+// compilano da soli con i valori ESATTI del listone (così l'esclusione dai
+// consigli dopo l'acquisto matcha sempre) e il focus salta ai crediti.
+function refreshAstaBuyDatalist(phase) {
+  const dl = document.getElementById('astaBuyDatalist');
+  if (!dl) return;
+  if (!phase) { dl.innerHTML = ''; return; }
+  dl.innerHTML = astaRankCandidates(phase, 1000)
+    .map(p => `<option value="${escapeHtmlSafe(p.name)} · ${escapeHtmlSafe(p.team)}"></option>`)
+    .join('');
+}
+
+function onAstaBuyNameInput() {
+  const nameEl = document.getElementById('astaBuyName');
+  const val = (nameEl.value || '');
+  const sepIdx = val.lastIndexOf(' · ');
+  if (sepIdx === -1) return; // sta ancora digitando: nessuna voce selezionata
+  const name = val.slice(0, sepIdx).trim();
+  const team = val.slice(sepIdx + 3).trim();
+  if (!name || !team) return;
+  nameEl.value = name;
+  document.getElementById('astaBuyTeam').value = team;
+  const phase = astaCurrentPhase();
+  if (phase) document.getElementById('astaBuyRole').value = phase;
+  const priceEl = document.getElementById('astaBuyPrice');
+  if (priceEl) priceEl.focus();
+}
+
 function addAstaAcquisto() {
   const name = (document.getElementById('astaBuyName').value || '').trim();
   const team = (document.getElementById('astaBuyTeam').value || '').trim();
@@ -9321,6 +9351,12 @@ function renderPianoAsta() {
   const remaining = astaBudgetRimanente();
   const slotsLeft = astaSlotRimanentiTotali();
   const avgPerSlot = slotsLeft > 0 ? (remaining / slotsLeft) : 0;
+
+  // Form acquisto allineato alla fase: ruolo preselezionato e autocomplete
+  // sui candidati del ruolo in corso.
+  refreshAstaBuyDatalist(phase);
+  const roleSel = document.getElementById('astaBuyRole');
+  if (roleSel && phase) roleSel.value = phase;
 
   const statusBar = document.getElementById('astaStatusBar');
   if (statusBar) {
