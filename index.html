@@ -4080,8 +4080,8 @@
         </div>
 
         <!-- Classifica ruolo corrente -->
-        <div style="margin-top:20px">
-          <div class="admin-field-label" style="margin-bottom:10px">CONSIGLIATI ORA</div>
+        <div style="margin-top:16px">
+          <div class="admin-field-label" style="margin-bottom:6px" id="astaRecLabel">CONSIGLIATI ORA</div>
           <div id="astaRecommendations"></div>
         </div>
 
@@ -9241,7 +9241,12 @@ function astaRankCandidates(role, limit) {
       return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
     })
     .filter(p => p._hasQuot)
-    .sort((a, b) => b._value - a._value);
+    // Ordino per qualità attesa, non per rapporto qualità/prezzo: senza
+    // fantamedia reale la qualità stimata è quasi piatta (5.9-7.5) mentre il
+    // prezzo va da 1 a 35, quindi fm/q premierebbe sempre i giocatori da 1
+    // credito — inutile in asta. La quotazione è il segnale di mercato, e la
+    // forma preseason differenzia chi sta dentro la stessa fascia di prezzo.
+    .sort((a, b) => (b._fm - a._fm) || (b._value - a._value));
   return candidates.slice(0, limit || 10);
 }
 
@@ -9317,28 +9322,34 @@ function renderPianoAsta() {
   const recEl = document.getElementById('astaRecommendations');
   if (recEl) {
     if (!phase) {
-      recEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted)">Rosa completa 🎉</div>`;
+      const lbl0 = document.getElementById('astaRecLabel');
+      if (lbl0) lbl0.textContent = 'CONSIGLIATI ORA';
+      recEl.innerHTML = `<div style="text-align:center;padding:14px;color:var(--muted)">Rosa completa 🎉</div>`;
     } else {
-      const cands = astaRankCandidates(phase, 10);
+      const cands = astaRankCandidates(phase, 8);
+      // Fascia di prezzo del prossimo slot da riempire, per capire a colpo
+      // d'occhio chi rientra nel budget previsto e chi è uno sforzo.
+      const rb = astaRoleBudgets()[phase];
+      const nextTarget = rb.slotsLeft > 0 ? astaSlotTargets(rb.remaining, rb.slotsLeft)[0] : 0;
+      const lbl = document.getElementById('astaRecLabel');
+      if (lbl) lbl.textContent = `CONSIGLIATI ORA · ${ASTA_ROLE_LABELS[phase]} · prossimo slot ~${nextTarget} cr`;
       if (cands.length === 0) {
         recEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Nessun candidato trovato nel listone per questo ruolo (carica/aggiorna il listone ufficiale in alto).</div>`;
       } else {
-        const medal = i => i === 0 ? ' 🎯' : (i === 1 ? ' 🥈' : (i === 2 ? ' 🥉' : ''));
-        recEl.innerHTML = cands.map((p, i) => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;background:${i===0?'rgba(245,197,66,0.08)':'var(--surface2)'};border:1px solid ${i===0?'rgba(245,197,66,0.3)':'var(--border)'};margin-bottom:6px">
-            <div style="display:flex;align-items:center;gap:10px">
-              <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:12px;width:26px">${i+1}${medal(i)}</span>
-              <div>
-                <div style="font-weight:600">${escapeHtmlSafe(p.name)}${p.rigorista ? ` <span title="Rigorista designato" style="font-size:9px;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.5px;color:#000;background:var(--gold);padding:1px 5px;border-radius:4px;vertical-align:middle">RIG</span>` : ''}${p._formaAdj ? ` <span style="font-size:10px;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋 ${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}</div>
-                <div style="font-size:11px;color:var(--muted)">${escapeHtmlSafe(p.team)}</div>
-              </div>
+        recEl.innerHTML = cands.map((p, i) => {
+          const inBudget = p._q <= nextTarget;
+          return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:6px;background:${i===0?'rgba(245,197,66,0.08)':'var(--surface2)'};border:1px solid ${i===0?'rgba(245,197,66,0.3)':'var(--border)'};margin-bottom:3px">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0">
+              <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:11px;width:14px;flex-shrink:0">${i+1}</span>
+              <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtmlSafe(p.name)}</span>
+              <span style="font-size:11px;color:var(--muted);flex-shrink:0">${escapeHtmlSafe(p.team)}</span>
+              ${p.rigorista ? `<span title="Rigorista designato" style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;flex-shrink:0">RIG</span>` : ''}
+              ${p._formaAdj ? `<span style="font-size:10px;flex-shrink:0;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}
             </div>
-            <div style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">
-              <div>FM ${p._fm.toFixed(1)}${p._formaAdj ? ` (base ${p._baseFm.toFixed(1)})` : ''} · ${p._q} cr</div>
-              <div style="color:var(--gold)">val ${p._value.toFixed(3)}</div>
-            </div>
-          </div>
-        `).join('');
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;flex-shrink:0;color:${inBudget ? 'var(--green)' : 'var(--muted)'}">${p._q} cr</div>
+          </div>`;
+        }).join('');
       }
     }
   }
@@ -9349,7 +9360,7 @@ function renderPianoAsta() {
       rosaEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Carica il listone ufficiale per vedere la rosa consigliata.</div>`;
     } else {
       const rosa = astaBuildRosaIdeale();
-      rosaEl.innerHTML = ASTA_ROLE_ORDER.map(r => {
+      rosaEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start">` + ASTA_ROLE_ORDER.map(r => {
         const g = rosa[r];
         const presi = g.slots.filter(s => s.acquired).length;
         const isPhase = r === phase;
@@ -9369,14 +9380,14 @@ function renderPianoAsta() {
             <div style="font-family:'DM Mono',monospace;font-size:12px;color:${s.overBudget ? 'var(--orange)' : 'var(--muted)'}">${s.overBudget ? `costa ${t._q}, budget ~${s.targetPrice}` : `~${s.targetPrice} cr${t ? ` <span style="opacity:0.7">(q ${t._q})</span>` : ''}`}</div>
           </div>`;
         }).join('');
-        return `<div style="margin-bottom:16px">
+        return `<div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:${isPhase ? 'var(--gold)' : 'var(--muted)'}">${ASTA_ROLE_LABELS[r]} ${isPhase ? '· IN CORSO' : ''}</div>
             <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${presi}/${astaState.needs[r] || 0} · ${g.budget.spent} spesi${g.budget.slotsLeft ? ` · ${g.budget.remaining} da spendere` : ''}</div>
           </div>
           ${rows}
         </div>`;
-      }).join('');
+      }).join('') + `</div>`;
     }
   }
 
