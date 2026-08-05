@@ -9244,7 +9244,7 @@ function renderPianoAsta() {
             <div style="display:flex;align-items:center;gap:10px">
               <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:12px;width:26px">${i+1}${medal(i)}</span>
               <div>
-                <div style="font-weight:600">${escapeHtmlSafe(p.name)}${p._formaAdj ? ` <span style="font-size:10px;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋 ${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}</div>
+                <div style="font-weight:600">${escapeHtmlSafe(p.name)}${p.rigorista ? ` <span title="Rigorista designato" style="font-size:9px;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.5px;color:#000;background:var(--gold);padding:1px 5px;border-radius:4px;vertical-align:middle">RIG</span>` : ''}${p._formaAdj ? ` <span style="font-size:10px;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋 ${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}</div>
                 <div style="font-size:11px;color:var(--muted)">${escapeHtmlSafe(p.team)}</div>
               </div>
             </div>
