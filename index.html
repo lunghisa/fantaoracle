@@ -4066,7 +4066,8 @@
         <div class="admin-field">
           <label class="admin-field-label">Registra acquisto</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <input class="admin-field-input" id="astaBuyName" type="text" placeholder="Nome giocatore" style="flex:2;min-width:140px">
+            <input class="admin-field-input" id="astaBuyName" type="text" placeholder="Nome giocatore" style="flex:2;min-width:140px" list="astaBuyDatalist" autocomplete="off" oninput="onAstaBuyNameInput()">
+            <datalist id="astaBuyDatalist"></datalist>
             <input class="admin-field-input" id="astaBuyTeam" type="text" placeholder="Squadra" style="flex:1;min-width:100px">
             <select class="admin-field-input" id="astaBuyRole" style="flex:0 0 90px">
               <option value="P">P</option>
@@ -4080,9 +4081,19 @@
         </div>
 
         <!-- Classifica ruolo corrente -->
-        <div style="margin-top:20px">
-          <div class="admin-field-label" style="margin-bottom:10px">CONSIGLIATI ORA</div>
+        <div style="margin-top:16px">
+          <div class="admin-field-label" style="margin-bottom:6px" id="astaRecLabel">CONSIGLIATI ORA</div>
           <div id="astaRecommendations"></div>
+        </div>
+
+        <!-- Rosa ideale completa -->
+        <div style="margin-top:24px">
+          <div class="admin-field-label" style="margin-bottom:4px">🧩 ROSA IDEALE</div>
+          <p class="section-desc" style="margin-top:0">
+            Tutti gli slot della rosa: ✅ chi hai già preso, 🎯 il target consigliato per quelli ancora vuoti
+            col prezzo a cui puntare. Si ricalcola dopo ogni acquisto sul budget rimasto.
+          </p>
+          <div id="astaRosaIdeale"></div>
         </div>
 
         <!-- Acquisti fatti -->
@@ -4091,7 +4102,7 @@
           <div id="astaAcquistiList"></div>
         </div>
 
-        <button class="admin-btn admin-btn-secondary" onclick="resetPianoAsta()" style="margin-top:20px">🔄 RICOMINCIA ASTA</button>
+        <button class="admin-btn admin-btn-secondary" id="astaResetBtn" onclick="resetPianoAsta()" style="margin-top:20px">🔄 RICOMINCIA ASTA</button>
       </div>
 
     </div>
@@ -5387,7 +5398,15 @@ function computeTeamRatings() {
     const t = normTeamName(p.team);
     if (!t) return;
     if (!teams[t]) teams[t] = { att: [], def: [] };
-    const fm = (p.fmReal && p.fmReal > 0) ? p.fmReal : (p.fmIndicativa || 0);
+    // Priorità: fantamedia reale > fantamedia indicativa > stima da quotazione.
+    // Il fallback sulla quotazione accende i fattori avversario/clean-sheet
+    // dell'Oracle anche pre-stagione, quando il listone ufficiale ha solo
+    // le quotazioni (fanta_media = campo del listone globale admin).
+    const quot = p.quotation || p.quotazione || 0;
+    const fm = (p.fmReal && p.fmReal > 0) ? p.fmReal
+      : ((p.fanta_media && p.fanta_media > 0) ? p.fanta_media
+      : ((p.fmIndicativa && p.fmIndicativa > 0) ? p.fmIndicativa
+      : (quot > 0 ? quotationToFm(quot) : 0)));
     if (fm <= 0) return;
     if (p.role === 'A' || p.role === 'C') teams[t].att.push(fm);
     if (p.role === 'D' || p.role === 'P') teams[t].def.push(fm);
@@ -8806,6 +8825,9 @@ function parseListinoRows(lines, sep) {
   if (idxQuot === -1) idxQuot = header.findIndex(h => ['qta', 'qti'].includes(h.replace(/[.\s]/g, '')));
   const idxMedia = header.findIndex(h => h.includes('fantamedia') || (h.includes('media') && !h.includes('voto')));
   const idxMv = header.findIndex(h => h === 'mv' || h.includes('media voto') || h.includes('mediavoto'));
+  // Presenze (partite a voto): serve a pesare quanto è affidabile la
+  // fantamedia — stessi criteri di colonna dell'upload personale di lega.
+  const idxPgv = header.findIndex(h => h === 'pgv' || h === 'pg' || h.includes('partit') || h.includes('presenze'));
   if (idxName === -1) throw new Error('Colonna "Nome" non trovata');
   const players = [];
   for (let i = headerRowIdx + 1; i < lines.length; i++) {
@@ -8820,6 +8842,7 @@ function parseListinoRows(lines, sep) {
       quotazione: idxQuot >= 0 ? parseFloat((cols[idxQuot]||'').toString().replace(',', '.')) || 0 : 0,
       fanta_media: idxMedia >= 0 ? parseFloat((cols[idxMedia]||'').toString().replace(',', '.')) || 0 : 0,
       media_voto: idxMv >= 0 ? parseFloat((cols[idxMv]||'').toString().replace(',', '.')) || 0 : 0,
+      pgv: idxPgv >= 0 ? parseInt((cols[idxPgv]||'').toString(), 10) || 0 : 0,
     });
   }
   return players;
@@ -9132,11 +9155,202 @@ function astaSlotRimanentiTotali() {
   return ASTA_ROLE_ORDER.reduce((sum, r) => sum + Math.max(0, (astaState.needs[r] || 0) - astaCountByRole(r)), 0);
 }
 
+// Ripartizione classica del budget per ruolo (profilo "equilibrato" Classic
+// 3/8/8/6): la media secca budget/slot non ha senso in asta, un portiere e un
+// attaccante non valgono lo stesso.
+const ASTA_BUDGET_SPLIT = { P: 0.05, D: 0.15, C: 0.32, A: 0.48 };
+
+// Crediti ancora destinabili a ciascun ruolo. Il peso di un ruolo cala man mano
+// che lo riempi, e la somma torna sempre al budget realmente rimasto: così se
+// sfori su un giocatore, i target dei successivi si abbassano da soli.
+function astaRoleBudgets() {
+  const globalRemaining = astaBudgetRimanente();
+  const out = {};
+  let weightSum = 0;
+  ASTA_ROLE_ORDER.forEach(r => {
+    const needed = astaState.needs[r] || 0;
+    const slotsLeft = Math.max(0, needed - astaCountByRole(r));
+    const weight = needed > 0 ? ASTA_BUDGET_SPLIT[r] * (slotsLeft / needed) : 0;
+    out[r] = { slotsLeft, weight, spent: astaState.acquisti.filter(a => a.role === r).reduce((s, a) => s + (a.prezzo || 0), 0) };
+    weightSum += weight;
+  });
+  ASTA_ROLE_ORDER.forEach(r => {
+    if (out[r].slotsLeft === 0 || weightSum <= 0) { out[r].remaining = 0; return; }
+    // almeno 1 credito per ogni slot ancora scoperto
+    out[r].remaining = Math.max(out[r].slotsLeft, Math.floor(globalRemaining * out[r].weight / weightSum));
+  });
+  return out;
+}
+
+// Prezzo obiettivo per ciascuno slot ancora libero di un ruolo: profilo
+// decrescente (un big, poi via via più economici) invece di dividere in parti
+// uguali, che porterebbe a una rosa piatta di giocatori mediocri.
+function astaSlotTargets(roleRemaining, slotsLeft) {
+  const w = [];
+  for (let i = 0; i < slotsLeft; i++) w.push(1 / (i + 1));
+  const sum = w.reduce((a, b) => a + b, 0);
+  return w.map(x => Math.max(1, Math.round(roleRemaining * x / sum)));
+}
+
+// Rosa completa 3/8/8/6: slot già acquistati + target consigliati per i vuoti.
+function astaBuildRosaIdeale() {
+  const budgets = astaRoleBudgets();
+  const rosa = {};
+  ASTA_ROLE_ORDER.forEach(r => {
+    const slots = astaState.acquisti
+      .filter(a => a.role === r)
+      .map(a => ({ acquired: true, name: a.name, team: a.team, prezzo: a.prezzo }));
+    const slotsLeft = Math.max(0, (astaState.needs[r] || 0) - slots.length);
+    if (slotsLeft > 0) {
+      const targets = astaSlotTargets(budgets[r].remaining, slotsLeft);
+      const pool = astaRankCandidates(r, 1000); // già esclude gli acquistati
+      const used = new Set();
+      const key = p => rosterNormalizeName(p.name) + '|' + normTeamName(p.team);
+      // Il risparmio di uno slot scorre sul successivo: se il migliore in
+      // fascia costa meno del target, i crediti avanzati alzano il target
+      // dello slot dopo (e viceversa: lo sforo di un ripiego lo abbassa),
+      // invece di restare congelati fino al prossimo acquisto reale.
+      let carry = 0;
+      targets.forEach(baseTp => {
+        const tp = Math.max(1, baseTp + carry);
+        // il giocatore più forte (fantamedia corretta dalla forma) che sta nel prezzo
+        let best = null;
+        pool.forEach(p => {
+          if (used.has(key(p)) || p._q > tp) return;
+          if (!best || p._fm > best._fm) best = p;
+        });
+        if (!best) { // nessuno in quella fascia: ripiega sul più economico libero
+          pool.forEach(p => {
+            if (used.has(key(p))) return;
+            if (!best || p._q < best._q) best = p;
+          });
+        }
+        if (best) used.add(key(best));
+        carry = best ? (tp - best._q) : 0;
+        // Se il ripiego costa più del target, il budget del ruolo non basta per
+        // quello slot: va segnalato, non spacciato per un consiglio in fascia.
+        slots.push({ acquired: false, target: best, targetPrice: tp, overBudget: !!(best && best._q > tp) });
+      });
+    }
+    rosa[r] = { slots, budget: budgets[r] };
+  });
+  return rosa;
+}
+
+// ---- GRIGLIE CALENDARIO (portieri e attaccanti) ----
+// Forza di reparto per squadra come proxy dalle quotazioni (pre-stagione non
+// esistono fantamedie): media delle top-6 quotazioni nei ruoli indicati.
+// roles ['A','C'] = attacco (fa paura ai portieri avversari),
+// roles ['D','P'] = difesa (fa paura agli attaccanti avversari).
+function astaTeamRatingsFromQuot(roles) {
+  const byTeam = {};
+  (listone.players || []).forEach(p => {
+    if (!roles.includes(p.role)) return;
+    const q = p.quotazione || p.quotation || 0;
+    if (q <= 0) return;
+    const t = normTeamName(p.team);
+    if (!t) return;
+    (byTeam[t] = byTeam[t] || []).push(q);
+  });
+  const ratings = {};
+  let sum = 0, n = 0;
+  Object.keys(byTeam).forEach(t => {
+    const top = byTeam[t].sort((a, b) => b - a).slice(0, 6);
+    ratings[t] = top.reduce((a, b) => a + b, 0) / top.length;
+    sum += ratings[t]; n++;
+  });
+  ratings._avg = n ? sum / n : 0;
+  return ratings;
+}
+
+// Punteggio-calendario per squadra sull'intera stagione (100 = media lega),
+// dal punto di vista di chi teme il reparto avversario passato in oppRatings:
+// ogni partita vale di più se quel reparto è debole e se si gioca in casa.
+function astaCalendarScores(oppRatings) {
+  if (typeof calendario === 'undefined' || !calendario.giornate || !calendario.giornate.length) return null;
+  if (!oppRatings || !oppRatings._avg) return null;
+  const raw = {};
+  calendario.giornate.forEach(g => {
+    (g.matches || []).forEach(m => {
+      const h = normTeamName(m.home), a = normTeamName(m.away);
+      if (!h || !a) return;
+      const rH = oppRatings[h] || oppRatings._avg, rA = oppRatings[a] || oppRatings._avg;
+      // facilità = reparto avversario debole rispetto alla media × fattore casa
+      raw[h] = (raw[h] || 0) + (2 - rA / oppRatings._avg) * 1.25;
+      raw[a] = (raw[a] || 0) + (2 - rH / oppRatings._avg) * 0.75;
+    });
+  });
+  const teams = Object.keys(raw);
+  if (!teams.length) return null;
+  const avg = teams.reduce((s, t) => s + raw[t], 0) / teams.length;
+  const scores = {};
+  teams.forEach(t => { scores[t] = Math.round(100 * raw[t] / avg); });
+  return scores;
+}
+
+// Griglia portieri: il portiere teme l'ATTACCO avversario.
+function astaGkCalendarScores() {
+  return astaCalendarScores(astaTeamRatingsFromQuot(['A', 'C']));
+}
+// Griglia attaccanti: l'attaccante teme la DIFESA avversaria.
+function astaAtkCalendarScores() {
+  return astaCalendarScores(astaTeamRatingsFromQuot(['D', 'P']));
+}
+
+// Abbinamento portieri: in quante giornate il candidato gioca IN CASA mentre
+// il primo portiere già acquistato è in trasferta (= copertura del calendario).
+function astaGkComplement(gk1Team, candTeam) {
+  let n = 0;
+  (calendario.giornate || []).forEach(g => {
+    let gk1Home = null, candHome = null;
+    (g.matches || []).forEach(m => {
+      const h = normTeamName(m.home), a = normTeamName(m.away);
+      if (h === gk1Team) gk1Home = true; else if (a === gk1Team) gk1Home = false;
+      if (h === candTeam) candHome = true; else if (a === candTeam) candHome = false;
+    });
+    if (gk1Home === false && candHome === true) n++;
+  });
+  return n;
+}
+
+// Abbinamento attaccanti: in quante giornate il candidato affronta una difesa
+// SOTTO media mentre il primo attaccante acquistato ne affronta una sopra
+// media — cioè quando il candidato "copre" le giornate storte dell'altro.
+function astaAtkComplement(atk1Team, candTeam, defRatings) {
+  if (!defRatings || !defRatings._avg) return -1;
+  let n = 0;
+  (calendario.giornate || []).forEach(g => {
+    let opp1 = null, oppC = null;
+    (g.matches || []).forEach(m => {
+      const h = normTeamName(m.home), a = normTeamName(m.away);
+      if (h === atk1Team) opp1 = a; else if (a === atk1Team) opp1 = h;
+      if (h === candTeam) oppC = a; else if (a === candTeam) oppC = h;
+    });
+    if (!opp1 || !oppC) return;
+    const def1 = defRatings[opp1] || defRatings._avg;
+    const defC = defRatings[oppC] || defRatings._avg;
+    if (defC < defRatings._avg && def1 >= defRatings._avg) n++;
+  });
+  return n;
+}
+
 // Classifica per il ruolo dato: fantamedia/quotazione (punti per credito),
 // esclude chi è già stato acquistato (match per squadra + nome, stesso
 // matching per cognome usato per rigoristi/forma preseason).
 function astaRankCandidates(role, limit) {
   const bought = astaState.acquisti;
+  // Griglie calendario: punteggio stagionale e abbinamento per P e A
+  let calScores = null, first1Team = null, defRatings = null;
+  if (role === 'P') {
+    calScores = astaGkCalendarScores();
+    const gk1 = bought.find(a => a.role === 'P');
+    first1Team = gk1 ? normTeamName(gk1.team) : null;
+  } else if (role === 'A') {
+    defRatings = astaTeamRatingsFromQuot(['D', 'P']);
+    calScores = astaCalendarScores(defRatings);
+    const a1 = bought.find(a => a.role === 'A');
+    first1Team = a1 ? normTeamName(a1.team) : null;
+  }
   const candidates = (listone.players || [])
     .filter(p => p.role === role)
     .filter(p => !bought.some(b => normTeamName(b.team) === normTeamName(p.team) && rigoristaNameMatches(p.name, b.name)))
@@ -9144,19 +9358,46 @@ function astaRankCandidates(role, limit) {
       const rawQ = p.quotazione || p.quotation || 0;
       const q = Math.max(1, rawQ);
       const rawFm = p.fanta_media || p.fmReal || 0;
-      // Un listone pre-stagione (es. file "Quotazioni" ufficiale) spesso non
-      // ha ancora fantamedia: uso la stessa stima cold-start dell'Oracle
-      // (quotationToFm) invece di escludere il giocatore dalla classifica.
-      const baseFm = rawFm > 0 ? rawFm : quotationToFm(rawQ);
+      const pgv = p.pgv || 0;
+      // Base = quotazione tradotta in fantamedia attesa (segnale di mercato).
+      // Se il listone ha una fantamedia reale (asta dopo l'inizio del
+      // campionato), la fondo con il prior usando la stessa formula di
+      // prudenza dell'Oracle (K=6): con 2 giornate pesa ~25%, a 6 pesa 50%.
+      // Una doppietta alla prima giornata non deve stravolgere la classifica.
+      const prior = quotationToFm(rawQ);
+      let baseFm = prior;
+      let fmWeight = 0;
+      if (rawFm > 0) {
+        fmWeight = pgv > 0 ? pgv / (pgv + 6) : 1; // senza presenze nel file: fantamedia piena (dato di fine stagione)
+        baseFm = fmWeight * rawFm + (1 - fmWeight) * prior;
+      }
       // Forma preseason (amichevoli) come moltiplicatore diretto sul valore:
       // range -0.5..+0.5 → 0.5x..1.5x. Stesso campo usato dall'Oracle per la
       // rosa (oraclePredictPlayer), qui applicato al piano asta.
       const formaAdj = Math.max(-0.5, Math.min(0.5, p.formaPreseason || 0));
-      const fm = baseFm * (1 + formaAdj);
-      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
+      // Griglia portieri: il punteggio-calendario (100 = media lega) diventa
+      // un moltiplicatore contenuto (±10% max) sulla qualità attesa del
+      // portiere. _gkComp = giornate in casa mentre il primo portiere
+      // acquistato è in trasferta (per scegliere l'abbinamento).
+      let calScore = 0, calComp = -1, calMult = 1;
+      if (calScores) {
+        calScore = calScores[normTeamName(p.team)] || 100;
+        calMult = 1 + Math.max(-0.1, Math.min(0.1, (calScore - 100) / 150));
+      }
+      if (first1Team) {
+        if (role === 'P') calComp = astaGkComplement(first1Team, normTeamName(p.team));
+        else if (role === 'A') calComp = astaAtkComplement(first1Team, normTeamName(p.team), defRatings);
+      }
+      const fm = baseFm * (1 + formaAdj) * calMult;
+      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _fmWeight: fmWeight, _pgv: pgv, _gkCal: calScore, _gkComp: calComp, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
     })
     .filter(p => p._hasQuot)
-    .sort((a, b) => b._value - a._value);
+    // Ordino per qualità attesa, non per rapporto qualità/prezzo: senza
+    // fantamedia reale la qualità stimata è quasi piatta (5.9-7.5) mentre il
+    // prezzo va da 1 a 35, quindi fm/q premierebbe sempre i giocatori da 1
+    // credito — inutile in asta. La quotazione è il segnale di mercato, e la
+    // forma preseason differenzia chi sta dentro la stessa fascia di prezzo.
+    .sort((a, b) => (b._fm - a._fm) || (b._value - a._value));
   return candidates.slice(0, limit || 10);
 }
 
@@ -9170,6 +9411,35 @@ function updateAstaConfig() {
   };
   saveAstaState();
   renderPianoAsta();
+}
+
+// Autocomplete del form acquisto: la datalist contiene i candidati del ruolo
+// in corso come "NOME · Squadra". Alla selezione, nome/squadra/ruolo si
+// compilano da soli con i valori ESATTI del listone (così l'esclusione dai
+// consigli dopo l'acquisto matcha sempre) e il focus salta ai crediti.
+function refreshAstaBuyDatalist(phase) {
+  const dl = document.getElementById('astaBuyDatalist');
+  if (!dl) return;
+  if (!phase) { dl.innerHTML = ''; return; }
+  dl.innerHTML = astaRankCandidates(phase, 1000)
+    .map(p => `<option value="${escapeHtmlSafe(p.name)} · ${escapeHtmlSafe(p.team)}"></option>`)
+    .join('');
+}
+
+function onAstaBuyNameInput() {
+  const nameEl = document.getElementById('astaBuyName');
+  const val = (nameEl.value || '');
+  const sepIdx = val.lastIndexOf(' · ');
+  if (sepIdx === -1) return; // sta ancora digitando: nessuna voce selezionata
+  const name = val.slice(0, sepIdx).trim();
+  const team = val.slice(sepIdx + 3).trim();
+  if (!name || !team) return;
+  nameEl.value = name;
+  document.getElementById('astaBuyTeam').value = team;
+  const phase = astaCurrentPhase();
+  if (phase) document.getElementById('astaBuyRole').value = phase;
+  const priceEl = document.getElementById('astaBuyPrice');
+  if (priceEl) priceEl.focus();
 }
 
 function addAstaAcquisto() {
@@ -9196,10 +9466,26 @@ function removeAstaAcquisto(idx) {
   renderPianoAsta();
 }
 
+// Conferma inline a doppio clic invece del confirm() nativo: Chrome può
+// sopprimere i dialoghi ("impedisci altre finestre di dialogo") e in quel
+// caso confirm() risponde subito false — il tasto sembrerebbe morto.
+let astaResetArmedTimer = null;
 function resetPianoAsta() {
-  if (!confirm("Ricominciare l'asta da zero? Verranno cancellati tutti gli acquisti registrati.")) return;
+  const btn = document.getElementById('astaResetBtn');
+  if (!astaResetArmedTimer) {
+    if (btn) btn.textContent = '⚠️ SICURO? CLICCA DI NUOVO';
+    astaResetArmedTimer = setTimeout(() => {
+      astaResetArmedTimer = null;
+      if (btn) btn.textContent = '🔄 RICOMINCIA ASTA';
+    }, 4000);
+    return;
+  }
+  clearTimeout(astaResetArmedTimer);
+  astaResetArmedTimer = null;
+  if (btn) btn.textContent = '🔄 RICOMINCIA ASTA';
   astaState.acquisti = [];
   saveAstaState();
+  showAdminFeedback('Asta', '✓ Asta azzerata: acquisti cancellati, budget ripristinato.', 'success');
   renderPianoAsta();
 }
 
@@ -9219,6 +9505,12 @@ function renderPianoAsta() {
   const slotsLeft = astaSlotRimanentiTotali();
   const avgPerSlot = slotsLeft > 0 ? (remaining / slotsLeft) : 0;
 
+  // Form acquisto allineato alla fase: ruolo preselezionato e autocomplete
+  // sui candidati del ruolo in corso.
+  refreshAstaBuyDatalist(phase);
+  const roleSel = document.getElementById('astaBuyRole');
+  if (roleSel && phase) roleSel.value = phase;
+
   const statusBar = document.getElementById('astaStatusBar');
   if (statusBar) {
     statusBar.innerHTML = `
@@ -9232,29 +9524,75 @@ function renderPianoAsta() {
   const recEl = document.getElementById('astaRecommendations');
   if (recEl) {
     if (!phase) {
-      recEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted)">Rosa completa 🎉</div>`;
+      const lbl0 = document.getElementById('astaRecLabel');
+      if (lbl0) lbl0.textContent = 'CONSIGLIATI ORA';
+      recEl.innerHTML = `<div style="text-align:center;padding:14px;color:var(--muted)">Rosa completa 🎉</div>`;
     } else {
-      const cands = astaRankCandidates(phase, 10);
+      const cands = astaRankCandidates(phase, 8);
+      // Fascia di prezzo del prossimo slot da riempire, per capire a colpo
+      // d'occhio chi rientra nel budget previsto e chi è uno sforzo.
+      const rb = astaRoleBudgets()[phase];
+      const nextTarget = rb.slotsLeft > 0 ? astaSlotTargets(rb.remaining, rb.slotsLeft)[0] : 0;
+      const lbl = document.getElementById('astaRecLabel');
+      if (lbl) lbl.textContent = `CONSIGLIATI ORA · ${ASTA_ROLE_LABELS[phase]} · prossimo slot ~${nextTarget} cr`;
       if (cands.length === 0) {
         recEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Nessun candidato trovato nel listone per questo ruolo (carica/aggiorna il listone ufficiale in alto).</div>`;
       } else {
-        const medal = i => i === 0 ? ' 🎯' : (i === 1 ? ' 🥈' : (i === 2 ? ' 🥉' : ''));
-        recEl.innerHTML = cands.map((p, i) => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;background:${i===0?'rgba(245,197,66,0.08)':'var(--surface2)'};border:1px solid ${i===0?'rgba(245,197,66,0.3)':'var(--border)'};margin-bottom:6px">
-            <div style="display:flex;align-items:center;gap:10px">
-              <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:12px;width:26px">${i+1}${medal(i)}</span>
-              <div>
-                <div style="font-weight:600">${escapeHtmlSafe(p.name)}${p.rigorista ? ` <span title="Rigorista designato" style="font-size:9px;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:0.5px;color:#000;background:var(--gold);padding:1px 5px;border-radius:4px;vertical-align:middle">RIG</span>` : ''}${p._formaAdj ? ` <span style="font-size:10px;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋 ${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}</div>
-                <div style="font-size:11px;color:var(--muted)">${escapeHtmlSafe(p.team)}</div>
-              </div>
+        recEl.innerHTML = cands.map((p, i) => {
+          const inBudget = p._q <= nextTarget;
+          return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:6px;background:${i===0?'rgba(245,197,66,0.08)':'var(--surface2)'};border:1px solid ${i===0?'rgba(245,197,66,0.3)':'var(--border)'};margin-bottom:3px">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0">
+              <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:11px;width:14px;flex-shrink:0">${i+1}</span>
+              <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtmlSafe(p.name)}</span>
+              <span style="font-size:11px;color:var(--muted);flex-shrink:0">${escapeHtmlSafe(p.team)}</span>
+              ${p.rigorista ? `<span title="Rigorista designato" style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;flex-shrink:0">RIG</span>` : ''}
+              ${p._formaAdj ? `<span style="font-size:10px;flex-shrink:0;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}
+              ${p._fmWeight ? `<span title="Fantamedia reale pesata sulle presenze" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--cyan);flex-shrink:0">FM ${(p.fanta_media || p.fmReal).toFixed(1)}${p._pgv ? `·${p._pgv}g` : ''}</span>` : ''}
+              ${p._gkCal ? `<span title="Griglia calendario stagionale, 100 = media lega (più alto = più partite facili contro reparti deboli, meglio se in casa)" style="font-size:10px;font-family:'DM Mono',monospace;flex-shrink:0;color:${p._gkCal >= 105 ? 'var(--green)' : (p._gkCal <= 95 ? 'var(--red)' : 'var(--muted)')}">📅${p._gkCal}</span>` : ''}
+              ${p._gkComp >= 0 ? `<span title="Abbinamento col primo acquistato di questo ruolo: portieri = giornate in casa quando lui è in trasferta; attaccanti = giornate contro difese deboli quando lui affronta difese forti" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--cyan);flex-shrink:0">🔁${p._gkComp}</span>` : ''}
             </div>
-            <div style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">
-              <div>FM ${p._fm.toFixed(1)}${p._formaAdj ? ` (base ${p._baseFm.toFixed(1)})` : ''} · ${p._q} cr</div>
-              <div style="color:var(--gold)">val ${p._value.toFixed(3)}</div>
-            </div>
-          </div>
-        `).join('');
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;flex-shrink:0;color:${inBudget ? 'var(--green)' : 'var(--muted)'}">${p._q} cr</div>
+          </div>`;
+        }).join('');
       }
+    }
+  }
+
+  const rosaEl = document.getElementById('astaRosaIdeale');
+  if (rosaEl) {
+    if (!(listone.players || []).length) {
+      rosaEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Carica il listone ufficiale per vedere la rosa consigliata.</div>`;
+    } else {
+      const rosa = astaBuildRosaIdeale();
+      rosaEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start">` + ASTA_ROLE_ORDER.map(r => {
+        const g = rosa[r];
+        const presi = g.slots.filter(s => s.acquired).length;
+        const isPhase = r === phase;
+        const rows = g.slots.map((s, i) => {
+          if (s.acquired) {
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(29,185,84,0.07);margin-bottom:4px">
+              <div style="font-size:13px">✅ <strong>${escapeHtmlSafe(s.name)}</strong> <span style="color:var(--muted);font-size:11px">${escapeHtmlSafe(s.team)}</span></div>
+              <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green)">${s.prezzo} cr</div>
+            </div>`;
+          }
+          const t = s.target;
+          const nome = t ? escapeHtmlSafe(t.name) : '—';
+          const squadra = t ? escapeHtmlSafe(t.team) : 'nessun candidato';
+          const rig = (t && t.rigorista) ? ` <span style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;vertical-align:middle">RIG</span>` : '';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;background:var(--surface);border:1px dashed ${s.overBudget ? 'rgba(255,140,66,0.4)' : 'rgba(255,255,255,0.12)'};margin-bottom:4px">
+            <div style="font-size:13px;color:var(--text)">${s.overBudget ? '⚠️' : '🎯'} ${nome}${rig} <span style="color:var(--muted);font-size:11px">${squadra}</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:12px;color:${s.overBudget ? 'var(--orange)' : 'var(--muted)'}">${s.overBudget ? `costa ${t._q}, budget ~${s.targetPrice}` : `~${s.targetPrice} cr${t ? ` <span style="opacity:0.7">(q ${t._q})</span>` : ''}`}</div>
+          </div>`;
+        }).join('');
+        return `<div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:${isPhase ? 'var(--gold)' : 'var(--muted)'}">${ASTA_ROLE_LABELS[r]} ${isPhase ? '· IN CORSO' : ''}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${presi}/${astaState.needs[r] || 0} · ${g.budget.spent} spesi${g.budget.slotsLeft ? ` · ${g.budget.remaining} da spendere` : ''}</div>
+          </div>
+          ${rows}
+        </div>`;
+      }).join('') + `</div>`;
     }
   }
 
@@ -9848,6 +10186,7 @@ async function applyGlobalListinoAndCalendar() {
           score: typeof p.fanta_media === 'number' ? p.fanta_media : 6.0,
           oracle: typeof p.fanta_media === 'number' ? +(p.fanta_media + 0.2).toFixed(1) : 6.2,
           media_voto: typeof p.media_voto === 'number' ? p.media_voto : 0,
+          pgv: typeof p.pgv === 'number' ? p.pgv : 0,
           rigorista: !!p.rigorista,
           formaPreseason: typeof p.formaPreseason === 'number' ? p.formaPreseason : 0,
           color: ({P:'#ff8c1a', D:'#7bc043', C:'#3d9bff', A:'#e63946', T:'#c77dff'})[p.role] || '#999'
