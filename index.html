@@ -9222,11 +9222,86 @@ function astaBuildRosaIdeale() {
   return rosa;
 }
 
+// ---- GRIGLIA PORTIERI ----
+// Forza d'attacco per squadra come proxy dalle quotazioni (pre-stagione non
+// esistono fantamedie): media delle top-6 quotazioni tra attaccanti e
+// centrocampisti. Più è alta, più quell'attacco fa paura al portiere avversario.
+function astaTeamAttackRatings() {
+  const byTeam = {};
+  (listone.players || []).forEach(p => {
+    if (p.role !== 'A' && p.role !== 'C') return;
+    const q = p.quotazione || p.quotation || 0;
+    if (q <= 0) return;
+    const t = normTeamName(p.team);
+    if (!t) return;
+    (byTeam[t] = byTeam[t] || []).push(q);
+  });
+  const ratings = {};
+  let sum = 0, n = 0;
+  Object.keys(byTeam).forEach(t => {
+    const top = byTeam[t].sort((a, b) => b - a).slice(0, 6);
+    ratings[t] = top.reduce((a, b) => a + b, 0) / top.length;
+    sum += ratings[t]; n++;
+  });
+  ratings._avg = n ? sum / n : 0;
+  return ratings;
+}
+
+// Punteggio-calendario portiere per squadra sull'intera stagione: 100 = media
+// lega. Ogni partita vale di più se l'avversario ha un attacco debole e se si
+// gioca in casa (dove il clean sheet è più probabile). È la logica della
+// "griglia portieri" da asta.
+function astaGkCalendarScores() {
+  if (typeof calendario === 'undefined' || !calendario.giornate || !calendario.giornate.length) return null;
+  const atk = astaTeamAttackRatings();
+  if (!atk._avg) return null;
+  const raw = {};
+  calendario.giornate.forEach(g => {
+    (g.matches || []).forEach(m => {
+      const h = normTeamName(m.home), a = normTeamName(m.away);
+      if (!h || !a) return;
+      const atkH = atk[h] || atk._avg, atkA = atk[a] || atk._avg;
+      // facilità = avversario debole rispetto alla media × fattore casa/trasferta
+      raw[h] = (raw[h] || 0) + (2 - atkA / atk._avg) * 1.25;
+      raw[a] = (raw[a] || 0) + (2 - atkH / atk._avg) * 0.75;
+    });
+  });
+  const teams = Object.keys(raw);
+  if (!teams.length) return null;
+  const avg = teams.reduce((s, t) => s + raw[t], 0) / teams.length;
+  const scores = {};
+  teams.forEach(t => { scores[t] = Math.round(100 * raw[t] / avg); });
+  return scores;
+}
+
+// Abbinamento portieri: in quante giornate il candidato gioca IN CASA mentre
+// il primo portiere già acquistato è in trasferta (= copertura del calendario).
+function astaGkComplement(gk1Team, candTeam) {
+  let n = 0;
+  (calendario.giornate || []).forEach(g => {
+    let gk1Home = null, candHome = null;
+    (g.matches || []).forEach(m => {
+      const h = normTeamName(m.home), a = normTeamName(m.away);
+      if (h === gk1Team) gk1Home = true; else if (a === gk1Team) gk1Home = false;
+      if (h === candTeam) candHome = true; else if (a === candTeam) candHome = false;
+    });
+    if (gk1Home === false && candHome === true) n++;
+  });
+  return n;
+}
+
 // Classifica per il ruolo dato: fantamedia/quotazione (punti per credito),
 // esclude chi è già stato acquistato (match per squadra + nome, stesso
 // matching per cognome usato per rigoristi/forma preseason).
 function astaRankCandidates(role, limit) {
   const bought = astaState.acquisti;
+  // Griglia portieri: punteggio-calendario e abbinamento (solo ruolo P)
+  let gkScores = null, gk1Team = null;
+  if (role === 'P') {
+    gkScores = astaGkCalendarScores();
+    const gk1 = bought.find(a => a.role === 'P');
+    gk1Team = gk1 ? normTeamName(gk1.team) : null;
+  }
   const candidates = (listone.players || [])
     .filter(p => p.role === role)
     .filter(p => !bought.some(b => normTeamName(b.team) === normTeamName(p.team) && rigoristaNameMatches(p.name, b.name)))
@@ -9251,8 +9326,20 @@ function astaRankCandidates(role, limit) {
       // range -0.5..+0.5 → 0.5x..1.5x. Stesso campo usato dall'Oracle per la
       // rosa (oraclePredictPlayer), qui applicato al piano asta.
       const formaAdj = Math.max(-0.5, Math.min(0.5, p.formaPreseason || 0));
-      const fm = baseFm * (1 + formaAdj);
-      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _fmWeight: fmWeight, _pgv: pgv, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
+      // Griglia portieri: il punteggio-calendario (100 = media lega) diventa
+      // un moltiplicatore contenuto (±10% max) sulla qualità attesa del
+      // portiere. _gkComp = giornate in casa mentre il primo portiere
+      // acquistato è in trasferta (per scegliere l'abbinamento).
+      let gkCal = 0, gkComp = -1, calMult = 1;
+      if (role === 'P') {
+        if (gkScores) {
+          gkCal = gkScores[normTeamName(p.team)] || 100;
+          calMult = 1 + Math.max(-0.1, Math.min(0.1, (gkCal - 100) / 150));
+        }
+        if (gk1Team) gkComp = astaGkComplement(gk1Team, normTeamName(p.team));
+      }
+      const fm = baseFm * (1 + formaAdj) * calMult;
+      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _fmWeight: fmWeight, _pgv: pgv, _gkCal: gkCal, _gkComp: gkComp, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
     })
     .filter(p => p._hasQuot)
     // Ordino per qualità attesa, non per rapporto qualità/prezzo: senza
@@ -9412,6 +9499,8 @@ function renderPianoAsta() {
               ${p.rigorista ? `<span title="Rigorista designato" style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;flex-shrink:0">RIG</span>` : ''}
               ${p._formaAdj ? `<span style="font-size:10px;flex-shrink:0;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}
               ${p._fmWeight ? `<span title="Fantamedia reale pesata sulle presenze" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--cyan);flex-shrink:0">FM ${(p.fanta_media || p.fmReal).toFixed(1)}${p._pgv ? `·${p._pgv}g` : ''}</span>` : ''}
+              ${p._gkCal ? `<span title="Griglia portieri: calendario stagionale, 100 = media lega (più alto = più partite facili in casa)" style="font-size:10px;font-family:'DM Mono',monospace;flex-shrink:0;color:${p._gkCal >= 105 ? 'var(--green)' : (p._gkCal <= 95 ? 'var(--red)' : 'var(--muted)')}">📅${p._gkCal}</span>` : ''}
+              ${p._gkComp >= 0 ? `<span title="Abbinamento: giornate in casa mentre il tuo primo portiere è in trasferta" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--cyan);flex-shrink:0">🔁${p._gkComp}</span>` : ''}
             </div>
             <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;flex-shrink:0;color:${inBudget ? 'var(--green)' : 'var(--muted)'}">${p._q} cr</div>
           </div>`;
