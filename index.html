@@ -8816,6 +8816,9 @@ function parseListinoRows(lines, sep) {
   if (idxQuot === -1) idxQuot = header.findIndex(h => ['qta', 'qti'].includes(h.replace(/[.\s]/g, '')));
   const idxMedia = header.findIndex(h => h.includes('fantamedia') || (h.includes('media') && !h.includes('voto')));
   const idxMv = header.findIndex(h => h === 'mv' || h.includes('media voto') || h.includes('mediavoto'));
+  // Presenze (partite a voto): serve a pesare quanto è affidabile la
+  // fantamedia — stessi criteri di colonna dell'upload personale di lega.
+  const idxPgv = header.findIndex(h => h === 'pgv' || h === 'pg' || h.includes('partit') || h.includes('presenze'));
   if (idxName === -1) throw new Error('Colonna "Nome" non trovata');
   const players = [];
   for (let i = headerRowIdx + 1; i < lines.length; i++) {
@@ -8830,6 +8833,7 @@ function parseListinoRows(lines, sep) {
       quotazione: idxQuot >= 0 ? parseFloat((cols[idxQuot]||'').toString().replace(',', '.')) || 0 : 0,
       fanta_media: idxMedia >= 0 ? parseFloat((cols[idxMedia]||'').toString().replace(',', '.')) || 0 : 0,
       media_voto: idxMv >= 0 ? parseFloat((cols[idxMv]||'').toString().replace(',', '.')) || 0 : 0,
+      pgv: idxPgv >= 0 ? parseInt((cols[idxPgv]||'').toString(), 10) || 0 : 0,
     });
   }
   return players;
@@ -9229,16 +9233,25 @@ function astaRankCandidates(role, limit) {
       const rawQ = p.quotazione || p.quotation || 0;
       const q = Math.max(1, rawQ);
       const rawFm = p.fanta_media || p.fmReal || 0;
-      // Un listone pre-stagione (es. file "Quotazioni" ufficiale) spesso non
-      // ha ancora fantamedia: uso la stessa stima cold-start dell'Oracle
-      // (quotationToFm) invece di escludere il giocatore dalla classifica.
-      const baseFm = rawFm > 0 ? rawFm : quotationToFm(rawQ);
+      const pgv = p.pgv || 0;
+      // Base = quotazione tradotta in fantamedia attesa (segnale di mercato).
+      // Se il listone ha una fantamedia reale (asta dopo l'inizio del
+      // campionato), la fondo con il prior usando la stessa formula di
+      // prudenza dell'Oracle (K=6): con 2 giornate pesa ~25%, a 6 pesa 50%.
+      // Una doppietta alla prima giornata non deve stravolgere la classifica.
+      const prior = quotationToFm(rawQ);
+      let baseFm = prior;
+      let fmWeight = 0;
+      if (rawFm > 0) {
+        fmWeight = pgv > 0 ? pgv / (pgv + 6) : 1; // senza presenze nel file: fantamedia piena (dato di fine stagione)
+        baseFm = fmWeight * rawFm + (1 - fmWeight) * prior;
+      }
       // Forma preseason (amichevoli) come moltiplicatore diretto sul valore:
       // range -0.5..+0.5 → 0.5x..1.5x. Stesso campo usato dall'Oracle per la
       // rosa (oraclePredictPlayer), qui applicato al piano asta.
       const formaAdj = Math.max(-0.5, Math.min(0.5, p.formaPreseason || 0));
       const fm = baseFm * (1 + formaAdj);
-      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
+      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _fmWeight: fmWeight, _pgv: pgv, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
     })
     .filter(p => p._hasQuot)
     // Ordino per qualità attesa, non per rapporto qualità/prezzo: senza
@@ -9346,6 +9359,7 @@ function renderPianoAsta() {
               <span style="font-size:11px;color:var(--muted);flex-shrink:0">${escapeHtmlSafe(p.team)}</span>
               ${p.rigorista ? `<span title="Rigorista designato" style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;flex-shrink:0">RIG</span>` : ''}
               ${p._formaAdj ? `<span style="font-size:10px;flex-shrink:0;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}
+              ${p._fmWeight ? `<span title="Fantamedia reale pesata sulle presenze" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--cyan);flex-shrink:0">FM ${(p.fanta_media || p.fmReal).toFixed(1)}${p._pgv ? `·${p._pgv}g` : ''}</span>` : ''}
             </div>
             <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;flex-shrink:0;color:${inBudget ? 'var(--green)' : 'var(--muted)'}">${p._q} cr</div>
           </div>`;
@@ -9981,6 +9995,7 @@ async function applyGlobalListinoAndCalendar() {
           score: typeof p.fanta_media === 'number' ? p.fanta_media : 6.0,
           oracle: typeof p.fanta_media === 'number' ? +(p.fanta_media + 0.2).toFixed(1) : 6.2,
           media_voto: typeof p.media_voto === 'number' ? p.media_voto : 0,
+          pgv: typeof p.pgv === 'number' ? p.pgv : 0,
           rigorista: !!p.rigorista,
           formaPreseason: typeof p.formaPreseason === 'number' ? p.formaPreseason : 0,
           color: ({P:'#ff8c1a', D:'#7bc043', C:'#3d9bff', A:'#e63946', T:'#c77dff'})[p.role] || '#999'
