@@ -9147,8 +9147,13 @@ function astaRankCandidates(role, limit) {
       // Un listone pre-stagione (es. file "Quotazioni" ufficiale) spesso non
       // ha ancora fantamedia: uso la stessa stima cold-start dell'Oracle
       // (quotationToFm) invece di escludere il giocatore dalla classifica.
-      const fm = rawFm > 0 ? rawFm : quotationToFm(rawQ);
-      return Object.assign({}, p, { _fm: fm, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
+      const baseFm = rawFm > 0 ? rawFm : quotationToFm(rawQ);
+      // Forma preseason (amichevoli) come moltiplicatore diretto sul valore:
+      // range -0.5..+0.5 → 0.5x..1.5x. Stesso campo usato dall'Oracle per la
+      // rosa (oraclePredictPlayer), qui applicato al piano asta.
+      const formaAdj = Math.max(-0.5, Math.min(0.5, p.formaPreseason || 0));
+      const fm = baseFm * (1 + formaAdj);
+      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
     })
     .filter(p => p._hasQuot)
     .sort((a, b) => b._value - a._value);
@@ -9239,12 +9244,12 @@ function renderPianoAsta() {
             <div style="display:flex;align-items:center;gap:10px">
               <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:12px;width:26px">${i+1}${medal(i)}</span>
               <div>
-                <div style="font-weight:600">${escapeHtmlSafe(p.name)}</div>
+                <div style="font-weight:600">${escapeHtmlSafe(p.name)}${p._formaAdj ? ` <span style="font-size:10px;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋 ${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}</div>
                 <div style="font-size:11px;color:var(--muted)">${escapeHtmlSafe(p.team)}</div>
               </div>
             </div>
             <div style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">
-              <div>FM ${p._fm.toFixed(1)} · ${p._q} cr</div>
+              <div>FM ${p._fm.toFixed(1)}${p._formaAdj ? ` (base ${p._baseFm.toFixed(1)})` : ''} · ${p._q} cr</div>
               <div style="color:var(--gold)">val ${p._value.toFixed(3)}</div>
             </div>
           </div>
