@@ -8778,8 +8778,23 @@ function parseAdminListinoXlsx(buffer, fileName) {
   }
 }
 
+function findListinoHeaderRow(lines) {
+  // Alcuni export (es. il listone ufficiale Fantacalcio.it, file
+  // "Quotazioni") hanno una riga di titolo prima della vera intestazione
+  // ("Quotazioni Fantacalcio Stagione ..." seguita da "Id, R, RM, Nome, ...").
+  // Cerco tra le prime righe quella che contiene davvero una colonna Nome,
+  // invece di assumere che l'intestazione sia sempre la prima riga.
+  const findName = h => h.includes('nome') || h.includes('giocatore') || h === 'name';
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const candidate = lines[i].split(/\t|,|;/).map(h => (h || '').trim().toLowerCase());
+    if (candidate.some(findName)) return i;
+  }
+  return 0;
+}
+
 function parseListinoRows(lines, sep) {
-  const header = lines[0].split(sep).map(h => (h || '').trim().toLowerCase());
+  const headerRowIdx = findListinoHeaderRow(lines);
+  const header = lines[headerRowIdx].split(sep).map(h => (h || '').trim().toLowerCase());
   const idxName = header.findIndex(h => h.includes('nome') || h.includes('giocatore') || h === 'name');
   const idxRole = header.findIndex(h => h === 'r' || h.includes('ruolo') || h.includes('role') || h === 'pos');
   const idxTeam = header.findIndex(h => h.includes('squadra') || h.includes('team') || h.includes('club'));
@@ -8793,7 +8808,7 @@ function parseListinoRows(lines, sep) {
   const idxMv = header.findIndex(h => h === 'mv' || h.includes('media voto') || h.includes('mediavoto'));
   if (idxName === -1) throw new Error('Colonna "Nome" non trovata');
   const players = [];
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = headerRowIdx + 1; i < lines.length; i++) {
     const cols = lines[i].split(sep);
     const nm = (cols[idxName] || '').trim();
     if (!nm) continue;
