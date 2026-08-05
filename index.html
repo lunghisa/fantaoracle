@@ -4085,6 +4085,16 @@
           <div id="astaRecommendations"></div>
         </div>
 
+        <!-- Rosa ideale completa -->
+        <div style="margin-top:24px">
+          <div class="admin-field-label" style="margin-bottom:4px">🧩 ROSA IDEALE</div>
+          <p class="section-desc" style="margin-top:0">
+            Tutti gli slot della rosa: ✅ chi hai già preso, 🎯 il target consigliato per quelli ancora vuoti
+            col prezzo a cui puntare. Si ricalcola dopo ogni acquisto sul budget rimasto.
+          </p>
+          <div id="astaRosaIdeale"></div>
+        </div>
+
         <!-- Acquisti fatti -->
         <div style="margin-top:24px">
           <div class="admin-field-label" style="margin-bottom:10px">I TUOI ACQUISTI</div>
@@ -9132,6 +9142,81 @@ function astaSlotRimanentiTotali() {
   return ASTA_ROLE_ORDER.reduce((sum, r) => sum + Math.max(0, (astaState.needs[r] || 0) - astaCountByRole(r)), 0);
 }
 
+// Ripartizione classica del budget per ruolo (profilo "equilibrato" Classic
+// 3/8/8/6): la media secca budget/slot non ha senso in asta, un portiere e un
+// attaccante non valgono lo stesso.
+const ASTA_BUDGET_SPLIT = { P: 0.05, D: 0.15, C: 0.32, A: 0.48 };
+
+// Crediti ancora destinabili a ciascun ruolo. Il peso di un ruolo cala man mano
+// che lo riempi, e la somma torna sempre al budget realmente rimasto: così se
+// sfori su un giocatore, i target dei successivi si abbassano da soli.
+function astaRoleBudgets() {
+  const globalRemaining = astaBudgetRimanente();
+  const out = {};
+  let weightSum = 0;
+  ASTA_ROLE_ORDER.forEach(r => {
+    const needed = astaState.needs[r] || 0;
+    const slotsLeft = Math.max(0, needed - astaCountByRole(r));
+    const weight = needed > 0 ? ASTA_BUDGET_SPLIT[r] * (slotsLeft / needed) : 0;
+    out[r] = { slotsLeft, weight, spent: astaState.acquisti.filter(a => a.role === r).reduce((s, a) => s + (a.prezzo || 0), 0) };
+    weightSum += weight;
+  });
+  ASTA_ROLE_ORDER.forEach(r => {
+    if (out[r].slotsLeft === 0 || weightSum <= 0) { out[r].remaining = 0; return; }
+    // almeno 1 credito per ogni slot ancora scoperto
+    out[r].remaining = Math.max(out[r].slotsLeft, Math.floor(globalRemaining * out[r].weight / weightSum));
+  });
+  return out;
+}
+
+// Prezzo obiettivo per ciascuno slot ancora libero di un ruolo: profilo
+// decrescente (un big, poi via via più economici) invece di dividere in parti
+// uguali, che porterebbe a una rosa piatta di giocatori mediocri.
+function astaSlotTargets(roleRemaining, slotsLeft) {
+  const w = [];
+  for (let i = 0; i < slotsLeft; i++) w.push(1 / (i + 1));
+  const sum = w.reduce((a, b) => a + b, 0);
+  return w.map(x => Math.max(1, Math.round(roleRemaining * x / sum)));
+}
+
+// Rosa completa 3/8/8/6: slot già acquistati + target consigliati per i vuoti.
+function astaBuildRosaIdeale() {
+  const budgets = astaRoleBudgets();
+  const rosa = {};
+  ASTA_ROLE_ORDER.forEach(r => {
+    const slots = astaState.acquisti
+      .filter(a => a.role === r)
+      .map(a => ({ acquired: true, name: a.name, team: a.team, prezzo: a.prezzo }));
+    const slotsLeft = Math.max(0, (astaState.needs[r] || 0) - slots.length);
+    if (slotsLeft > 0) {
+      const targets = astaSlotTargets(budgets[r].remaining, slotsLeft);
+      const pool = astaRankCandidates(r, 1000); // già esclude gli acquistati
+      const used = new Set();
+      const key = p => rosterNormalizeName(p.name) + '|' + normTeamName(p.team);
+      targets.forEach(tp => {
+        // il giocatore più forte (fantamedia corretta dalla forma) che sta nel prezzo
+        let best = null;
+        pool.forEach(p => {
+          if (used.has(key(p)) || p._q > tp) return;
+          if (!best || p._fm > best._fm) best = p;
+        });
+        if (!best) { // nessuno in quella fascia: ripiega sul più economico libero
+          pool.forEach(p => {
+            if (used.has(key(p))) return;
+            if (!best || p._q < best._q) best = p;
+          });
+        }
+        if (best) used.add(key(best));
+        // Se il ripiego costa più del target, il budget del ruolo non basta per
+        // quello slot: va segnalato, non spacciato per un consiglio in fascia.
+        slots.push({ acquired: false, target: best, targetPrice: tp, overBudget: !!(best && best._q > tp) });
+      });
+    }
+    rosa[r] = { slots, budget: budgets[r] };
+  });
+  return rosa;
+}
+
 // Classifica per il ruolo dato: fantamedia/quotazione (punti per credito),
 // esclude chi è già stato acquistato (match per squadra + nome, stesso
 // matching per cognome usato per rigoristi/forma preseason).
@@ -9255,6 +9340,43 @@ function renderPianoAsta() {
           </div>
         `).join('');
       }
+    }
+  }
+
+  const rosaEl = document.getElementById('astaRosaIdeale');
+  if (rosaEl) {
+    if (!(listone.players || []).length) {
+      rosaEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Carica il listone ufficiale per vedere la rosa consigliata.</div>`;
+    } else {
+      const rosa = astaBuildRosaIdeale();
+      rosaEl.innerHTML = ASTA_ROLE_ORDER.map(r => {
+        const g = rosa[r];
+        const presi = g.slots.filter(s => s.acquired).length;
+        const isPhase = r === phase;
+        const rows = g.slots.map((s, i) => {
+          if (s.acquired) {
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(29,185,84,0.07);margin-bottom:4px">
+              <div style="font-size:13px">✅ <strong>${escapeHtmlSafe(s.name)}</strong> <span style="color:var(--muted);font-size:11px">${escapeHtmlSafe(s.team)}</span></div>
+              <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green)">${s.prezzo} cr</div>
+            </div>`;
+          }
+          const t = s.target;
+          const nome = t ? escapeHtmlSafe(t.name) : '—';
+          const squadra = t ? escapeHtmlSafe(t.team) : 'nessun candidato';
+          const rig = (t && t.rigorista) ? ` <span style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;vertical-align:middle">RIG</span>` : '';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;background:var(--surface);border:1px dashed ${s.overBudget ? 'rgba(255,140,66,0.4)' : 'rgba(255,255,255,0.12)'};margin-bottom:4px">
+            <div style="font-size:13px;color:var(--text)">${s.overBudget ? '⚠️' : '🎯'} ${nome}${rig} <span style="color:var(--muted);font-size:11px">${squadra}</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:12px;color:${s.overBudget ? 'var(--orange)' : 'var(--muted)'}">${s.overBudget ? `costa ${t._q}, budget ~${s.targetPrice}` : `~${s.targetPrice} cr${t ? ` <span style="opacity:0.7">(q ${t._q})</span>` : ''}`}</div>
+          </div>`;
+        }).join('');
+        return `<div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:${isPhase ? 'var(--gold)' : 'var(--muted)'}">${ASTA_ROLE_LABELS[r]} ${isPhase ? '· IN CORSO' : ''}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${presi}/${astaState.needs[r] || 0} · ${g.budget.spent} spesi${g.budget.slotsLeft ? ` · ${g.budget.remaining} da spendere` : ''}</div>
+          </div>
+          ${rows}
+        </div>`;
+      }).join('');
     }
   }
 
