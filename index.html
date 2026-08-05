@@ -4102,7 +4102,7 @@
           <div id="astaAcquistiList"></div>
         </div>
 
-        <button class="admin-btn admin-btn-secondary" onclick="resetPianoAsta()" style="margin-top:20px">🔄 RICOMINCIA ASTA</button>
+        <button class="admin-btn admin-btn-secondary" id="astaResetBtn" onclick="resetPianoAsta()" style="margin-top:20px">🔄 RICOMINCIA ASTA</button>
       </div>
 
     </div>
@@ -9329,10 +9329,26 @@ function removeAstaAcquisto(idx) {
   renderPianoAsta();
 }
 
+// Conferma inline a doppio clic invece del confirm() nativo: Chrome può
+// sopprimere i dialoghi ("impedisci altre finestre di dialogo") e in quel
+// caso confirm() risponde subito false — il tasto sembrerebbe morto.
+let astaResetArmedTimer = null;
 function resetPianoAsta() {
-  if (!confirm("Ricominciare l'asta da zero? Verranno cancellati tutti gli acquisti registrati.")) return;
+  const btn = document.getElementById('astaResetBtn');
+  if (!astaResetArmedTimer) {
+    if (btn) btn.textContent = '⚠️ SICURO? CLICCA DI NUOVO';
+    astaResetArmedTimer = setTimeout(() => {
+      astaResetArmedTimer = null;
+      if (btn) btn.textContent = '🔄 RICOMINCIA ASTA';
+    }, 4000);
+    return;
+  }
+  clearTimeout(astaResetArmedTimer);
+  astaResetArmedTimer = null;
+  if (btn) btn.textContent = '🔄 RICOMINCIA ASTA';
   astaState.acquisti = [];
   saveAstaState();
+  showAdminFeedback('Asta', '✓ Asta azzerata: acquisti cancellati, budget ripristinato.', 'success');
   renderPianoAsta();
 }
 
