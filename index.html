@@ -9206,7 +9206,13 @@ function astaBuildRosaIdeale() {
       const pool = astaRankCandidates(r, 1000); // già esclude gli acquistati
       const used = new Set();
       const key = p => rosterNormalizeName(p.name) + '|' + normTeamName(p.team);
-      targets.forEach(tp => {
+      // Il risparmio di uno slot scorre sul successivo: se il migliore in
+      // fascia costa meno del target, i crediti avanzati alzano il target
+      // dello slot dopo (e viceversa: lo sforo di un ripiego lo abbassa),
+      // invece di restare congelati fino al prossimo acquisto reale.
+      let carry = 0;
+      targets.forEach(baseTp => {
+        const tp = Math.max(1, baseTp + carry);
         // il giocatore più forte (fantamedia corretta dalla forma) che sta nel prezzo
         let best = null;
         pool.forEach(p => {
@@ -9220,6 +9226,7 @@ function astaBuildRosaIdeale() {
           });
         }
         if (best) used.add(key(best));
+        carry = best ? (tp - best._q) : 0;
         // Se il ripiego costa più del target, il budget del ruolo non basta per
         // quello slot: va segnalato, non spacciato per un consiglio in fascia.
         slots.push({ acquired: false, target: best, targetPrice: tp, overBudget: !!(best && best._q > tp) });
