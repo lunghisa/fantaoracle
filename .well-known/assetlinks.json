@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "ch.fantaoracle.app",
+    "sha256_cert_fingerprints": ["C2:6A:C5:DA:BA:19:68:CC:21:B9:2F:10:90:91:EA:54:42:36:F5:52:7A:6B:49:28:3D:F4:E3:AC:B5:1F:AE:D2"]
+  }
+}]
