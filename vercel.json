@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    {
+      "source": "/:path(.*)",
+      "has": [{ "type": "host", "value": "www.fantaoracle.ch" }],
+      "destination": "https://fantaoracle.ch/:path",
+      "permanent": true
+    }
+  ]
+}
