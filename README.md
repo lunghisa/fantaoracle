@@ -44,10 +44,13 @@ App statica + serverless function in `api/`. Nessuno step di build.
 
 ## Setup cloud (una tantum)
 
-Per la sincronizzazione dello storico Oracle serve la tabella `oracle_states` su
-Supabase: eseguire `oracle_states_setup.sql` nel SQL Editor (file non incluso in
-questo repo, va recuperato o ricreato separatamente). Senza, l'app funziona
-comunque ma lo storico Oracle resta locale.
+Migrazioni Supabase (eseguire una volta nel SQL Editor, in quest'ordine):
+
+1. `oracle_states_setup.sql` — tabella per il sync cloud dello storico Oracle
+   (senza, l'app funziona comunque ma lo storico resta locale)
+2. `admin_lockdown.sql` — blindatura lato server dei privilegi admin
+3. `billing_setup.sql` — prova 7 giorni e interesse abbonamento (opzionale,
+   senza c'è il fallback in localStorage)
 
 ---
 
