@@ -8,7 +8,7 @@
 <!-- SEO -->
 <meta name="description" content="FantaOracle schiera, tu vinci. Il copilota intelligente per il fantacalcio: importa la tua lega, ottieni l'undici ottimale, segui le news della tua rosa in tempo reale.">
 <meta name="author" content="Sacha Lunghi">
-<meta name="theme-color" content="#080c10">
+<meta name="theme-color" content="#0a0714">
 <link rel="canonical" href="https://www.lunghi.ch">
 
 <!-- OpenGraph (WhatsApp, Telegram, Facebook, LinkedIn) -->
@@ -33,19 +33,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --bg: #080c10;
-    --surface: #0d1318;
-    --surface2: #131b22;
-    --border: rgba(255,255,255,0.07);
+    --bg: #0a0714;
+    --surface: #160f2c;
+    --surface2: #181031;
+    --border: rgba(201,162,255,0.16);
     --gold: #f5c542;
     --gold2: #e8a800;
-    --cyan: #00e5ff;
+    --oracle: #a86ef5;
     --green: #1db954;
     --red: #ff4c4c;
     --orange: #ff8c42;
     --purple: #c77dff;
-    --text: #e8edf2;
-    --muted: #6b7a8d;
+    --text: #efe9ff;
+    --muted: #8b7bb5;
     --grass: #1a5c2a;
     --grass2: #1f6b31;
   }
@@ -54,7 +54,8 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    background: var(--bg); color: var(--text);
+    background: radial-gradient(ellipse at 20% -10%, #1d1140, var(--bg) 60%) var(--bg);
+    color: var(--text);
     font-family: 'DM Sans', sans-serif;
     min-height: 100vh; overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
@@ -473,7 +474,7 @@
     margin-top: 6px;
     display: inline-block;
   }
-  .profile-userinfo-badge.badge-email { background: rgba(0,229,255,0.1); color: var(--cyan); border: 1px solid rgba(0,229,255,0.3); }
+  .profile-userinfo-badge.badge-email { background: rgba(168,110,245,0.1); color: var(--oracle); border: 1px solid rgba(168,110,245,0.3); }
   .profile-userinfo-badge.badge-google { background: rgba(245,197,66,0.1); color: var(--gold); border: 1px solid rgba(245,197,66,0.3); }
   /* sezione */
   .profile-section {
@@ -611,11 +612,11 @@
   .auth-card {
     width: 100%;
     max-width: 420px;
-    background: linear-gradient(135deg, #0d1318 0%, #0a1525 100%);
+    background: linear-gradient(135deg, #1d1140 0%, #120b24 100%);
     border: 1px solid rgba(245,197,66,0.28);
     border-radius: 20px;
     padding: 36px 28px 28px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 80px rgba(0,229,255,0.08);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 80px rgba(168,110,245,0.08);
     animation: authSlideUp 0.4s cubic-bezier(0.2,0.8,0.2,1);
   }
   @keyframes authSlideUp {
@@ -638,7 +639,7 @@
   .auth-subtitle {
     text-align: center;
     font-size: 11px;
-    color: var(--cyan);
+    color: var(--oracle);
     letter-spacing: 3px;
     margin-bottom: 28px;
     font-family: 'DM Mono', monospace;
@@ -683,7 +684,7 @@
   .auth-input {
     width: 100%;
     padding: 12px 14px;
-    background: #080c10;
+    background: #0a0714;
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 10px;
     color: var(--text);
@@ -694,8 +695,8 @@
     min-height: 44px;
   }
   .auth-input:focus {
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(0,229,255,0.1);
+    border-color: var(--oracle);
+    box-shadow: 0 0 0 3px rgba(168,110,245,0.1);
   }
   .auth-input.error {
     border-color: var(--red);
@@ -739,7 +740,7 @@
     text-align: center;
     transition: color 0.2s;
   }
-  .auth-secondary:hover { color: var(--cyan); }
+  .auth-secondary:hover { color: var(--oracle); }
   .auth-error {
     background: rgba(255,76,76,0.08);
     border: 1px solid rgba(255,76,76,0.25);
@@ -854,7 +855,7 @@
   .user-pill-avatar {
     width: 26px; height: 26px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--cyan), var(--gold));
+    background: linear-gradient(135deg, var(--oracle), var(--gold));
     display: flex; align-items: center; justify-content: center;
     font-family: 'Bebas Neue', sans-serif;
     font-size: 13px;
@@ -887,7 +888,7 @@
   .user-menu {
     position: fixed;
     top: 60px; right: 14px;
-    background: #0d1318;
+    background: #160f2c;
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 6px;
@@ -934,7 +935,7 @@
     width: 100%;
     max-width: 980px;
     margin: auto;
-    background: linear-gradient(135deg, #0a0e15 0%, #0f1a28 100%);
+    background: linear-gradient(135deg, #120b24 0%, #1a1136 100%);
     border: 1px solid rgba(245,197,66,0.35);
     border-radius: 20px;
     padding: 0;
@@ -968,6 +969,7 @@
     overflow-x: auto;
     border-bottom: 1px solid var(--border);
     -webkit-overflow-scrolling: touch;
+    flex-shrink: 0; /* mai schiacciati dal body (flex column con max-height) */
   }
   .admin-tab {
     padding: 10px 14px;
@@ -1005,6 +1007,7 @@
     padding: 24px 28px 28px;
     overflow-y: auto;
     flex: 1;
+    min-height: 0; /* permette lo scroll interno invece di gonfiare la card */
   }
   .admin-section {
     display: none;
@@ -1027,8 +1030,8 @@
 
   /* Card "current item" (listone attivo o calendario attivo) */
   .current-item-card {
-    background: linear-gradient(135deg, rgba(0,229,255,0.08) 0%, rgba(245,197,66,0.04) 100%);
-    border: 1px solid rgba(0,229,255,0.25);
+    background: linear-gradient(135deg, rgba(168,110,245,0.08) 0%, rgba(245,197,66,0.04) 100%);
+    border: 1px solid rgba(168,110,245,0.25);
     border-radius: 12px;
     padding: 16px 18px;
     margin-bottom: 18px;
@@ -1046,7 +1049,7 @@
   .current-item-label {
     font-size: 10px;
     letter-spacing: 1.5px;
-    color: var(--cyan);
+    color: var(--oracle);
     text-transform: uppercase;
     margin-bottom: 4px;
     font-weight: 600;
@@ -1081,8 +1084,8 @@
     background: rgba(245,197,66,0.04);
   }
   .admin-upload-zone.drag {
-    border-color: var(--cyan);
-    background: rgba(0,229,255,0.05);
+    border-color: var(--oracle);
+    background: rgba(168,110,245,0.05);
   }
   .admin-upload-zone .icon {
     font-size: 36px; margin-bottom: 10px;
@@ -1115,7 +1118,7 @@
   .admin-field-input {
     width: 100%;
     padding: 11px 14px;
-    background: #080c10;
+    background: #0a0714;
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 8px;
     color: var(--text);
@@ -1125,7 +1128,7 @@
     transition: border-color 0.2s;
     min-height: 42px;
   }
-  .admin-field-input:focus { border-color: var(--cyan); }
+  .admin-field-input:focus { border-color: var(--oracle); }
 
   .admin-btn {
     padding: 12px 22px;
@@ -1179,8 +1182,8 @@
     font-size: 13px;
   }
   .admin-history-item.active {
-    border-color: rgba(0,229,255,0.3);
-    background: rgba(0,229,255,0.04);
+    border-color: rgba(168,110,245,0.3);
+    background: rgba(168,110,245,0.04);
   }
   .admin-history-item-info { flex: 1; min-width: 0; }
   .admin-history-item-name {
@@ -1235,9 +1238,9 @@
     color: var(--red);
   }
   .admin-feedback.info {
-    background: rgba(0,229,255,0.06);
-    border: 1px solid rgba(0,229,255,0.2);
-    color: var(--cyan);
+    background: rgba(168,110,245,0.06);
+    border: 1px solid rgba(168,110,245,0.2);
+    color: var(--oracle);
   }
 
   /* ===== STATS ===== */
@@ -1248,7 +1251,7 @@
     margin-bottom: 18px;
   }
   .admin-stat-card {
-    background: linear-gradient(135deg, rgba(0,229,255,0.04) 0%, rgba(245,197,66,0.03) 100%);
+    background: linear-gradient(135deg, rgba(168,110,245,0.04) 0%, rgba(245,197,66,0.03) 100%);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 14px 16px;
@@ -1291,7 +1294,7 @@
     font-family: 'Bebas Neue', sans-serif;
     font-size: 14px;
     letter-spacing: 1.5px;
-    color: var(--cyan);
+    color: var(--oracle);
     margin-bottom: 10px;
   }
   .admin-chart-bars {
@@ -1303,7 +1306,7 @@
   }
   .admin-chart-bar {
     flex: 1;
-    background: linear-gradient(180deg, var(--cyan), rgba(0,229,255,0.3));
+    background: linear-gradient(180deg, var(--oracle), rgba(168,110,245,0.3));
     border-radius: 2px 2px 0 0;
     min-height: 2px;
     position: relative;
@@ -1364,7 +1367,7 @@
   .admin-user-avatar {
     width: 36px; height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--cyan), var(--gold));
+    background: linear-gradient(135deg, var(--oracle), var(--gold));
     color: #000;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Bebas Neue', sans-serif;
@@ -1393,8 +1396,8 @@
     letter-spacing: 1px;
   }
   .admin-user-name .me-badge {
-    background: rgba(0,229,255,0.15);
-    color: var(--cyan);
+    background: rgba(168,110,245,0.15);
+    color: var(--oracle);
     font-size: 8px;
     font-weight: 800;
     padding: 1px 5px;
@@ -1443,8 +1446,8 @@
     margin-top: -2px;
     margin-bottom: 8px;
     padding: 14px 16px;
-    background: rgba(0,229,255,0.03);
-    border: 1px solid rgba(0,229,255,0.15);
+    background: rgba(168,110,245,0.03);
+    border: 1px solid rgba(168,110,245,0.15);
     border-radius: 0 0 10px 10px;
     border-top: none;
     font-size: 12px;
@@ -1453,7 +1456,7 @@
     font-family: 'Bebas Neue', sans-serif;
     font-size: 12px;
     letter-spacing: 1.5px;
-    color: var(--cyan);
+    color: var(--oracle);
     margin-bottom: 8px;
   }
   .admin-user-drawer-league {
@@ -1509,7 +1512,7 @@
   #app.show { display: block; }
   nav {
     position: sticky; top: 0; z-index: 100;
-    background: rgba(8,12,16,0.9);
+    background: rgba(10,7,20,0.9);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
     padding: 0 24px;
@@ -1528,26 +1531,47 @@
     position: sticky;
     top: 60px;
     z-index: 99;
-    background: rgba(8,12,16,0.85);
+    background: rgba(10,7,20,0.85);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
-    padding: 10px 24px;
+    padding: 8px 24px;
+    display: flex; align-items: center; gap: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .page-title-bar::-webkit-scrollbar { display: none; }
   .page-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 14px;
     letter-spacing: 3px;
     color: var(--muted);
     text-transform: uppercase;
+    flex-shrink: 0;
   }
+  /* Context bar: giornata, rosa, stato sync — sempre in vista */
+  .ctx-items {
+    display: flex; align-items: center; gap: 12px;
+    margin-left: auto;
+    font-size: 11.5px; color: var(--muted);
+    white-space: nowrap;
+  }
+  .ctx-item { display: inline-flex; align-items: center; gap: 5px; }
+  .ctx-item b { color: var(--text); font-weight: 600; }
+  .ctx-item .hl { color: var(--gold); font-weight: 600; }
+  .ctx-sep { width: 1px; height: 14px; background: var(--border); flex-shrink: 0; }
+  .ctx-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .ctx-dot.ok { background: var(--green); }
+  .ctx-dot.err { background: var(--red); }
+  .ctx-dot.sync { background: var(--gold); animation: pulse 1.2s infinite; }
   @media (max-width: 699px) {
-    .page-title-bar { top: 56px; padding: 8px 14px; }
+    .page-title-bar { top: 56px; padding: 7px 14px; gap: 10px; }
     .page-title { font-size: 12px; letter-spacing: 2px; }
+    .ctx-items { font-size: 11px; gap: 9px; }
   }
   .nav-logo {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 28px; letter-spacing: 4px;
-    background: linear-gradient(90deg, var(--gold), #fff);
+    background: linear-gradient(90deg, #c9a2ff, var(--gold));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .nav-tabs { display: flex; gap: 4px; }
@@ -1559,9 +1583,20 @@
     transition: all 0.2s;
     border: none; background: none;
     letter-spacing: 0.5px; position: relative;
+    display: inline-flex; align-items: center; gap: 7px;
   }
   .nav-tab:hover { color: var(--text); background: var(--surface2); }
   .nav-tab.active { color: var(--gold); background: rgba(245,197,66,0.1); }
+  .nav-tab.tab-oracle:hover { color: var(--oracle); }
+  .nav-tab.tab-oracle.active { color: var(--oracle); background: rgba(168,110,245,0.12); }
+  /* Icone SVG a tratto — usate al posto delle emoji */
+  .ico {
+    width: 1em; height: 1em;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    vertical-align: -0.12em; flex-shrink: 0;
+  }
+  .nav-tab .ico { width: 15px; height: 15px; }
   .nav-tab .news-dot {
     position: absolute; top: 4px; right: 4px;
     width: 6px; height: 6px; border-radius: 50%;
@@ -1612,14 +1647,14 @@
   }
   .field-mode-btn:hover { color: var(--text); }
   .field-mode-btn.active.standard {
-    background: var(--green);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(29,185,84,0.3);
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+    color: #1a1408;
+    box-shadow: 0 2px 10px rgba(245,197,66,0.35);
   }
   .field-mode-btn.active.oracle {
-    background: linear-gradient(135deg, var(--cyan) 0%, #0096b8 100%);
-    color: #000;
-    box-shadow: 0 2px 12px rgba(0,229,255,0.4);
+    background: linear-gradient(135deg, var(--oracle) 0%, #7c3fd4 100%);
+    color: #fff;
+    box-shadow: 0 2px 14px rgba(168,110,245,0.5);
   }
   .field-mode-btn .fmb-icon { font-size: 16px; line-height: 1; }
   @media (max-width: 699px) {
@@ -1630,7 +1665,7 @@
     position: fixed;
     left: 0; right: 0; bottom: 0;
     z-index: 200;
-    background: rgba(8,12,16,0.96);
+    background: rgba(10,7,20,0.96);
     backdrop-filter: blur(16px);
     border-top: 1px solid var(--border);
     padding: 6px 4px;
@@ -1655,6 +1690,25 @@
   .bottom-nav-tab .bn-icon {
     font-size: 20px; line-height: 1;
   }
+  .bottom-nav-tab .ico { width: 20px; height: 20px; }
+  /* Voce centrale Oracle: sfera rialzata con glow viola */
+  .bottom-nav-tab.bn-oracle { color: var(--oracle); overflow: visible; }
+  .bottom-nav-tab.bn-oracle .bn-orb {
+    width: 40px; height: 40px;
+    margin-top: -20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, #c9a2ff, #7c3fd4 60%, #4d2586);
+    border: 2px solid rgba(168,110,245,0.55);
+    box-shadow: 0 0 16px rgba(168,110,245,0.5), 0 4px 12px rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    transition: box-shadow 0.2s;
+  }
+  .bottom-nav-tab.bn-oracle .bn-orb .ico { width: 19px; height: 19px; color: #fff; }
+  .bottom-nav-tab.bn-oracle.active .bn-orb {
+    box-shadow: 0 0 24px rgba(168,110,245,0.85), 0 4px 12px rgba(0,0,0,0.5);
+  }
+  .bottom-nav-tab.bn-oracle.active::before { display: none; }
+  .bottom-nav-tab.bn-oracle:active { background: rgba(168,110,245,0.08); }
   .bottom-nav-tab .bn-label {
     font-size: 10px;
     letter-spacing: 0.5px;
@@ -1685,10 +1739,17 @@
     body.app-ready .bottom-nav { display: flex; }
   }
   .page { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
-  .page.active { display: block; }
+  .page.active { display: block; animation: pageIn 0.18s ease; }
+  @keyframes pageIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .page.active { animation: none; }
+  }
 
   .welcome-banner {
-    background: linear-gradient(135deg, #0d1f2e 0%, #0a1a10 100%);
+    background: linear-gradient(135deg, #1d1140 0%, #140d29 100%);
     border: 1px solid rgba(245,197,66,0.2);
     border-radius: 16px; padding: 28px 32px;
     margin-bottom: 28px;
@@ -1705,7 +1766,7 @@
 
   /* ====== HERO BANNER (personalizzato) ====== */
   .hero-banner {
-    background: linear-gradient(135deg, #0d1f2e 0%, #0a1a10 50%, #1a0f0a 100%);
+    background: linear-gradient(135deg, #1d1140 0%, #140d29 55%, #241533 100%);
     border: 1px solid rgba(245,197,66,0.2);
     border-radius: 16px;
     padding: 22px 28px 24px;
@@ -1716,7 +1777,7 @@
     content: '';
     position: absolute; inset: 0;
     background: radial-gradient(ellipse at top right, rgba(245,197,66,0.06), transparent 60%),
-                radial-gradient(ellipse at bottom left, rgba(0,229,255,0.04), transparent 60%);
+                radial-gradient(ellipse at bottom left, rgba(168,110,245,0.04), transparent 60%);
     pointer-events: none;
   }
   .hero-banner > * { position: relative; z-index: 1; }
@@ -1743,8 +1804,8 @@
   }
   .hero-league-pill {
     display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0,229,255,0.06);
-    border: 1px solid rgba(0,229,255,0.25);
+    background: rgba(168,110,245,0.06);
+    border: 1px solid rgba(168,110,245,0.25);
     border-radius: 20px;
     padding: 6px 14px;
     font-size: 12px;
@@ -1752,7 +1813,7 @@
     transition: all 0.2s;
     max-width: 100%;
   }
-  .hero-league-pill:hover { background: rgba(0,229,255,0.1); border-color: var(--cyan); }
+  .hero-league-pill:hover { background: rgba(168,110,245,0.1); border-color: var(--oracle); }
   .hero-league-icon { font-size: 14px; }
   .hero-league-label {
     font-family: 'DM Mono', monospace;
@@ -1761,13 +1822,13 @@
     font-size: 10px;
   }
   .hero-league-name {
-    color: var(--cyan); font-weight: 700;
+    color: var(--oracle); font-weight: 700;
     letter-spacing: 0.5px;
     overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap; max-width: 260px;
   }
   .hero-league-edit { color: var(--muted); font-size: 10px; margin-left: 2px; opacity: 0.5; }
-  .hero-league-pill:hover .hero-league-edit { opacity: 1; color: var(--cyan); }
+  .hero-league-pill:hover .hero-league-edit { opacity: 1; color: var(--oracle); }
   .hero-team-wrap {
     background: rgba(0,0,0,0.25);
     border: 1px solid rgba(255,255,255,0.06);
@@ -1810,12 +1871,12 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--muted);
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 12px; letter-spacing: 2px;
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
     cursor: pointer; transition: all 0.2s;
     white-space: nowrap;
   }
-  .hero-switch-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .hero-switch-btn:hover { border-color: var(--gold); color: var(--gold); }
   .hero-empty {
     padding: 12px 0 4px;
     display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
@@ -1880,15 +1941,15 @@
   }
   .import-box {
     background: var(--surface2);
-    border: 1px dashed rgba(0,229,255,0.3);
+    border: 1px dashed rgba(168,110,245,0.3);
     border-radius: 12px; padding: 24px;
     text-align: center; cursor: pointer;
     transition: all 0.2s; margin-bottom: 20px;
   }
-  .import-box:hover { border-color: var(--cyan); background: rgba(0,229,255,0.04); }
+  .import-box:hover { border-color: var(--oracle); background: rgba(168,110,245,0.04); }
   .import-box .icon { font-size: 32px; margin-bottom: 8px; }
   .import-box p { font-size: 13px; color: var(--muted); }
-  .import-box strong { color: var(--cyan); }
+  .import-box strong { color: var(--oracle); }
   .team-pill {
     display: inline-flex; align-items: center; gap: 8px;
     background: var(--surface2);
@@ -1903,7 +1964,7 @@
 
   .field-container { display: flex; gap: 24px; flex-wrap: wrap; }
   /* ============ CAMPO (refresh Round 2) ============ */
-  
+
   /* container con larghezza max e centrato per non occupare tutto */
   .field-wrap {
     flex: 0 1 460px;
@@ -1913,6 +1974,11 @@
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 18px;
+  }
+  /* Desktop largo: campo grande + colonna laterale sticky (banco di lavoro) */
+  @media (min-width: 900px) {
+    .field-container { flex-wrap: nowrap; align-items: flex-start; }
+    .field-wrap { flex: 1.3 1 0; max-width: 560px; }
   }
   @media (max-width: 699px) {
     .field-container { gap: 14px; }
@@ -2004,12 +2070,12 @@
   }
   .player-token:hover { transform: scale(1.12); z-index: 3; }
   .token-circle {
-    width: 38px; height: 38px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.95);
     display: flex; align-items: center; justify-content: center;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 14px;
+    font-size: 17px;
     color: #fff;
     position: relative;
     box-shadow: 0 3px 10px rgba(0,0,0,0.55), inset 0 -3px 6px rgba(0,0,0,0.2);
@@ -2032,8 +2098,9 @@
     content: attr(data-score);
     position: absolute;
     bottom: -7px; right: -8px;
-    background: #fff; color: #000;
-    font-size: 10px;
+    background: rgba(10,7,20,0.92); color: var(--gold);
+    border: 1px solid rgba(245,197,66,0.35);
+    font-size: 11.5px;
     font-family: 'DM Mono', monospace;
     font-weight: 700;
     padding: 1px 5px;
@@ -2042,14 +2109,14 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.4);
   }
   .token-name {
-    font-size: 11px;
+    font-size: 13px;
     color: #fff;
     margin-top: 8px;
     font-weight: 700;
     text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.85);
     white-space: nowrap;
     letter-spacing: 0.4px;
-    max-width: 90px;
+    max-width: 112px;
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
@@ -2063,11 +2130,11 @@
     position: absolute;
     top: -7px; left: -7px;
     width: 16px; height: 16px;
-    background: var(--cyan);
+    background: var(--oracle);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 8px; color: #000; font-weight: 800;
-    box-shadow: 0 0 8px rgba(0,229,255,0.6);
+    box-shadow: 0 0 8px rgba(168,110,245,0.6);
   }
 
   /* ============ ORACLE MODE — VISUAL OVERHAUL ============ */
@@ -2075,28 +2142,28 @@
     background:
       radial-gradient(ellipse at center, #1a0d3d 0%, #0a0420 70%, #050110 100%);
     box-shadow:
-      inset 0 0 80px rgba(0,229,255,0.18),
-      inset 0 0 0 1px rgba(0,229,255,0.15),
-      0 0 30px rgba(0,229,255,0.15);
+      inset 0 0 80px rgba(168,110,245,0.18),
+      inset 0 0 0 1px rgba(168,110,245,0.15),
+      0 0 30px rgba(168,110,245,0.15);
     animation: oracleBreathe 4s ease-in-out infinite;
   }
   @keyframes oracleBreathe {
-    0%, 100% { box-shadow: inset 0 0 80px rgba(0,229,255,0.18), inset 0 0 0 1px rgba(0,229,255,0.15), 0 0 30px rgba(0,229,255,0.15); }
-    50%      { box-shadow: inset 0 0 100px rgba(0,229,255,0.28), inset 0 0 0 1px rgba(0,229,255,0.3), 0 0 50px rgba(0,229,255,0.25); }
+    0%, 100% { box-shadow: inset 0 0 80px rgba(168,110,245,0.18), inset 0 0 0 1px rgba(168,110,245,0.15), 0 0 30px rgba(168,110,245,0.15); }
+    50%      { box-shadow: inset 0 0 100px rgba(168,110,245,0.28), inset 0 0 0 1px rgba(168,110,245,0.3), 0 0 50px rgba(168,110,245,0.25); }
   }
   .oracle-active .field-line {
-    background: rgba(0,229,255,0.55);
-    box-shadow: 0 0 6px rgba(0,229,255,0.7);
+    background: rgba(168,110,245,0.55);
+    box-shadow: 0 0 6px rgba(168,110,245,0.7);
     animation: oracleLinePulse 3s ease-in-out infinite;
   }
   .oracle-active .field-line.circle {
-    border-color: rgba(0,229,255,0.55);
-    box-shadow: 0 0 10px rgba(0,229,255,0.5), inset 0 0 8px rgba(0,229,255,0.3);
+    border-color: rgba(168,110,245,0.55);
+    box-shadow: 0 0 10px rgba(168,110,245,0.5), inset 0 0 8px rgba(168,110,245,0.3);
     background: transparent;
   }
   .oracle-active .field-line.center-dot {
-    background: var(--cyan);
-    box-shadow: 0 0 12px rgba(0,229,255,0.9);
+    background: var(--oracle);
+    box-shadow: 0 0 12px rgba(168,110,245,0.9);
   }
   @keyframes oracleLinePulse {
     0%, 100% { opacity: 0.55; }
@@ -2107,7 +2174,7 @@
     content: '';
     position: absolute; inset: 0;
     background-image:
-      radial-gradient(circle, rgba(0,229,255,0.8) 1px, transparent 1.5px),
+      radial-gradient(circle, rgba(168,110,245,0.8) 1px, transparent 1.5px),
       radial-gradient(circle, rgba(245,197,66,0.6) 1px, transparent 1.5px);
     background-size: 80px 80px, 130px 130px;
     background-position: 0 0, 40px 60px;
@@ -2121,19 +2188,19 @@
   }
   .oracle-active .token-circle {
     box-shadow:
-      0 0 18px rgba(0,229,255,0.6),
+      0 0 18px rgba(168,110,245,0.6),
       0 3px 10px rgba(0,0,0,0.5),
       inset 0 -3px 6px rgba(0,0,0,0.2);
-    border-color: rgba(0,229,255,0.95);
+    border-color: rgba(168,110,245,0.95);
   }
   .oracle-active .token-name {
-    color: #d0f5ff;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 8px rgba(0,229,255,0.5);
+    color: #ece2ff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 8px rgba(168,110,245,0.5);
   }
   .oracle-active .token-circle::after {
-    background: linear-gradient(135deg, var(--cyan), #99e8ff);
+    background: linear-gradient(135deg, var(--oracle), #cdb0fa);
     color: #000;
-    box-shadow: 0 2px 6px rgba(0,229,255,0.4);
+    box-shadow: 0 2px 6px rgba(168,110,245,0.4);
   }
 
   /* Header campo + mode info */
@@ -2148,26 +2215,26 @@
   }
   .field-modulo-tag {
     font-family: 'DM Mono', monospace;
-    font-size: 11px; color: var(--cyan);
+    font-size: 11px; color: var(--gold);
     padding: 3px 10px;
-    background: rgba(0,229,255,0.08);
-    border: 1px solid rgba(0,229,255,0.25);
+    background: rgba(245,197,66,0.08);
+    border: 1px solid rgba(245,197,66,0.25);
     border-radius: 12px;
   }
   .mode-explain {
     padding: 8px 10px;
-    background: rgba(29,185,84,0.06);
-    border: 1px solid rgba(29,185,84,0.22);
+    background: rgba(245,197,66,0.05);
+    border: 1px solid rgba(245,197,66,0.2);
     border-radius: 8px;
-    font-size: 11px;
+    font-size: 12.5px;
     color: var(--muted);
     margin-bottom: 12px;
     line-height: 1.5;
     display: flex; align-items: flex-start; gap: 8px;
   }
   .mode-explain.oracle {
-    background: rgba(0,229,255,0.06);
-    border-color: rgba(0,229,255,0.25);
+    background: rgba(168,110,245,0.06);
+    border-color: rgba(168,110,245,0.25);
   }
   .mode-explain .me-icon { font-size: 14px; line-height: 1; }
   .mode-explain strong { color: var(--text); }
@@ -2202,6 +2269,318 @@
   }
   .field-sidebar .card { padding: 14px 12px; }
   .field-sidebar .card-title { font-size: 14px; letter-spacing: 1.5px; margin-bottom: 10px; }
+  /* Desktop largo: sidebar a colonna singola, sticky accanto al campo */
+  @media (min-width: 900px) {
+    .field-sidebar {
+      flex: 1 1 0;
+      min-width: 290px; max-width: 420px;
+      grid-template-columns: 1fr;
+      position: sticky;
+      top: 112px; /* nav + context bar */
+      max-height: calc(100vh - 128px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+  }
+  /* Pannello dettaglio giocatore selezionato */
+  .player-detail-card { border-color: rgba(168,110,245,0.3); }
+  .pd-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; letter-spacing: 1.5px;
+    color: var(--text); line-height: 1.1;
+  }
+  .pd-sub { font-size: 11px; color: var(--muted); margin: 2px 0 12px; }
+  .pd-stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .pd-stat { flex: 1; background: var(--surface2); border-radius: 8px; padding: 8px 6px; text-align: center; }
+  .pd-stat .v { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 700; }
+  .pd-stat .l { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .pd-oracle {
+    background: rgba(168,110,245,0.1);
+    border: 1px solid rgba(168,110,245,0.3);
+    border-radius: 8px; padding: 9px 11px;
+    font-size: 12px; color: var(--text); line-height: 1.5;
+  }
+  .pd-oracle b { color: var(--oracle); font-family: 'DM Mono', monospace; }
+  .pd-factors { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.65; }
+  .pd-factors li { margin-left: 14px; }
+  /* Pannello Fantacalcio.it integrato — solo desktop: schieri la lega ufficiale
+     a destra leggendo i consigli FantaOracle sul campo a sinistra */
+  .fc-embed-card { display: none; }
+  @media (min-width: 900px) {
+    .fc-embed-card { display: block; }
+    /* Colonna più larga quando il pannello è aperto, per leggibilità */
+    .field-sidebar.fc-wide { max-width: 560px; flex: 1.4 1 0; }
+  }
+  .fc-embed-intro { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
+  .fc-embed-open-btn {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(201,162,255,0.1);
+    border: 1px solid rgba(201,162,255,0.35);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .fc-embed-open-btn:hover { background: rgba(201,162,255,0.18); border-color: #c9a2ff; }
+  .fc-embed-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .fc-embed-bar .fc-embed-hint { font-size: 10.5px; color: var(--muted); margin-right: auto; }
+  .fc-embed-bar button, .fc-embed-bar a {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 5px 9px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px;
+    transition: all 0.2s;
+  }
+  .fc-embed-bar button:hover, .fc-embed-bar a:hover { color: var(--text); border-color: rgba(201,162,255,0.4); }
+  .fc-embed-frame {
+    width: 100%;
+    height: 64vh;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    display: block;
+  }
+
+  /* ============ ARENA — hub di giornata (dal mockup web) ============ */
+  .arena-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .arena-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 3px; color: var(--muted);
+    text-transform: uppercase;
+  }
+  .arena-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(34px, 5vw, 52px);
+    letter-spacing: 2px; color: var(--text);
+    line-height: 1; margin-top: 8px;
+  }
+  .arena-streak {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(245,197,66,0.12);
+    border: 1px solid rgba(245,197,66,0.35);
+    border-radius: 24px; padding: 8px 16px;
+  }
+  .arena-streak b { font-size: 16px; color: var(--gold); }
+  .arena-streak span {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px; color: var(--gold);
+  }
+  .arena-grid {
+    display: grid; grid-template-columns: 1.55fr 1fr;
+    gap: 22px; align-items: start;
+  }
+  @media (max-width: 899px) { .arena-grid { grid-template-columns: 1fr; } }
+  .arena-col { display: flex; flex-direction: column; gap: 22px; }
+  .arena-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px; padding: 20px 22px;
+  }
+  .arena-card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 2.5px; color: #c9a2ff;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .arena-card-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .arena-card-label-row .arena-card-label { margin-bottom: 0; }
+  .arena-g { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  /* Pick della giornata: cornice con gradiente lavanda→viola→oro */
+  .arena-pick-frame {
+    border-radius: 22px; padding: 2px;
+    background: linear-gradient(140deg, #c9a2ff, #7c3fd4 40%, var(--gold));
+  }
+  .arena-pick {
+    background: #140d29;
+    border-radius: 20px; padding: 26px;
+    display: flex; gap: 26px; align-items: center;
+  }
+  @media (max-width: 599px) { .arena-pick { flex-direction: column; text-align: center; } }
+  .arena-pick-photo {
+    width: 130px; height: 165px; flex: none;
+    border-radius: 14px;
+    background: repeating-linear-gradient(135deg, #2a1c4d 0 8px, #241844 8px 16px);
+    border: 1px solid rgba(201,162,255,0.35);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  }
+  .arena-pick-photo .role-big {
+    width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #0a0714;
+    border: 2px solid rgba(255,255,255,0.85);
+  }
+  .arena-pick-photo .role-lab { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  .arena-pick-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 4.5vw, 54px);
+    letter-spacing: 1px; color: var(--text); line-height: 1; margin-top: 8px;
+  }
+  .arena-pick-meta { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .arena-pick-score-row { display: flex; align-items: baseline; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  @media (max-width: 599px) { .arena-pick-score-row { justify-content: center; } }
+  .arena-pick-score { font-family: 'Bebas Neue', sans-serif; font-size: 58px; color: var(--gold); line-height: 1; }
+  .arena-pick-diff { font-size: 13px; font-weight: 600; }
+  .arena-chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  @media (max-width: 599px) { .arena-chips { justify-content: center; } }
+  .arena-chip {
+    font-size: 11px; font-weight: 600; color: var(--text);
+    background: rgba(255,255,255,0.07);
+    border-radius: 20px; padding: 6px 12px;
+  }
+  .arena-chip.rig { background: var(--green); color: #0d0820; }
+  /* Card rischio titolari */
+  .arena-risk {
+    background: var(--surface);
+    border: 1px solid rgba(255,76,76,0.35);
+    border-radius: 18px; padding: 20px 22px;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  }
+  .arena-risk.ok { border-color: rgba(29,185,84,0.35); }
+  .arena-risk .ar-body { flex: 1; min-width: 220px; }
+  .arena-risk .ar-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .arena-risk .ar-text { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 4px; }
+  .arena-risk .ar-btn {
+    background: var(--red); color: #fff;
+    border: none; border-radius: 12px; padding: 13px 20px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px;
+    cursor: pointer; white-space: nowrap;
+    transition: filter 0.2s;
+  }
+  .arena-risk .ar-btn:hover { filter: brightness(1.1); }
+  .arena-risk.ok .ar-btn { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  /* News sulla tua rosa */
+  .arena-news-item { display: flex; gap: 12px; align-items: flex-start; padding: 6px 0; }
+  .arena-news-item .an-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; margin-top: 6px; }
+  .arena-news-item .an-title { font-size: 13.5px; color: var(--text); line-height: 1.4; }
+  .arena-news-item .an-title a { color: inherit; text-decoration: none; }
+  .arena-news-item .an-title a:hover { color: #c9a2ff; }
+  .arena-news-item .an-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 3px; text-transform: uppercase; }
+  /* Scontro diretto */
+  .arena-h2h-nums { display: flex; align-items: center; gap: 14px; }
+  .arena-h2h-side { flex: 1; text-align: center; }
+  .arena-h2h-side .n { font-family: 'Bebas Neue', sans-serif; font-size: 44px; line-height: 1; }
+  .arena-h2h-side .t { font-size: 12px; font-weight: 600; margin-top: 4px; }
+  .arena-h2h-vs { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .arena-h2h-verdict {
+    margin-top: 16px; border-radius: 12px; padding: 12px;
+    text-align: center; font-size: 12.5px; font-weight: 600;
+  }
+  .arena-h2h-advice { margin-top: 10px; font-size: 11.5px; color: var(--muted); line-height: 1.55; }
+  /* Classifica */
+  .arena-standing-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 10px; border-radius: 10px; margin: 0 -10px;
+    font-size: 13px;
+  }
+  .arena-standing-row.mine { background: rgba(245,197,66,0.08); }
+  .arena-standing-row .pos { width: 18px; font-weight: 700; color: var(--muted); font-size: 12px; }
+  .arena-standing-row.mine .pos, .arena-standing-row.mine .nm { color: var(--gold); }
+  .arena-standing-row .nm { flex: 1; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .arena-standing-row .pts { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+  .arena-empty { text-align: center; padding: 14px 8px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  /* La finestra affiancata ha senso solo su desktop */
+  @media (max-width: 899px) { .arena-fc-card { display: none; } }
+  /* Slot pubblicitario Arena: placeholder finché non c'è un circuito ad */
+  .arena-ad {
+    min-height: 90px;
+    margin-bottom: 22px;
+    border: 1px dashed rgba(201,162,255,0.35);
+    border-radius: 14px;
+    background: repeating-linear-gradient(135deg, #140d29 0 10px, #181031 10px 20px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    text-align: center; padding: 12px;
+  }
+  .arena-ad-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 2.5px; color: var(--muted);
+    text-transform: uppercase;
+  }
+  .arena-ad-sub { font-size: 10.5px; color: #6b5f8a; }
+  @media (max-width: 699px) { .arena-ad { min-height: 70px; } }
+
+  /* ============ DASHBOARD GESTIONE: leghe · prova · piani ============ */
+  .dash-manage-grid {
+    display: grid; grid-template-columns: 1.2fr 1fr 1.2fr;
+    gap: 16px; margin-bottom: 24px;
+    align-items: stretch;
+  }
+  @media (max-width: 899px) { .dash-manage-grid { grid-template-columns: 1fr; } }
+  .mng-card { display: flex; flex-direction: column; }
+  .mng-empty { font-size: 12px; color: var(--muted); line-height: 1.6; padding: 6px 0; }
+  .mng-league-row {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left;
+    background: var(--surface2);
+    border: 1px solid transparent;
+    border-radius: 9px; padding: 9px 12px;
+    color: var(--text); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    margin-bottom: 6px;
+  }
+  .mng-league-row:hover { border-color: rgba(201,162,255,0.35); }
+  .mng-league-row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .mng-league-row.active { border-color: var(--gold); background: rgba(245,197,66,0.08); }
+  .mng-league-row.active .dot { background: var(--gold); }
+  .mng-league-row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mng-league-row .tag { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--gold); }
+  .mng-add-league {
+    margin-top: auto;
+    background: none; border: 1px dashed var(--border);
+    border-radius: 9px; padding: 9px 12px;
+    color: var(--muted); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .mng-add-league:hover { color: var(--gold); border-color: rgba(245,197,66,0.4); }
+  .mng-trial-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 54px; line-height: 1; text-align: center;
+    margin: 8px 0 10px;
+  }
+  .mng-trial-sub { font-size: 12px; color: var(--muted); line-height: 1.6; text-align: center; }
+  .mng-trial-sub strong { color: var(--text); }
+  .mng-plans-row { display: flex; gap: 10px; }
+  .mng-plan {
+    flex: 1; text-align: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 10px;
+  }
+  .mng-plan.best { border-color: rgba(245,197,66,0.45); background: rgba(245,197,66,0.06); }
+  .mng-plan-name { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; color: var(--muted); }
+  .mng-plan.best .mng-plan-name { color: var(--gold); }
+  .mng-plan-price { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--text); margin: 6px 0 10px; }
+  .mng-plan-price span { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--muted); }
+  .mng-plan-btn {
+    width: 100%;
+    background: rgba(201,162,255,0.12);
+    border: 1px solid rgba(201,162,255,0.35);
+    border-radius: 8px; padding: 8px 10px;
+    color: var(--text); font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .mng-plan-btn:hover { background: rgba(201,162,255,0.2); }
+  .mng-plan-btn.done { background: rgba(29,185,84,0.12); border-color: rgba(29,185,84,0.4); color: var(--green); cursor: default; }
+  .mng-plans-note { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 10px; }
   @media (max-width: 700px) {
     .field-sidebar { grid-template-columns: 1fr; }
   }
@@ -2216,9 +2595,9 @@
     flex-wrap: wrap;
   }
   .modulo-bar-label {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 12px;
-    letter-spacing: 2px;
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
     color: var(--muted);
     flex-shrink: 0;
   }
@@ -2252,17 +2631,17 @@
     flex-shrink: 0;
   }
   .pli-name {
-    font-size: 11px; font-weight: 500; flex: 1;
+    font-size: 13px; font-weight: 500; flex: 1;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .pli-score { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; flex-shrink: 0; }
-  .pli-oracle { font-size: 9px; color: var(--cyan); font-family: 'DM Mono', monospace; flex-shrink: 0; }
+  .pli-score { font-family: 'DM Mono', monospace; font-size: 12.5px; font-weight: 500; flex-shrink: 0; }
+  .pli-oracle { font-size: 10.5px; color: var(--oracle); font-family: 'DM Mono', monospace; flex-shrink: 0; }
 
   .ai-header { text-align: center; margin-bottom: 32px; }
   .ai-header h2 {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 40px; letter-spacing: 4px;
-    background: linear-gradient(90deg, var(--cyan), var(--gold));
+    background: linear-gradient(90deg, var(--oracle), var(--gold));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .flow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-bottom: 32px; }
@@ -2273,7 +2652,7 @@
     position: relative; overflow: hidden;
     transition: transform 0.2s, border-color 0.2s;
   }
-  .flow-step:hover { transform: translateY(-3px); border-color: rgba(0,229,255,0.3); }
+  .flow-step:hover { transform: translateY(-3px); border-color: rgba(168,110,245,0.3); }
   .flow-step::before {
     content: attr(data-num);
     position: absolute; top: -10px; right: 16px;
@@ -2296,7 +2675,7 @@
   }
   .conf-title {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 18px; letter-spacing: 2px; color: var(--cyan);
+    font-size: 18px; letter-spacing: 2px; color: var(--oracle);
     margin-bottom: 16px;
   }
   .conf-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
@@ -2309,8 +2688,8 @@
   }
   @keyframes barLoad { from { width: 0 !important; } }
   .conf-val { font-family: 'DM Mono', monospace; font-size: 12px; width: 36px; text-align: right; }
-  .oracle-active .field { box-shadow: 0 0 40px rgba(0,229,255,0.15) inset; }
-  .oracle-active .token-circle { box-shadow: 0 0 12px rgba(0,229,255,0.4), 0 2px 8px rgba(0,0,0,0.5); }
+  .oracle-active .field { box-shadow: 0 0 40px rgba(168,110,245,0.15) inset; }
+  .oracle-active .token-circle { box-shadow: 0 0 12px rgba(168,110,245,0.4), 0 2px 8px rgba(0,0,0,0.5); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
   .pulse { animation: pulse 2s infinite; }
 
@@ -2318,7 +2697,7 @@
   .news-header h2 {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 32px; letter-spacing: 3px;
-    background: linear-gradient(90deg, var(--gold), var(--cyan));
+    background: linear-gradient(90deg, var(--gold), #f8e3a0);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .news-status {
@@ -2341,10 +2720,22 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 14px;
   }
-  .news-refresh-btn:hover { color: var(--cyan); border-color: var(--cyan); }
+  .news-refresh-btn:hover { color: var(--oracle); border-color: var(--oracle); }
   .news-refresh-btn.loading { animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .news-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  /* Mobile: una sola riga a scorrimento orizzontale */
+  @media (max-width: 699px) {
+    .news-filters {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .news-filters::-webkit-scrollbar { display: none; }
+    .news-filter { flex-shrink: 0; white-space: nowrap; }
+  }
   .news-filter {
     padding: 6px 14px;
     background: var(--surface2);
@@ -2398,12 +2789,12 @@
   }
   .cat-formazioni { background: rgba(245,197,66,0.85); color: #000; }
   .cat-infortuni { background: rgba(255,76,76,0.85); color: #fff; }
-  .cat-consigli { background: rgba(0,229,255,0.85); color: #000; }
+  .cat-consigli { background: rgba(168,110,245,0.85); color: #000; }
   .cat-mercato { background: rgba(199,125,255,0.85); color: #fff; }
   .cat-news { background: rgba(107,122,141,0.85); color: #fff; }
   .news-card-img {
     width: 100%; height: 140px;
-    background: linear-gradient(135deg, #1a2530 0%, #0d1318 100%);
+    background: linear-gradient(135deg, #1a2530 0%, #160f2c 100%);
     position: relative; overflow: hidden;
     display: flex; align-items: center; justify-content: center;
   }
@@ -2480,7 +2871,7 @@
   .news-mini-item:hover { background: #1a2530; transform: translateX(2px); }
   .news-mini-item.cat-formazioni { border-left-color: var(--gold); }
   .news-mini-item.cat-infortuni { border-left-color: var(--red); }
-  .news-mini-item.cat-consigli { border-left-color: var(--cyan); }
+  .news-mini-item.cat-consigli { border-left-color: var(--oracle); }
   .news-mini-item.cat-mercato { border-left-color: var(--purple); }
   .news-mini-content { flex: 1; min-width: 0; }
   .news-mini-title {
@@ -2504,10 +2895,10 @@
   .toast {
     position: fixed; bottom: 24px; right: 24px;
     background: var(--surface2);
-    border: 1px solid rgba(0,229,255,0.4);
+    border: 1px solid rgba(168,110,245,0.4);
     border-radius: 10px;
     padding: 12px 18px;
-    font-size: 13px; color: var(--cyan);
+    font-size: 13px; color: var(--oracle);
     transform: translateX(120%);
     transition: transform 0.3s ease, opacity 0.3s ease;
     z-index: 9999;
@@ -2516,18 +2907,18 @@
   }
   .toast.show { transform: translateX(0); }
   /* Varianti per tipo (punto C round 2) */
-  .toast.info    { border-color: rgba(0,229,255,0.4); color: var(--cyan); }
+  .toast.info    { border-color: rgba(255,255,255,0.22); color: var(--text); }
   .toast.success { border-color: rgba(29,185,84,0.5); color: var(--green); background: rgba(29,185,84,0.08); }
   .toast.error   { border-color: rgba(255,76,76,0.5); color: var(--red); background: rgba(255,76,76,0.08); }
   .toast.warning { border-color: rgba(245,161,66,0.5); color: #f5a142; background: rgba(245,161,66,0.08); }
-  /* Su mobile esce dall'alto sotto la nav (punto C-bis) */
+  /* Su mobile sale dal basso, ancorato sopra la bottom nav (non copre i titoli) */
   @media (max-width: 699px) {
     .toast {
-      bottom: auto;
-      top: calc(56px + 36px + env(safe-area-inset-top, 0px) + 12px); /* nav + page-title-bar + gap */
+      top: auto;
+      bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px); /* bottom nav + gap */
       right: 12px; left: 12px;
       max-width: none;
-      transform: translateY(-140%);
+      transform: translateY(calc(100% + 80px + env(safe-area-inset-bottom, 0px)));
     }
     .toast.show { transform: translateY(0); }
   }
@@ -2536,7 +2927,7 @@
   ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
   .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
   .tag-std { background: rgba(29,185,84,0.15); color: var(--green); }
-  .tag-oracle { background: rgba(0,229,255,0.12); color: var(--cyan); }
+  .tag-oracle { background: rgba(168,110,245,0.12); color: var(--oracle); }
   .section-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 14px; letter-spacing: 2px; color: var(--muted);
@@ -2570,7 +2961,7 @@
   .alert-show-more:hover { background: rgba(255,76,76,0.06); border-color: rgba(255,76,76,0.5); }
   /* CTA "Costruisci la tua rosa" */
   .build-roster-cta {
-    background: linear-gradient(135deg, rgba(245,197,66,0.08) 0%, rgba(0,229,255,0.05) 100%);
+    background: linear-gradient(135deg, rgba(245,197,66,0.08) 0%, rgba(168,110,245,0.05) 100%);
     border: 1px solid rgba(245,197,66,0.3);
     border-radius: 14px;
     padding: 20px;
@@ -2581,13 +2972,13 @@
     padding: 32px 24px;
     margin-top: 8px;
     border-color: rgba(245,197,66,0.55);
-    background: linear-gradient(135deg, rgba(245,197,66,0.14) 0%, rgba(0,229,255,0.08) 100%);
+    background: linear-gradient(135deg, rgba(245,197,66,0.14) 0%, rgba(168,110,245,0.08) 100%);
     box-shadow: 0 8px 32px rgba(245,197,66,0.08);
   }
   /* Drag-over: feedback visivo quando trascini un file sopra il CTA */
   .build-roster-cta.drag-over {
-    border-color: var(--cyan);
-    background: linear-gradient(135deg, rgba(0,229,255,0.18) 0%, rgba(245,197,66,0.12) 100%);
+    border-color: var(--oracle);
+    background: linear-gradient(135deg, rgba(168,110,245,0.18) 0%, rgba(245,197,66,0.12) 100%);
     transform: scale(1.01);
     transition: all 0.2s;
   }
@@ -2595,7 +2986,7 @@
   .swap-popover {
     position: fixed;
     z-index: 5000;
-    background: #0d1318;
+    background: #160f2c;
     border: 1px solid rgba(245,197,66,0.4);
     border-radius: 12px;
     padding: 12px;
@@ -2754,14 +3145,14 @@
   .cal-summary {
     margin-bottom: 12px;
     padding: 10px 12px;
-    background: rgba(0,229,255,0.05);
-    border: 1px solid rgba(0,229,255,0.2);
+    background: rgba(168,110,245,0.05);
+    border: 1px solid rgba(168,110,245,0.2);
     border-radius: 8px;
     font-size: 12px;
     color: var(--muted);
     line-height: 1.5;
   }
-  .cal-summary strong { color: var(--cyan); }
+  .cal-summary strong { color: var(--oracle); }
   .cal-no-matches {
     text-align: center; padding: 18px;
     color: var(--muted); font-size: 12px;
@@ -2797,7 +3188,7 @@
     top: calc(100% + 6px);
     left: 0;
     width: 260px;
-    background: #0d1318;
+    background: #160f2c;
     border: 1px solid var(--border);
     border-radius: 10px;
     z-index: 200;
@@ -2822,10 +3213,10 @@
   /* ============ ORACLE DASHBOARD (mockup DEMO) ============ */
   .oracle-dash-hero {
     background:
-      radial-gradient(ellipse at top right, rgba(0,229,255,0.12), transparent 60%),
+      radial-gradient(ellipse at top right, rgba(168,110,245,0.12), transparent 60%),
       radial-gradient(ellipse at bottom left, rgba(245,197,66,0.08), transparent 60%),
-      linear-gradient(135deg, #0a1626 0%, #0d0a1f 100%);
-    border: 1px solid rgba(0,229,255,0.25);
+      linear-gradient(135deg, #1a1136 0%, #120b24 100%);
+    border: 1px solid rgba(168,110,245,0.25);
     border-radius: 14px;
     padding: 24px 28px;
     margin-bottom: 20px;
@@ -2836,7 +3227,7 @@
     content: '';
     position: absolute; top: -20px; right: -20px;
     width: 200px; height: 200px;
-    background: radial-gradient(circle, rgba(0,229,255,0.15), transparent 70%);
+    background: radial-gradient(circle, rgba(168,110,245,0.15), transparent 70%);
     pointer-events: none;
   }
   .oracle-demo-tag {
@@ -2856,8 +3247,8 @@
     margin: 40px auto 0;
     text-align: center;
     padding: 48px 32px;
-    background: linear-gradient(180deg, rgba(0,229,255,0.04) 0%, rgba(13,19,24,0.6) 100%);
-    border: 1px solid rgba(0,229,255,0.2);
+    background: linear-gradient(180deg, rgba(168,110,245,0.04) 0%, rgba(13,19,24,0.6) 100%);
+    border: 1px solid rgba(168,110,245,0.2);
     border-radius: 18px;
     position: relative;
     overflow: hidden;
@@ -2868,14 +3259,14 @@
     top: -100px; left: 50%;
     transform: translateX(-50%);
     width: 400px; height: 400px;
-    background: radial-gradient(circle, rgba(0,229,255,0.08), transparent 70%);
+    background: radial-gradient(circle, rgba(168,110,245,0.08), transparent 70%);
     pointer-events: none;
   }
   .oracle-soon-icon {
     font-size: 64px;
     line-height: 1;
     margin-bottom: 12px;
-    filter: drop-shadow(0 0 24px rgba(0,229,255,0.4));
+    filter: drop-shadow(0 0 24px rgba(168,110,245,0.4));
     position: relative;
   }
   .oracle-soon-tag {
@@ -2883,9 +3274,9 @@
     font-family: 'DM Mono', monospace;
     font-size: 10px;
     letter-spacing: 3px;
-    color: var(--cyan);
-    background: rgba(0,229,255,0.1);
-    border: 1px solid rgba(0,229,255,0.3);
+    color: var(--oracle);
+    background: rgba(168,110,245,0.1);
+    border: 1px solid rgba(168,110,245,0.3);
     border-radius: 14px;
     padding: 4px 12px;
     margin-bottom: 16px;
@@ -2895,7 +3286,7 @@
     font-family: 'Bebas Neue', sans-serif;
     font-size: clamp(40px, 7vw, 64px);
     letter-spacing: 6px;
-    background: linear-gradient(90deg, var(--cyan), var(--gold));
+    background: linear-gradient(90deg, var(--oracle), var(--gold));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 8px;
@@ -2925,14 +3316,14 @@
     border-radius: 12px;
     transition: border-color 0.2s, transform 0.2s;
   }
-  .osf-step:hover { border-color: rgba(0,229,255,0.3); transform: translateY(-1px); }
+  .osf-step:hover { border-color: rgba(168,110,245,0.3); transform: translateY(-1px); }
   .osf-num {
     flex-shrink: 0;
     width: 32px; height: 32px;
     border-radius: 50%;
-    background: rgba(0,229,255,0.12);
-    border: 1px solid rgba(0,229,255,0.3);
-    color: var(--cyan);
+    background: rgba(168,110,245,0.12);
+    border: 1px solid rgba(168,110,245,0.3);
+    color: var(--oracle);
     font-family: 'Bebas Neue', sans-serif;
     font-size: 18px;
     display: flex; align-items: center; justify-content: center;
@@ -2974,7 +3365,7 @@
     overflow: hidden;
   }
   .oracle-pick-card:hover {
-    border-color: var(--cyan);
+    border-color: var(--oracle);
     transform: translateY(-2px);
   }
   .oracle-pick-rank {
@@ -2996,14 +3387,14 @@
   }
   .oracle-pick-name {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 18px;
+    font-size: 22px;
     letter-spacing: 1px;
     color: var(--text);
     line-height: 1.1;
     margin-bottom: 6px;
   }
   .oracle-pick-team {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--muted);
     margin-bottom: 10px;
   }
@@ -3018,7 +3409,7 @@
     flex: 1;
   }
   .oracle-pick-stat-label {
-    font-size: 9px;
+    font-size: 10.5px;
     color: var(--muted);
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -3026,10 +3417,10 @@
   .oracle-pick-stat-value {
     font-family: 'DM Mono', monospace;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 17px;
     margin-top: 1px;
   }
-  .oracle-pick-stat.expected .oracle-pick-stat-value { color: var(--cyan); }
+  .oracle-pick-stat.expected .oracle-pick-stat-value { color: var(--oracle); }
   .oracle-pick-stat.boost .oracle-pick-stat-value { color: var(--green); }
   .oracle-pick-reason {
     font-size: 10px;
@@ -3097,7 +3488,7 @@
     font-family: 'Bebas Neue', sans-serif;
     font-size: 14px;
     letter-spacing: 2px;
-    color: var(--cyan);
+    color: var(--oracle);
     margin-bottom: 6px;
   }
   .ofs-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
@@ -3120,7 +3511,7 @@
     border: none;
     border-radius: 9px;
     cursor: pointer;
-    background: var(--cyan);
+    background: var(--oracle);
     color: #000;
     transition: transform 0.15s, filter 0.2s;
   }
@@ -3138,7 +3529,7 @@
     font-family: 'Bebas Neue', sans-serif;
     font-size: 34px;
     line-height: 1;
-    color: var(--cyan);
+    color: var(--oracle);
   }
   .oracle-hero-stat .ohs-label {
     font-size: 9px;
@@ -3171,8 +3562,8 @@
   .voti-card {
     max-width: 560px;
     margin: 0 auto;
-    background: #0d1318;
-    border: 1px solid rgba(0,229,255,0.25);
+    background: #160f2c;
+    border: 1px solid rgba(168,110,245,0.25);
     border-radius: 18px;
     padding: 24px;
   }
@@ -3195,7 +3586,7 @@
   .voti-row input {
     width: 64px;
     padding: 7px 8px;
-    background: #080c10;
+    background: #0a0714;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 7px;
     color: var(--text);
@@ -3204,7 +3595,7 @@
     text-align: center;
     outline: none;
   }
-  .voti-row input:focus { border-color: var(--cyan); }
+  .voti-row input:focus { border-color: var(--oracle); }
 
   .oracle-hist-row {
     display: flex; align-items: center; gap: 12px;
@@ -3229,13 +3620,31 @@
     font-size: 52px;
     letter-spacing: 4px;
     line-height: 1;
-    background: linear-gradient(90deg, var(--cyan), var(--gold));
+    background: linear-gradient(90deg, var(--oracle), var(--gold));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 </style>
 </head>
 <body class="has-bottom-nav">
+<!-- ============ SPRITE ICONE SVG (stile tratto, coerenti col tema) ============ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="ico-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></symbol>
+  <symbol id="ico-field" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18M12 4v16"/><circle cx="12" cy="12" r="2.6"/></symbol>
+  <symbol id="ico-orb" viewBox="0 0 24 24"><circle cx="12" cy="10" r="6.5"/><path d="M8.5 19h7M10 21.5h4"/></symbol>
+  <symbol id="ico-news" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="ico-gear" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1.5 14h5M9.5 8h5M17.5 16h5"/></symbol>
+  <symbol id="ico-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+  <symbol id="ico-cloud" viewBox="0 0 24 24"><path d="M6.5 19a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 12.5 3.75 3.75 0 0 1 18.2 19z"/></symbol>
+  <symbol id="ico-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></symbol>
+  <symbol id="ico-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m12 7.5 4 3-1.5 4.7h-5L8 10.5z"/><path d="M12 3.5v4M20.1 9.4l-4.1 1.1M17.4 19.1l-2.9-3.2M6.6 19.1l2.9-3.2M3.9 9.4l4.1 1.1"/></symbol>
+  <symbol id="ico-medic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="ico-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 1 3.5 10.9c-.6.5-1 1.2-1.2 2.1h-4.6c-.2-.9-.6-1.6-1.2-2.1A6 6 0 0 1 12 3z"/></symbol>
+  <symbol id="ico-coins" viewBox="0 0 24 24"><circle cx="9" cy="9" r="5.5"/><path d="M14.6 6.9a5.5 5.5 0 1 1-7.7 7.7"/><circle cx="15" cy="15" r="5.5"/></symbol>
+  <symbol id="ico-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.4-6.5-10a6.5 6.5 0 0 1 13 0c0 4.6-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.2"/></symbol>
+  <symbol id="ico-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></symbol>
+  <symbol id="ico-chart" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21v-7M11 21V6M16 21v-10M21 21v-4"/></symbol>
+</svg>
 
 <div id="splash">
   <div class="splash-content">
@@ -3469,6 +3878,32 @@
   </div>
 </div>
 
+<!-- ============ GATE FINE PROVA (Oracle/Arena) ============ -->
+<div class="profile-modal" id="trialGateModal">
+  <div class="profile-card" style="max-width:440px;text-align:center">
+    <div style="font-size:40px;margin-bottom:10px">🔮</div>
+    <div class="profile-title" style="margin-bottom:6px">LA PROVA È FINITA</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px">
+      La tua settimana di prova completa è terminata: <strong style="color:var(--text)">Oracle e Arena</strong> sono in pausa.<br>
+      Campo, Dashboard e News restano gratis, sempre.
+    </div>
+    <div class="mng-plans-row" style="margin-bottom:14px">
+      <div class="mng-plan">
+        <div class="mng-plan-name">MESE</div>
+        <div class="mng-plan-price">— <span>/mese</span></div>
+        <button class="mng-plan-btn" onclick="registerPlanInterest('month')">Ti avviso</button>
+      </div>
+      <div class="mng-plan best">
+        <div class="mng-plan-name">ANNO</div>
+        <div class="mng-plan-price">— <span>/anno</span></div>
+        <button class="mng-plan-btn" onclick="registerPlanInterest('year')">Ti avviso</button>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Gli abbonamenti aprono a breve: lasciami l'interesse e ti scrivo io.</div>
+    <button class="profile-btn secondary" style="width:100%" onclick="closeTrialGate(); showPage('dashboard', document.getElementById('tab-dashboard'))">Torna alla Dashboard</button>
+  </div>
+</div>
+
 <div id="app">
   <nav>
     <div style="display:flex;align-items:center;gap:14px;min-width:0;flex-shrink:1">
@@ -3481,18 +3916,27 @@
       </div>
     </div>
     <div class="nav-tabs">
-      <button class="nav-tab active" id="tab-dashboard" onclick="showPage('dashboard', this)">Dashboard</button>
-      <button class="nav-tab" id="tab-campo" onclick="showPage('campo', this)">Campo</button>
-      <button class="nav-tab" id="tab-news" onclick="showPage('news', this)" id="newsNavTab">News <span class="news-dot" id="newsDot" style="display:none"></span></button>
-      <button class="nav-tab" id="tab-admin" onclick="showPage('admin', this)" style="display:none">⚙️ Admin</button>
+      <button class="nav-tab active" id="tab-dashboard" onclick="showPage('dashboard', this)"><svg class="ico"><use href="#ico-home"/></svg>Dashboard</button>
+      <button class="nav-tab" id="tab-arena" onclick="showPage('arena', this)"><svg class="ico"><use href="#ico-trophy"/></svg>Arena</button>
+      <button class="nav-tab" id="tab-campo" onclick="showPage('campo', this)"><svg class="ico"><use href="#ico-field"/></svg>Campo</button>
+      <button class="nav-tab tab-oracle" id="tab-ai" onclick="showPage('ai', this)"><svg class="ico"><use href="#ico-orb"/></svg>Oracle</button>
+      <button class="nav-tab" id="tab-news" onclick="showPage('news', this)"><svg class="ico"><use href="#ico-news"/></svg>News <span class="news-dot" id="newsDot" style="display:none"></span></button>
+      <button class="nav-tab" id="tab-admin" onclick="showPage('admin', this)" style="display:none"><svg class="ico"><use href="#ico-gear"/></svg>Admin</button>
     </div>
     <div class="cloud-dot" id="cloudPill" title="Cloud · in attesa"></div>
     <div id="userPillWrap" style="margin-left:8px"></div>
   </nav>
 
-  <!-- Page title bar (punto 10 UX cleanup) -->
+  <!-- Context bar: titolo pagina + giornata + rosa + sync -->
   <div class="page-title-bar">
     <span class="page-title" id="pageTitle">Dashboard</span>
+    <div class="ctx-items">
+      <span class="ctx-item" id="ctxGiornata" style="display:none"></span>
+      <span class="ctx-sep" id="ctxGiornataSep" style="display:none"></span>
+      <span class="ctx-item" id="ctxRosa" style="display:none"></span>
+      <span class="ctx-sep" id="ctxRosaSep" style="display:none"></span>
+      <span class="ctx-item" id="ctxSync"><span class="ctx-dot" id="ctxSyncDot"></span><span id="ctxSyncLabel">Locale</span></span>
+    </div>
   </div>
 
   <!-- USER MENU DROPDOWN -->
@@ -3501,13 +3945,29 @@
       <div style="font-size:13px;font-weight:600" id="userMenuName">—</div>
       <div class="user-menu-email" id="userMenuEmail">—</div>
     </div>
-    <button class="user-menu-item" id="userMenuProfileBtn" onclick="openProfileModal()">👤 <span>Profilo</span></button>
-    <button class="user-menu-item" id="userMenuAdminBtn" style="display:none" onclick="showPage('admin', document.getElementById('tab-admin'))">⚙️ <span>Admin Panel</span></button>
-    <button class="user-menu-item" onclick="alert('Le tue leghe sono sincronizzate automaticamente nel cloud.')">☁️ <span>Sincronizzazione cloud</span></button>
-    <button class="user-menu-item danger" onclick="doLogout()">🚪 <span>Esci</span></button>
+    <button class="user-menu-item" id="userMenuProfileBtn" onclick="openProfileModal()"><svg class="ico"><use href="#ico-user"/></svg> <span>Profilo</span></button>
+    <button class="user-menu-item" id="userMenuAdminBtn" style="display:none" onclick="showPage('admin', document.getElementById('tab-admin'))"><svg class="ico"><use href="#ico-gear"/></svg> <span>Admin Panel</span></button>
+    <button class="user-menu-item" onclick="alert('Le tue leghe sono sincronizzate automaticamente nel cloud.')"><svg class="ico"><use href="#ico-cloud"/></svg> <span>Sincronizzazione cloud</span></button>
+    <button class="user-menu-item danger" onclick="doLogout()"><svg class="ico"><use href="#ico-logout"/></svg> <span>Esci</span></button>
   </div>
 
   <div class="page active" id="page-dashboard">
+    <!-- GESTIONE: leghe · prova · piani (roadmap punto 2) -->
+    <div class="dash-manage-grid">
+      <div class="card mng-card">
+        <div class="card-title">LE TUE LEGHE</div>
+        <div id="dashLeaguesList"></div>
+        <button class="mng-add-league" onclick="addNewLeague()">+ Nuova lega</button>
+      </div>
+      <div class="card mng-card">
+        <div class="card-title" style="color:var(--oracle)">LA TUA PROVA</div>
+        <div id="trialCardBody"></div>
+      </div>
+      <div class="card mng-card">
+        <div class="card-title">ABBONAMENTO</div>
+        <div id="planBannerBody"></div>
+      </div>
+    </div>
     <!-- HERO BANNER personalizzato -->
     <div class="hero-banner">
       <!-- top row: greeting + league name -->
@@ -3517,7 +3977,7 @@
           <span class="hero-greeting-name" id="user-name">FANTALLENATORE</span>
         </div>
         <div class="hero-league-pill" id="leaguePill" onclick="editLeagueName()" title="Click per rinominare la lega">
-          <span class="hero-league-icon">🏆</span>
+          <span class="hero-league-icon"><svg class="ico" style="width:14px;height:14px"><use href="#ico-trophy"/></svg></span>
           <span class="hero-league-label">LEGA</span>
           <span class="hero-league-name" id="leagueNameDisplay">—</span>
           <span class="hero-league-edit">✎</span>
@@ -3553,14 +4013,14 @@
     <div class="stats-grid">
       <div class="stat-card"><div class="accent" style="background:var(--gold)"></div><div class="label">Giocatori in rosa</div><div class="value" id="stat-roster-count" style="color:var(--gold)">—</div><div class="sub" id="stat-roster-sub">Carica la rosa</div></div>
       <div class="stat-card"><div class="accent" style="background:var(--green)"></div><div class="label">Fantamedia rosa</div><div class="value" id="stat-fm-avg" style="color:var(--green)">—</div><div class="sub" id="stat-fm-sub">Media titolari</div></div>
-      <div class="stat-card"><div class="accent" style="background:var(--cyan)"></div><div class="label">News tua rosa</div><div class="value" id="stat-news-count" style="color:var(--cyan)">0</div><div class="sub" id="stat-news-sub">Aggiornamenti live</div></div>
+      <div class="stat-card"><div class="accent" style="background:var(--oracle)"></div><div class="label">News tua rosa</div><div class="value" id="stat-news-count" style="color:var(--oracle)">0</div><div class="sub" id="stat-news-sub">Aggiornamenti live</div></div>
       <div class="stat-card" id="stat-alert-card"><div class="accent" style="background:var(--red)"></div><div class="label">⚠️ Allerta</div><div class="value" id="stat-alert-count" style="color:var(--red)">0</div><div class="sub" id="stat-alert-sub">Nessun problema</div></div>
     </div>
 
     <!-- ONBOARDING INTRO — visibile solo a rosa vuota -->
     <div id="onboardingIntro" style="display:none;margin-bottom:20px">
       <div style="text-align:center;padding:8px 0 20px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,5vw,38px);letter-spacing:3px;background:linear-gradient(90deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1">SCHIERA. TU VINCI.</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,5vw,38px);letter-spacing:3px;background:linear-gradient(90deg,var(--oracle),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1">SCHIERA. TU VINCI.</div>
         <div style="font-size:14px;color:var(--muted);margin-top:8px;line-height:1.6;max-width:560px;margin-left:auto;margin-right:auto">
           FantaOracle è il copilota che analizza la tua rosa, prevede i punteggi della prossima giornata, segnala titolarità e infortuni in tempo reale e ti dice la strategia giusta contro l'avversario di turno.
         </div>
@@ -3612,7 +4072,7 @@
         </button>
         <button onclick="openImportHelpModal()"
                 style="padding:14px 16px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:10px;cursor:pointer"
-                onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'"
+                onmouseover="this.style.borderColor='var(--oracle)';this.style.color='var(--oracle)'"
                 onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
           Come esporto?
         </button>
@@ -3636,10 +4096,10 @@
     <!-- CALENDARIO SERIE A -->
     <div id="calendarioCard" class="card" style="margin-bottom:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <div class="card-title" style="margin-bottom:0">📅 CALENDARIO SERIE A · <span id="calendarioGiornataLabel" style="color:var(--cyan)">—</span></div>
+        <div class="card-title" style="margin-bottom:0">📅 CALENDARIO SERIE A · <span id="calendarioGiornataLabel" style="color:var(--oracle)">—</span></div>
         <div style="display:flex;align-items:center;gap:6px">
           <button id="calendarioPrevBtn" onclick="navCalendario(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px" title="Giornata precedente">‹</button>
-          <button id="calendarioTodayBtn" onclick="resetCalendarioToday()" style="background:var(--surface2);border:1px solid var(--border);color:var(--cyan);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:10px;letter-spacing:1px;font-family:'DM Mono',monospace" title="Vai a oggi">OGGI</button>
+          <button id="calendarioTodayBtn" onclick="resetCalendarioToday()" style="background:var(--surface2);border:1px solid var(--border);color:var(--oracle);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:10px;letter-spacing:1px;font-family:'DM Mono',monospace" title="Vai a oggi">OGGI</button>
           <button id="calendarioNextBtn" onclick="navCalendario(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px" title="Giornata successiva">›</button>
         </div>
       </div>
@@ -3656,7 +4116,7 @@
         <div class="card-title" style="margin-bottom:0">📰 ULTIME NEWS FANTACALCIO</div>
         <div style="display:flex;align-items:center;gap:8px">
           <span id="dashNewsStatus" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:1px">CARICAMENTO...</span>
-          <button onclick="showPage('news', document.querySelector('[onclick*=\"news\"]'))" style="font-size:11px;color:var(--cyan);background:none;border:none;cursor:pointer;font-weight:600">VEDI TUTTE →</button>
+          <button onclick="showPage('news', document.querySelector('[onclick*=\"news\"]'))" style="font-size:11px;color:var(--oracle);background:none;border:none;cursor:pointer;font-weight:600">VEDI TUTTE →</button>
         </div>
       </div>
       <div class="news-mini-list" id="dashNewsList">
@@ -3664,6 +4124,54 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- ============ ARENA — hub di giornata ============ -->
+  <div class="page" id="page-arena">
+    <!-- Slot pubblicitario (nascosto per admin e abbonati) -->
+    <div class="arena-ad" id="arenaAdSlot" style="display:none">
+      <span class="arena-ad-label">Spazio pubblicitario · Leaderboard</span>
+      <span class="arena-ad-sub">nascosto per gli utenti Pro</span>
+    </div>
+    <div class="arena-head">
+      <div>
+        <div class="arena-eyebrow" id="arenaEyebrow">ARENA</div>
+        <h2 class="arena-title" id="arenaTitle">CIAO, FANTALLENATORE</h2>
+      </div>
+      <div class="arena-streak" id="arenaStreak" style="display:none"></div>
+    </div>
+    <div class="arena-grid">
+      <div class="arena-col">
+        <div class="arena-pick-frame">
+          <div class="arena-pick" id="arenaPick">
+            <div class="arena-empty">Carica la tua rosa per vedere il pick della giornata.</div>
+          </div>
+        </div>
+        <div class="arena-risk" id="arenaRisk" style="display:none"></div>
+        <div class="arena-card">
+          <div class="arena-card-label">News sulla tua rosa</div>
+          <div id="arenaNews"><div class="arena-empty">Nessuna menzione al momento.</div></div>
+        </div>
+      </div>
+      <div class="arena-col">
+        <div class="arena-card arena-fc-card">
+          <div class="arena-card-label">Fantacalcio.it</div>
+          <div class="fc-embed-intro">Apri la tua lega ufficiale in una finestra affiancata a destra: schieri lì leggendo i consigli dell'Arena a sinistra.</div>
+          <button class="fc-embed-open-btn" onclick="openFcWindow()"><svg class="ico"><use href="#ico-field"/></svg> FINESTRA AFFIANCATA</button>
+        </div>
+        <div class="arena-card">
+          <div class="arena-card-label">Scontro diretto</div>
+          <div id="arenaH2H"></div>
+        </div>
+        <div class="arena-card">
+          <div class="arena-card-label-row">
+            <span class="arena-card-label">La tua lega</span>
+            <span class="arena-g" id="arenaLeagueG"></span>
+          </div>
+          <div id="arenaStandings"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="page" id="page-campo">
@@ -3677,10 +4185,10 @@
         <!-- Toggle Standard/Oracle locale (subito sopra al campo) -->
         <div class="field-mode-toggle">
           <button class="field-mode-btn standard active" id="fieldModeStd" onclick="setMode('standard')">
-            <span class="fmb-icon">📊</span>STANDARD
+            <svg class="ico fmb-icon"><use href="#ico-chart"/></svg>STANDARD
           </button>
           <button class="field-mode-btn oracle" id="fieldModeOracle" onclick="setMode('oracle')">
-            <span class="fmb-icon">🔮</span>ORACLE
+            <svg class="ico fmb-icon"><use href="#ico-orb"/></svg>ORACLE
           </button>
         </div>
         
@@ -3746,10 +4254,33 @@
           <div class="card-title">PANCHINA</div>
           <div id="benchList"></div>
           <button class="autobench-btn" id="autoBenchBtn" onclick="autoBenchInjured()" title="Sposta in panchina i titolari infortunati o dati verso la panchina dalle news">
-            🚑 PANCHINA AUTO RISCHI
+            <svg class="ico"><use href="#ico-medic"/></svg> PANCHINA AUTO RISCHI
           </button>
           <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:6px;line-height:1.4">
-            💡 Click su un giocatore in campo per sostituirlo
+            Click su un giocatore in campo per sostituirlo
+          </div>
+        </div>
+        <!-- Dettaglio giocatore selezionato (banco di lavoro) -->
+        <div class="card player-detail-card" id="playerDetailCard" style="display:none">
+          <div class="card-title" style="color:var(--oracle)">SELEZIONATO</div>
+          <div id="playerDetailBody"></div>
+        </div>
+        <!-- Fantacalcio.it integrato (solo desktop): lega ufficiale a destra, consigli a sinistra -->
+        <div class="card fc-embed-card" id="fcEmbedCard">
+          <div class="card-title">FANTACALCIO.IT</div>
+          <div id="fcEmbedIntro">
+            <div class="fc-embed-intro">Schiera la formazione su Fantacalcio.it leggendo i consigli di FantaOracle a sinistra. <strong>Finestra affiancata</strong> apre la lega in una finestra vera a destra dello schermo (login sempre ok); <strong>Pannello</strong> la incorpora qui dentro (su Safari il login può bloccarsi).</div>
+            <button class="fc-embed-open-btn" onclick="openFcWindow()"><svg class="ico"><use href="#ico-field"/></svg> FINESTRA AFFIANCATA</button>
+            <button class="fc-embed-open-btn" style="margin-top:8px;background:var(--surface2);border-color:var(--border)" onclick="openFcEmbed()"><svg class="ico"><use href="#ico-news"/></svg> PANNELLO INTEGRATO</button>
+          </div>
+          <div id="fcEmbedWrap" style="display:none">
+            <div class="fc-embed-bar">
+              <span class="fc-embed-hint">Se il login non parte qui dentro, usa "Nuova scheda"</span>
+              <button onclick="reloadFcEmbed()" title="Ricarica">↻</button>
+              <a href="https://leghe.fantacalcio.it" target="_blank" rel="noopener" title="Apri in una nuova scheda">Nuova scheda ↗</a>
+              <button onclick="closeFcEmbed()" title="Chiudi">✕</button>
+            </div>
+            <iframe class="fc-embed-frame" id="fcEmbedFrame" title="Fantacalcio.it — la tua lega" referrerpolicy="no-referrer-when-downgrade"></iframe>
           </div>
         </div>
       </div>
@@ -3758,7 +4289,7 @@
 
   <div class="page" id="page-news">
     <div class="news-header">
-      <h2>📰 NEWS FANTACALCIO</h2>
+      <h2>NEWS FANTACALCIO</h2>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div class="news-status">
           <span class="news-status-dot" id="newsStatusDot"></span>
@@ -3770,11 +4301,11 @@
     <div class="news-sources-bar" id="newsSourcesBar"><span style="color:var(--muted);font-size:11px">FONTI:</span></div>
     <div class="news-filters" id="newsFilters">
       <button class="news-filter active" data-cat="all" onclick="filterNews(this, 'all')">Tutte <span class="count" id="cnt-all">0</span></button>
-      <button class="news-filter" data-cat="formazioni" onclick="filterNews(this, 'formazioni')">⚽ Formazioni <span class="count" id="cnt-formazioni">0</span></button>
-      <button class="news-filter" data-cat="infortuni" onclick="filterNews(this, 'infortuni')">🚑 Infortuni <span class="count" id="cnt-infortuni">0</span></button>
-      <button class="news-filter" data-cat="consigli" onclick="filterNews(this, 'consigli')">💡 Consigli <span class="count" id="cnt-consigli">0</span></button>
-      <button class="news-filter" data-cat="mercato" onclick="filterNews(this, 'mercato')">💰 Mercato <span class="count" id="cnt-mercato">0</span></button>
-      <button class="news-filter" data-cat="news" onclick="filterNews(this, 'news')">📌 Generale <span class="count" id="cnt-news">0</span></button>
+      <button class="news-filter" data-cat="formazioni" onclick="filterNews(this, 'formazioni')"><svg class="ico"><use href="#ico-ball"/></svg> Formazioni <span class="count" id="cnt-formazioni">0</span></button>
+      <button class="news-filter" data-cat="infortuni" onclick="filterNews(this, 'infortuni')"><svg class="ico"><use href="#ico-medic"/></svg> Infortuni <span class="count" id="cnt-infortuni">0</span></button>
+      <button class="news-filter" data-cat="consigli" onclick="filterNews(this, 'consigli')"><svg class="ico"><use href="#ico-bulb"/></svg> Consigli <span class="count" id="cnt-consigli">0</span></button>
+      <button class="news-filter" data-cat="mercato" onclick="filterNews(this, 'mercato')"><svg class="ico"><use href="#ico-coins"/></svg> Mercato <span class="count" id="cnt-mercato">0</span></button>
+      <button class="news-filter" data-cat="news" onclick="filterNews(this, 'news')"><svg class="ico"><use href="#ico-pin"/></svg> Generale <span class="count" id="cnt-news">0</span></button>
     </div>
     <div id="newsGrid" class="news-grid"></div>
   </div>
@@ -3785,9 +4316,9 @@
       <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:18px;position:relative">
         <div style="flex:1;min-width:240px">
           <div class="oracle-soon-tag" style="margin-bottom:10px">⚡ ATTIVO · ENGINE V1</div>
-          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,6vw,52px);letter-spacing:5px;background:linear-gradient(90deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin:0">ORACLE ENGINE</h2>
+          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,6vw,52px);letter-spacing:5px;background:linear-gradient(90deg,var(--oracle),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin:0">ORACLE ENGINE</h2>
           <p style="color:var(--muted);font-size:13px;margin-top:8px;line-height:1.6">
-            Previsioni per la <strong style="color:var(--cyan)">giornata <span id="oracleGiornata">—</span></strong> ·
+            Previsioni per la <strong style="color:var(--oracle)">giornata <span id="oracleGiornata">—</span></strong> ·
             fantamedia reale + forma + forza avversario + casa/trasferta.
             Si <strong style="color:var(--gold)">auto-corregge</strong> con i voti reali che inserisci dopo ogni giornata.
           </p>
@@ -4114,7 +4645,7 @@
 <div class="voti-modal" id="votiModal" onclick="if(event.target===this)closeVotiModal()">
   <div class="voti-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--cyan)">📝 VOTI REALI</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--oracle)">📝 VOTI REALI</div>
       <button onclick="closeVotiModal()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px">✕</button>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6">
@@ -4125,7 +4656,7 @@
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
       <div>
         <div style="font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Giornata</div>
-        <input id="votiGiornataNum" type="number" min="1" max="50" style="width:80px;padding:8px 10px;background:#080c10;border:1px solid rgba(255,255,255,0.12);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;text-align:center;outline:none">
+        <input id="votiGiornataNum" type="number" min="1" max="50" style="width:80px;padding:8px 10px;background:#0a0714;border:1px solid rgba(255,255,255,0.12);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;text-align:center;outline:none">
       </div>
       <div style="flex:1"></div>
       <button class="oracle-cta ghost" style="font-size:13px;padding:9px 14px" onclick="document.getElementById('votiFileInput').click()">📂 IMPORTA DA FILE VOTI</button>
@@ -4464,6 +4995,7 @@ function switchToLeague(leagueId) {
   renderLists();
   renderCalendarioWidget();
   renderLeagueSwitcher();
+  renderDashboardManage();
   closeLeagueMenu();
   showToast('Lega: ' + target.name);
 }
@@ -4814,7 +5346,7 @@ function confirmOverwriteLeague(file) {
   modal.id = 'overwriteLeagueModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:5500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.25s ease';
   modal.innerHTML = `
-    <div style="background:#0d1318;border:1px solid rgba(245,161,66,0.4);border-radius:18px;padding:28px;max-width:440px;width:100%;animation:slideUp 0.3s ease">
+    <div style="background:#160f2c;border:1px solid rgba(245,161,66,0.4);border-radius:18px;padding:28px;max-width:440px;width:100%;animation:slideUp 0.3s ease">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:#f5a142;margin-bottom:4px">⚠️ AGGIORNARE LA LEGA?</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5">
         La lega <strong style="color:var(--text)">${escapeHtml(currentName)}</strong> ha già <strong style="color:var(--text)">${currentPlayers} giocatori</strong> caricati.
@@ -4877,7 +5409,7 @@ function showImportWrongFileTypeDialog(playersCount) {
     ? `<button onclick="document.getElementById('wrongFileTypeModal').remove();showPage('admin', document.getElementById('tab-admin'))" style="flex:1;padding:11px;background:var(--gold);color:#000;border:none;border-radius:8px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px">VAI AD ADMIN PANEL</button>`
     : '';
   modal.innerHTML = `
-    <div style="background:#0d1318;border:1px solid rgba(255,140,66,0.4);border-radius:18px;padding:28px;max-width:460px;width:100%;animation:slideUp 0.3s ease">
+    <div style="background:#160f2c;border:1px solid rgba(255,140,66,0.4);border-radius:18px;padding:28px;max-width:460px;width:100%;animation:slideUp 0.3s ease">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--orange);margin-bottom:4px">⚠️ FILE NON RICONOSCIUTO</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">
         Hai caricato un file con <strong style="color:var(--text)">${playersCount} giocatori</strong>, ma <strong style="color:var(--orange)">nessuna fantasquadra</strong>.
@@ -4910,23 +5442,23 @@ function openImportHelpModal() {
   modal.id = 'importHelpModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:5500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.25s ease';
   modal.innerHTML = `
-    <div style="background:#0d1318;border:1px solid rgba(0,229,255,0.3);border-radius:18px;padding:28px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;animation:slideUp 0.3s ease">
+    <div style="background:#160f2c;border:1px solid rgba(168,110,245,0.3);border-radius:18px;padding:28px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;animation:slideUp 0.3s ease">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
         <div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--cyan)">COME ESPORTARE DA FANTACALCIO.IT</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--oracle)">COME ESPORTARE DA FANTACALCIO.IT</div>
           <div style="font-size:12px;color:var(--muted);margin-top:4px">Bastano 30 secondi</div>
         </div>
         <button onclick="document.getElementById('importHelpModal').remove()"
                 style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
       </div>
       <ol style="padding-left:22px;font-size:13px;line-height:1.7;color:var(--text)">
-        <li style="margin-bottom:10px">Accedi a <strong style="color:var(--cyan)">leghe.fantacalcio.it</strong> e seleziona la tua lega.</li>
+        <li style="margin-bottom:10px">Accedi a <strong style="color:var(--oracle)">leghe.fantacalcio.it</strong> e seleziona la tua lega.</li>
         <li style="margin-bottom:10px">Vai nella sezione <strong>Rose</strong> (o "Lista calciatori").</li>
         <li style="margin-bottom:10px">Cerca il bottone <strong style="color:var(--gold)">Esporta in Excel</strong> o <strong style="color:var(--gold)">Scarica CSV</strong>.</li>
         <li style="margin-bottom:10px">Salva il file sul tuo dispositivo.</li>
         <li>Torna qui e trascinalo nella zona "Carica la tua lega".</li>
       </ol>
-      <div style="margin-top:18px;padding:12px;background:rgba(0,229,255,0.05);border-left:3px solid var(--cyan);border-radius:6px;font-size:12px;color:var(--muted);line-height:1.5">
+      <div style="margin-top:18px;padding:12px;background:rgba(168,110,245,0.05);border-left:3px solid var(--oracle);border-radius:6px;font-size:12px;color:var(--muted);line-height:1.5">
         💡 Il file contiene tutte le squadre della lega: dopo l'upload, FantaOracle ti chiederà quale fantasquadra sei tu.
       </div>
       <button onclick="document.getElementById('importHelpModal').remove();document.getElementById('listinoUploadInput').click()"
@@ -5859,7 +6391,7 @@ function renderHeadToHead() {
 
   let html = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">'
     + '<span style="font-size:12px;color:var(--muted)">' + (myTeam ? escapeHtml(myTeam) : 'La tua squadra') + ' <strong style="color:var(--text)">vs</strong></span>'
-    + '<select onchange="onH2HOpponentChange(this)" style="flex:1;min-width:180px;padding:9px 12px;background:#080c10;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none">'
+    + '<select onchange="onH2HOpponentChange(this)" style="flex:1;min-width:180px;padding:9px 12px;background:#0a0714;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none">'
     + options + '</select></div>';
 
   if (!opponent) {
@@ -5926,7 +6458,7 @@ function renderHeadToHead() {
         return '<div style="flex:1;min-width:90px;background:var(--surface2);border-radius:8px;border-left:3px solid ' + rc + ';padding:8px 10px">'
           + '<div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(p.name) + '</div>'
           + '<div style="font-size:10px;color:var(--muted)">' + p.role + ' · ' + escapeHtml(p.team || '—') + '</div>'
-          + '<div style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--cyan);margin-top:2px">' + p._exp.toFixed(1) + '</div></div>';
+          + '<div style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--oracle);margin-top:2px">' + p._exp.toFixed(1) + '</div></div>';
       }).join('')
     + '</div>';
 
@@ -6410,7 +6942,7 @@ function renderOracleModulo() {
   const missing = best.needed - best.filled;
   box.innerHTML = '<div style="text-align:center;padding:8px 0 4px">'
     + '<div class="oracle-modulo-big">' + best.modulo + '</div>'
-    + '<div style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--cyan);margin-top:10px">' + best.total.toFixed(1) + ' punti attesi totali</div>'
+    + '<div style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--oracle);margin-top:10px">' + best.total.toFixed(1) + ' punti attesi totali</div>'
     + (missing > 0 ? '<div style="font-size:11px;color:var(--orange);margin-top:6px">⚠️ Mancano ' + missing + ' giocatori per completarlo</div>' : '')
     + '<button class="oracle-cta gold" style="margin-top:16px;width:100%" onclick="applyOracleFormation()">APPLICA AL CAMPO →</button>'
     + '<div style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5">L\'Oracolo sceglie il modulo che massimizza la somma dei punteggi attesi,<br>escludendo gli infortunati segnalati dalle news.</div>'
@@ -6424,8 +6956,8 @@ function renderOracleHistory() {
   if (oracleState.history.length === 0) {
     box.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;line-height:1.8">'
       + 'Il loop di auto-correzione parte da qui.<br>'
-      + '<strong style="color:var(--text)">1.</strong> Prima della giornata: premi <strong style="color:var(--cyan)">Calcola previsioni</strong> (l\'Oracolo salva uno snapshot)<br>'
-      + '<strong style="color:var(--text)">2.</strong> Dopo la giornata: inserisci i <strong style="color:var(--cyan)">voti reali</strong><br>'
+      + '<strong style="color:var(--text)">1.</strong> Prima della giornata: premi <strong style="color:var(--oracle)">Calcola previsioni</strong> (l\'Oracolo salva uno snapshot)<br>'
+      + '<strong style="color:var(--text)">2.</strong> Dopo la giornata: inserisci i <strong style="color:var(--oracle)">voti reali</strong><br>'
       + '<strong style="color:var(--text)">3.</strong> L\'Oracolo misura l\'errore, si ricalibra per ruolo e migliora giornata dopo giornata.'
       + '</div>';
     return;
@@ -6875,10 +7407,10 @@ function openLeagueTeamPicker() {
     animation: fadeIn 0.25s ease;
   `;
   overlay.innerHTML = `
-    <div style="max-width:560px;width:100%;background:#0d1318;border:1px solid rgba(245,197,66,0.35);border-radius:18px;padding:28px;max-height:90vh;overflow-y:auto;animation:slideUp 0.3s ease">
+    <div style="max-width:560px;width:100%;background:#160f2c;border:1px solid rgba(245,197,66,0.35);border-radius:18px;padding:28px;max-height:90vh;overflow-y:auto;animation:slideUp 0.3s ease">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
         <div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;background:linear-gradient(90deg,var(--gold),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent">🏆 LA TUA LEGA</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;background:linear-gradient(90deg,var(--gold),var(--oracle));-webkit-background-clip:text;-webkit-text-fill-color:transparent">🏆 LA TUA LEGA</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">Ho rilevato ${teams.length} fantasquadre nel file</div>
         </div>
         <button onclick="closeLeagueTeamPicker()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px">✕</button>
@@ -6904,7 +7436,7 @@ function openLeagueTeamPicker() {
                   <span style="color:#e63946">${b.P}P</span> · <span style="color:#5e94c4">${b.D}D</span> · <span style="color:#4caf7d">${b.C}C</span> · <span style="color:#c77dff">${b.A}A</span> · ${c} totali
                 </div>
               </div>
-              <div style="color:var(--cyan);font-size:18px">→</div>
+              <div style="color:var(--oracle);font-size:18px">→</div>
             </div>
           `;
         }).join('')}
@@ -6912,8 +7444,8 @@ function openLeagueTeamPicker() {
       
       <button onclick="closeLeagueTeamPicker()" style="width:100%;padding:10px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;letter-spacing:1px">SALTA · SCELGO DOPO</button>
       
-      <div style="margin-top:14px;padding:10px;background:rgba(0,229,255,0.05);border-left:3px solid var(--cyan);border-radius:6px;font-size:11px;color:var(--muted);line-height:1.5">
-        💡 <strong style="color:var(--cyan)">Bonus:</strong> sapendo le rose di tutte le squadre, FantaOracle può mostrarti chi possiede ogni giocatore e (in futuro) predire gli scontri di giornata contro i tuoi avversari.
+      <div style="margin-top:14px;padding:10px;background:rgba(168,110,245,0.05);border-left:3px solid var(--oracle);border-radius:6px;font-size:11px;color:var(--muted);line-height:1.5">
+        💡 <strong style="color:var(--oracle)">Bonus:</strong> sapendo le rose di tutte le squadre, FantaOracle può mostrarti chi possiede ogni giocatore e (in futuro) predire gli scontri di giornata contro i tuoi avversari.
       </div>
     </div>
   `;
@@ -7032,9 +7564,9 @@ function openListinoDialog() {
   `;
   const isUploaded = listone.source === 'uploaded';
   overlay.innerHTML = `
-    <div style="max-width:540px;width:100%;background:#0d1318;border:1px solid rgba(0,229,255,0.3);border-radius:18px;padding:28px;max-height:90vh;overflow-y:auto">
+    <div style="max-width:540px;width:100%;background:#160f2c;border:1px solid rgba(168,110,245,0.3);border-radius:18px;padding:28px;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:var(--cyan)">⬆ CARICA LISTONE</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:var(--oracle)">⬆ CARICA LISTONE</div>
         <button onclick="closeListinoDialog()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px">✕</button>
       </div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">
@@ -7044,17 +7576,17 @@ function openListinoDialog() {
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
         <div style="font-size:11px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">📥 Come scaricarlo</div>
         <ol style="font-size:12px;color:var(--text);line-height:1.7;padding-left:18px;margin:0">
-          <li>Vai su <a href="https://www.fantacalcio.it/quotazioni-fantacalcio" target="_blank" style="color:var(--cyan)">fantacalcio.it/quotazioni-fantacalcio</a></li>
+          <li>Vai su <a href="https://www.fantacalcio.it/quotazioni-fantacalcio" target="_blank" style="color:var(--oracle)">fantacalcio.it/quotazioni-fantacalcio</a></li>
           <li>Clicca <strong>"Scarica le quotazioni"</strong> (Excel)</li>
           <li>Salva il file <code style="background:#000;padding:2px 6px;border-radius:3px;color:var(--gold);font-size:11px">Quotazioni_Fantacalcio_*.xlsx</code></li>
           <li>Trascinalo qui sotto o clicca per selezionarlo</li>
         </ol>
       </div>
       
-      <div id="listinoDropZone" style="background:var(--surface);border:2px dashed rgba(0,229,255,0.4);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all 0.2s"
+      <div id="listinoDropZone" style="background:var(--surface);border:2px dashed rgba(168,110,245,0.4);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all 0.2s"
            onclick="document.getElementById('listinoUploadInput').click()"
-           ondragover="event.preventDefault();this.style.borderColor='var(--cyan)';this.style.background='rgba(0,229,255,0.06)'"
-           ondragleave="this.style.borderColor='rgba(0,229,255,0.4)';this.style.background='var(--surface)'"
+           ondragover="event.preventDefault();this.style.borderColor='var(--oracle)';this.style.background='rgba(168,110,245,0.06)'"
+           ondragleave="this.style.borderColor='rgba(168,110,245,0.4)';this.style.background='var(--surface)'"
            ondrop="handleListinoDrop(event)">
         <div style="font-size:42px;margin-bottom:8px">📂</div>
         <div style="font-size:14px;color:var(--text);font-weight:500;margin-bottom:4px">Trascina il file qui</div>
@@ -7088,7 +7620,7 @@ function closeListinoDialog() {
 function handleListinoDrop(event) {
   event.preventDefault();
   const dz = document.getElementById('listinoDropZone');
-  if (dz) { dz.style.borderColor = 'rgba(0,229,255,0.4)'; dz.style.background = 'var(--surface)'; }
+  if (dz) { dz.style.borderColor = 'rgba(168,110,245,0.4)'; dz.style.background = 'var(--surface)'; }
   const file = event.dataTransfer.files[0];
   if (!file) return;
   // Simula il flusso del file input
@@ -7103,7 +7635,7 @@ const NEWS_FEEDS = [
   { name: 'Fantacalcio.it',  url: 'https://www.fantacalcio.it/feed/news',  color: '#00a651' },
   { name: 'FantaMaster',     url: 'https://www.fantamaster.it/feed/',      color: '#e74c3c' },
   { name: 'SOS Fanta',       url: 'https://www.sosfanta.com/feed/',        color: '#0073e6' },
-  { name: 'FantaGazzetta',   url: 'https://www.fantagazzetta.com/rss',     color: '#f39c12' },
+  // FantaGazzetta rimossa (7 ago 2026): dominio morto, solo timeout — verificato.
 ];
 const CORS_PROXIES = [
   // Proxy affidabile ospitato su Vercel (stesso dominio): nessuna dipendenza
@@ -7188,7 +7720,15 @@ function stripHtml(html) {
     .replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
     .replace(/\s+/g, ' ').trim();
 }
-function cleanText(t) { return t.replace(/<!\[CDATA\[/g, '').replace(/\]\]>/g, '').trim(); }
+function cleanText(t) { return decodeEntities(t.replace(/<!\[CDATA\[/g, '').replace(/\]\]>/g, '')).trim(); }
+// Decodifica entità HTML (&#8217; &amp; ecc.) nei testi dei feed
+function decodeEntities(s) {
+  if (!s || s.indexOf('&') === -1) return s || '';
+  try {
+    const doc = new DOMParser().parseFromString(s, 'text/html');
+    return doc.documentElement.textContent || s;
+  } catch (e) { return s; }
+}
 function extractImage(item, descHtml) {
   const mt = item.querySelector('thumbnail, content[medium="image"], content[type^="image"]');
   if (mt) { const url = mt.getAttribute('url'); if (url) return url; }
@@ -7290,7 +7830,7 @@ function renderNewsGrid() {
   const filtered = newsState.filter === 'all' ? newsState.items : newsState.items.filter(i => i.category === newsState.filter);
   if (filtered.length === 0) { grid.innerHTML = '<div class="news-empty"><div class="icon">📭</div><p>Nessuna news</p></div>'; return; }
   grid.innerHTML = filtered.map(item => `
-    <a href="${escapeAttr(item.link)}" target="_blank" rel="noopener noreferrer" class="news-card" style="text-decoration:none;color:inherit">
+    <a href="${escapeAttr(outboundNewsUrl(item.link))}" target="_blank" rel="noopener" class="news-card" style="text-decoration:none;color:inherit">
       <div class="news-card-cat cat-${item.category}">${catLabel(item.category)}</div>
       <div class="news-card-img">
         ${item.image
@@ -7336,7 +7876,7 @@ function renderDashNews() {
     return;
   }
   el.innerHTML = top.map(item => `
-    <a href="${escapeAttr(item.link)}" target="_blank" rel="noopener noreferrer" class="news-mini-item cat-${item.category}" style="text-decoration:none;color:inherit">
+    <a href="${escapeAttr(outboundNewsUrl(item.link))}" target="_blank" rel="noopener" class="news-mini-item cat-${item.category}" style="text-decoration:none;color:inherit">
       <div class="news-mini-content">
         <div class="news-mini-title">${escapeHtml(item.title)}</div>
         <div class="news-mini-meta">
@@ -7394,9 +7934,23 @@ function setNewsStatus(status) {
   newsState.status = status;
 }
 function catLabel(c) { return { formazioni:'Formazioni', infortuni:'Infortuni', consigli:'Consigli', mercato:'Mercato', news:'News' }[c] || c; }
-function catIcon(c) { return { formazioni:'⚽', infortuni:'🚑', consigli:'💡', mercato:'💰', news:'📌' }[c] || '📰'; }
+function catIcon(c) {
+  const id = { formazioni:'ico-ball', infortuni:'ico-medic', consigli:'ico-bulb', mercato:'ico-coins', news:'ico-pin' }[c] || 'ico-news';
+  return `<svg class="ico" style="width:40px;height:40px;stroke-width:1.3"><use href="#${id}"/></svg>`;
+}
 function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escapeAttr(s) { return escapeHtml(s||''); }
+// Link in uscita verso le fonti news: aggiunge l'attribuzione FantaOracle
+// (utm_source), così il sito di destinazione sa da dove arriva il lettore.
+function outboundNewsUrl(link) {
+  try {
+    const u = new URL(link);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return link;
+    u.searchParams.set('utm_source', 'fantaoracle');
+    u.searchParams.set('utm_medium', 'referral');
+    return u.toString();
+  } catch (e) { return link; }
+}
 function formatRelativeTime(d) {
   if (!d) return '';
   const diff = (Date.now() - d.getTime()) / 1000;
@@ -7428,6 +7982,7 @@ function handleSplashEnter(ev) {
 // Aggiorna testo bottone splash in base allo stato auth
 // Chiamato da onAuthStateChange e da getSession on init
 function updateSplashButton() {
+  if (window._oauthReturn) return; // in accesso automatico: non toccare il bottone
   const btn = document.getElementById('splashBtn');
   const hint = document.getElementById('splashHint');
   if (!btn) return;
@@ -7462,10 +8017,16 @@ function enterApp(ev) {
     renderLeagueSwitcher();
     updateRosterStats();          // <- attiva onboarding hero se rosa vuota (punto 2)
     updateLeagueBanner();         // <- imposta saluto dinamico (punto 8)
+    ensureTrialStarted();         // <- la settimana di prova parte dal primo ingresso
+    renderDashboardManage();      // <- leghe / prova / piani in Dashboard
     updateUserPill();              // <- mostra il tab Admin per gli account admin, prima del routing sotto
-    // Admin: la prima pagina è l'Admin Panel, non la Dashboard
+    // Landing: admin → Admin Panel (gestione asta/listone); tutti gli altri →
+    // ARENA (roadmap punto 3). Prova scaduta → Dashboard (dove ci sono i
+    // piani), così non si viene accolti dal gate appena entrati.
     if (currentUser && currentUser.is_admin) {
       showPage('admin', document.getElementById('tab-admin'));
+    } else if (!trialGateBlocks('arena')) {
+      showPage('arena', document.getElementById('tab-arena'));
     }
     loadNews(false);
     setInterval(() => loadNews(true), AUTO_REFRESH_MIN * 60 * 1000);
@@ -7512,24 +8073,24 @@ function initSupabase() {
     });
     supabaseClient.auth.onAuthStateChange((event, session) => {
       currentSession = session;
-      if (event === 'SIGNED_IN' && session) {
-        loadUserProfile(session.user).catch(err => console.error('[FantaOracle] Profile load failed:', err));
-        // Se il modal di auth è aperto (es. dopo login Google con redirect), chiudilo ed entra
+      // SIGNED_IN: login appena avvenuto. INITIAL_SESSION: alcune versioni del
+      // client consegnano così la sessione dopo il redirect OAuth.
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        try { localStorage.removeItem('fantaoracle_guest'); } catch (e) {} // account vero > modalità ospite
+        const profileReady = loadUserProfile(session.user).catch(err => console.error('[FantaOracle] Profile load failed:', err));
         const authModal = document.getElementById('authModal');
-        if (authModal && authModal.classList.contains('show')) {
-          setTimeout(() => { closeAuthModal(); enterApp(); }, 400);
-        }
-        // Se l'utente è arrivato qui via redirect Google (URL ha #access_token o ?code),
-        // pulisci la barra degli indirizzi per estetica e evita duplicati al refresh
-        if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-          try {
-            window.history.replaceState(null, '', window.location.pathname);
-          } catch(e) {}
-          // Se l'app non è ancora entrata e siamo sullo splash, entriamo direttamente
-          const app = document.getElementById('app');
-          if (app && !document.body.classList.contains('app-ready')) {
-            setTimeout(() => enterApp(), 400);
-          }
+        const modalOpen = authModal && authModal.classList.contains('show');
+        // Ritorno da Google: il flag è stato salvato PRIMA che Supabase pulisse
+        // l'URL (l'URL a questo punto è già stato riscritto, non va ricontrollato).
+        if (window._oauthReturn || modalOpen) {
+          window._oauthReturn = false;
+          try { window.history.replaceState(null, '', window.location.pathname); } catch(e) {}
+          // Entra direttamente appena il profilo è pronto (max 1.2s di attesa):
+          // niente splash, niente secondo click su "Accedi".
+          Promise.race([profileReady, new Promise(r => setTimeout(r, 1200))]).then(() => {
+            if (modalOpen) closeAuthModal();
+            if (!document.body.classList.contains('app-ready')) enterApp();
+          });
         }
       } else if (event === 'SIGNED_OUT') {
         currentUser = null;
@@ -7561,10 +8122,38 @@ window.initSupabase = initSupabase;
 (function autoInitOnOAuthReturn() {
   const hash = window.location.hash || '';
   const search = window.location.search || '';
-  const hasOAuthToken = hash.includes('access_token=') || hash.includes('error=') || 
+  const hasOAuthToken = hash.includes('access_token=') || hash.includes('error=') ||
                         search.includes('code=') || search.includes('error=');
   if (!hasOAuthToken) return;
-  
+
+  // Flag letto da onAuthStateChange: va salvato ORA, perché Supabase riscrive
+  // l'URL prima di emettere l'evento e i marker OAuth spariscono.
+  window._oauthReturn = !hash.includes('error=') && !search.includes('error=');
+
+  // Sullo splash mostra "accesso in corso" al posto del bottone cliccabile
+  if (window._oauthReturn) {
+    const markBusy = () => {
+      const btn = document.getElementById('splashBtn');
+      const hint = document.getElementById('splashHint');
+      if (btn) { btn.textContent = 'ACCESSO IN CORSO…'; btn.style.pointerEvents = 'none'; }
+      if (hint) hint.textContent = 'UN ATTIMO';
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', markBusy);
+    else markBusy();
+    // Fallback: se dopo 6s la sessione non è arrivata (token scaduto/invalido),
+    // ripristina il bottone normale invece di lasciare l'utente bloccato.
+    setTimeout(() => {
+      if (window._oauthReturn && !document.body.classList.contains('app-ready')) {
+        window._oauthReturn = false;
+        const btn = document.getElementById('splashBtn');
+        const hint = document.getElementById('splashHint');
+        if (btn) { btn.style.pointerEvents = ''; }
+        if (typeof updateSplashButton === 'function') updateSplashButton();
+        else if (btn) { btn.textContent = 'ACCEDI'; if (hint) hint.textContent = 'REGISTRAZIONE GRATUITA'; }
+      }
+    }, 6000);
+  }
+
   console.log('[FantaOracle] OAuth callback rilevato, inizializzo Supabase subito...');
   // Aspetto un attimo che il DOM sia pronto, poi inizializzo
   if (document.readyState === 'loading') {
@@ -7572,6 +8161,38 @@ window.initSupabase = initSupabase;
   } else {
     setTimeout(() => initSupabase(), 50);
   }
+})();
+
+// === Auto-ingresso al load (rifinitura roadmap punto 3) ===
+// Refresh o nuova visita: se c'è una sessione Supabase valida (o eri in
+// modalità ospite) si entra direttamente in app, senza ripassare dallo splash.
+(function autoEnterOnLoad() {
+  const boot = () => {
+    if (window._oauthReturn) return; // il ritorno OAuth ha la sua gestione
+    initSupabase();                  // avvia subito il check sessione
+    let isGuest = false;
+    try { isGuest = localStorage.getItem('fantaoracle_guest') === '1'; } catch (e) {}
+    let waited = 0;
+    const tick = () => {
+      if (document.body.classList.contains('app-ready')) return;
+      // sessione + profilo pronti → dentro
+      if (currentSession && currentUser) { console.log('[FantaOracle] auto-enter: sessione+profilo'); enterApp(); return; }
+      // sessione c'è ma il profilo tarda → dentro comunque dopo 2s
+      if (currentSession && waited >= 2000) { console.log('[FantaOracle] auto-enter: sessione (profilo in ritardo)'); enterApp(); return; }
+      waited += 250;
+      // ospite ricordato: non c'è sessione da aspettare, entra presto
+      if (waited >= 1500 && isGuest && !currentSession) {
+        console.log('[FantaOracle] auto-enter: modalità ospite ricordata');
+        enterApp();
+        return;
+      }
+      if (waited >= 3500) return; // nessuna sessione e nessun ospite: resta lo splash
+      setTimeout(tick, 250);
+    };
+    setTimeout(tick, 300);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
 
 // Garantisce che il client sia pronto. Aspetta fino a 5 secondi.
@@ -7609,8 +8230,24 @@ async function loadUserProfile(authUser) {
       email: authUser.email,
       name: finalUsername,
       is_admin: !!(data && data.is_admin),
-      provider: provider  // 'google' | 'email' | etc.
+      provider: provider,  // 'google' | 'email' | etc.
+      plan: (data && data.plan) || 'free',
+      trial_started_at: (data && data.trial_started_at) || null
     };
+    // Prova: il profilo cloud comanda; se ha solo il browser, riallinea il cloud
+    if (currentUser.trial_started_at) {
+      try { localStorage.setItem(TRIAL_LOCAL_KEY, currentUser.trial_started_at); } catch (e) {}
+    } else {
+      try {
+        const loc = localStorage.getItem(TRIAL_LOCAL_KEY);
+        if (loc) {
+          currentUser.trial_started_at = loc;
+          supabaseClient.from('profiles').update({ trial_started_at: loc }).eq('id', currentUser.id)
+            .then(({ error }) => { if (error) console.warn('[FantaOracle] sync trial fallito:', error.message); });
+        }
+      } catch (e) {}
+    }
+    if (typeof renderDashboardManage === 'function') renderDashboardManage();
     
     // Se il profilo non esiste ancora (primo login Google), lo crea ora
     if (!data) {
@@ -8230,6 +8867,7 @@ async function doLogout() {
 function enterAsGuest() {
   closeAuthModal();
   currentUser = null;  // resta null → modalità locale
+  try { localStorage.setItem('fantaoracle_guest', '1'); } catch (e) {} // ricordato al refresh
   enterApp();
   showToast('Modalità ospite: dati salvati solo su questo browser');
 }
@@ -8261,6 +8899,48 @@ let cloudSyncState = {
   migrationDone: false,     // true dopo la migrazione one-shot
 };
 
+// Aggiorna la context bar sotto l'header: giornata, rosa, stato sync
+function updateContextBar() {
+  const gEl = document.getElementById('ctxGiornata');
+  const gSep = document.getElementById('ctxGiornataSep');
+  if (gEl) {
+    let html = '';
+    if (calendario.giornate.length && calendario.currentIdx >= 0) {
+      const g = calendario.giornate[calendario.currentIdx];
+      if (g) {
+        html = `Giornata <b>${g.num}</b>`;
+        if (g.date) {
+          try { html += ' · <span class="hl">' + g.date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }) + '</span>'; } catch (e) {}
+        }
+      }
+    }
+    gEl.innerHTML = html;
+    gEl.style.display = html ? 'inline-flex' : 'none';
+    if (gSep) gSep.style.display = html ? 'inline-block' : 'none';
+  }
+  const rEl = document.getElementById('ctxRosa');
+  const rSep = document.getElementById('ctxRosaSep');
+  if (rEl) {
+    const n = [...players.starters, ...players.bench].filter(p => p.name && p.name !== '---').length;
+    rEl.innerHTML = n ? `Rosa <b>${n}</b>` : '';
+    rEl.style.display = n ? 'inline-flex' : 'none';
+    if (rSep) rSep.style.display = n ? 'inline-block' : 'none';
+  }
+  const dot = document.getElementById('ctxSyncDot');
+  const lab = document.getElementById('ctxSyncLabel');
+  if (dot && lab) {
+    if (!currentUser) { dot.className = 'ctx-dot'; lab.textContent = 'Ospite · dati locali'; }
+    else {
+      const s = cloudSyncState.status;
+      if (s === 'synced') { dot.className = 'ctx-dot ok'; lab.textContent = 'Cloud sincronizzato'; }
+      else if (s === 'syncing') { dot.className = 'ctx-dot sync'; lab.textContent = 'Sincronizzazione…'; }
+      else if (s === 'offline') { dot.className = 'ctx-dot err'; lab.textContent = 'Offline'; }
+      else if (s === 'error') { dot.className = 'ctx-dot err'; lab.textContent = 'Errore sync'; }
+      else { dot.className = 'ctx-dot'; lab.textContent = 'Cloud in attesa'; }
+    }
+  }
+}
+
 // Aggiorna l'indicatore visivo nella nav — pallino piccolo con stato di colore
 function updateCloudIndicator() {
   const el = document.getElementById('cloudPill');
@@ -8270,6 +8950,7 @@ function updateCloudIndicator() {
     return;
   }
   el.style.display = 'inline-block';
+  updateContextBar();
   const s = cloudSyncState.status;
   // pulisco eventuali classi di stato precedenti
   el.classList.remove('idle','synced','syncing','error');
@@ -9548,9 +10229,9 @@ function renderPianoAsta() {
               <span style="font-size:11px;color:var(--muted);flex-shrink:0">${escapeHtmlSafe(p.team)}</span>
               ${p.rigorista ? `<span title="Rigorista designato" style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;flex-shrink:0">RIG</span>` : ''}
               ${p._formaAdj ? `<span style="font-size:10px;flex-shrink:0;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}
-              ${p._fmWeight ? `<span title="Fantamedia reale pesata sulle presenze" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--cyan);flex-shrink:0">FM ${(p.fanta_media || p.fmReal).toFixed(1)}${p._pgv ? `·${p._pgv}g` : ''}</span>` : ''}
+              ${p._fmWeight ? `<span title="Fantamedia reale pesata sulle presenze" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--oracle);flex-shrink:0">FM ${(p.fanta_media || p.fmReal).toFixed(1)}${p._pgv ? `·${p._pgv}g` : ''}</span>` : ''}
               ${p._gkCal ? `<span title="Griglia calendario stagionale, 100 = media lega (più alto = più partite facili contro reparti deboli, meglio se in casa)" style="font-size:10px;font-family:'DM Mono',monospace;flex-shrink:0;color:${p._gkCal >= 105 ? 'var(--green)' : (p._gkCal <= 95 ? 'var(--red)' : 'var(--muted)')}">📅${p._gkCal}</span>` : ''}
-              ${p._gkComp >= 0 ? `<span title="Abbinamento col primo acquistato di questo ruolo: portieri = giornate in casa quando lui è in trasferta; attaccanti = giornate contro difese deboli quando lui affronta difese forti" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--cyan);flex-shrink:0">🔁${p._gkComp}</span>` : ''}
+              ${p._gkComp >= 0 ? `<span title="Abbinamento col primo acquistato di questo ruolo: portieri = giornate in casa quando lui è in trasferta; attaccanti = giornate contro difese deboli quando lui affronta difese forti" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--oracle);flex-shrink:0">🔁${p._gkComp}</span>` : ''}
             </div>
             <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;flex-shrink:0;color:${inBudget ? 'var(--green)' : 'var(--muted)'}">${p._q} cr</div>
           </div>`;
@@ -9937,9 +10618,9 @@ function renderAdminStats(stats) {
       <div class="sub">+${stats.users_new_7d || 0} nuovi (7 gg)</div>
     </div>
     <div class="admin-stat-card">
-      <div class="accent" style="background:var(--cyan)"></div>
+      <div class="accent" style="background:var(--oracle)"></div>
       <div class="label">Attivi ultimi 7 gg</div>
-      <div class="value" style="color:var(--cyan)">${stats.users_active_7d || 0}</div>
+      <div class="value" style="color:var(--oracle)">${stats.users_active_7d || 0}</div>
       <div class="sub">${stats.users_active_30d || 0} negli ultimi 30 gg</div>
     </div>
     <div class="admin-stat-card">
@@ -10263,16 +10944,22 @@ function showPage(id, btn) {
     showToast('⛔ Solo per admin');
     return;
   }
+  // Fine prova: Oracle e Arena in pausa finché non c'è un piano attivo
+  if (trialGateBlocks(id)) { openTrialGate(); return; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
+  // sincronizza la bottom nav mobile
+  document.querySelectorAll('.bottom-nav-tab').forEach(b => b.classList.toggle('active', b.dataset.page === id));
   // Aggiorna titolo pagina (punto 10 UX)
   const pageTitleEl = document.getElementById('pageTitle');
   if (pageTitleEl) {
-    const titles = { dashboard: 'Dashboard', campo: 'Il tuo campo', news: 'News Fantacalcio', ai: 'Oracle', admin: 'Admin Panel' };
+    const titles = { dashboard: 'Dashboard', arena: 'Arena', campo: 'Il tuo campo', news: 'News Fantacalcio', ai: 'Oracle', admin: 'Admin Panel' };
     pageTitleEl.textContent = titles[id] || '';
   }
+  updateContextBar();
+  if (id === 'arena') renderArenaPage();
   if (id === 'campo') renderField();
   // Oracle Engine v1: render della dashboard predittiva
   if (id === 'ai') renderOraclePage();
@@ -10486,6 +11173,7 @@ function updateDashboardOnboarding(rosterSize) {
 }
 
 function updateRosterStats() {
+  updateContextBar();
   const allRoster = [...players.starters, ...players.bench].filter(p => p.name && p.name !== '---');
   const starters = players.starters.filter(p => p.name && p.name !== '---');
   
@@ -10574,7 +11262,7 @@ function renderRosterAlertCard(matches) {
       `<span style="font-size:9px;background:${p.color}22;color:${p.color};padding:1px 6px;border-radius:3px;font-weight:700;letter-spacing:0.5px">${escapeHtml(p.name)}</span>`
     ).join(' ');
     return `
-      <a href="${escapeAttr(item.link)}" target="_blank" rel="noopener noreferrer" class="news-mini-item cat-${item.category}" style="text-decoration:none;color:inherit">
+      <a href="${escapeAttr(outboundNewsUrl(item.link))}" target="_blank" rel="noopener" class="news-mini-item cat-${item.category}" style="text-decoration:none;color:inherit">
         <div class="news-mini-content">
           <div class="news-mini-title">${escapeHtml(item.title)}</div>
           <div class="news-mini-meta" style="flex-wrap:wrap">
@@ -10770,6 +11458,7 @@ function renderField() {
       token.title = 'Click per sostituire';
       token.addEventListener('click', (ev) => {
         ev.stopPropagation();
+        showPlayerDetail(p);
         openSwapPopover('starter', currentFlatIdx, token);
       });
       // Pallino titolarità in alto a sinistra (solo se c'è un segnale e non è già infortunato)
@@ -10797,6 +11486,413 @@ function renderField() {
 
 function roleLabel(r) {
   return { P:'POR', D:'DIF', C:'CEN', A:'ATT' }[r] || r;
+}
+
+// ============ PROVA 7 GIORNI + PIANI (roadmap punto 2) ============
+const TRIAL_DAYS = 7;
+const TRIAL_LOCAL_KEY = 'fantaoracle_trial_start'; // globale, non per-lega
+
+// Stato prova/piano. Admin e abbonati: mai scaduti.
+function getTrialState() {
+  if (currentUser && currentUser.is_admin) return { plan: 'admin', started: true, expired: false, daysLeft: Infinity };
+  const plan = (currentUser && currentUser.plan) || 'free';
+  if (plan === 'month' || plan === 'year') return { plan, started: true, expired: false, daysLeft: Infinity };
+  let start = null;
+  if (currentUser && currentUser.trial_started_at) start = new Date(currentUser.trial_started_at);
+  if (!start || isNaN(start.getTime())) {
+    try { const raw = localStorage.getItem(TRIAL_LOCAL_KEY); if (raw) start = new Date(raw); } catch (e) {}
+  }
+  if (!start || isNaN(start.getTime())) return { plan: 'free', started: false, expired: false, daysLeft: TRIAL_DAYS };
+  const elapsedDays = (Date.now() - start.getTime()) / 86400000;
+  return {
+    plan: 'free', started: true, startedAt: start,
+    expired: elapsedDays >= TRIAL_DAYS,
+    daysLeft: Math.max(0, Math.ceil(TRIAL_DAYS - elapsedDays)),
+  };
+}
+
+// Avvia la prova al primo ingresso in app (browser + profilo cloud se loggato)
+function ensureTrialStarted() {
+  const st = getTrialState();
+  if (st.started || st.plan !== 'free') return;
+  const now = new Date().toISOString();
+  try { localStorage.setItem(TRIAL_LOCAL_KEY, now); } catch (e) {}
+  if (currentUser) currentUser.trial_started_at = now;
+  if (currentUser && supabaseClient) {
+    supabaseClient.from('profiles').update({ trial_started_at: now }).eq('id', currentUser.id)
+      .then(({ error }) => { if (error) console.warn('[FantaOracle] trial_started_at non salvato (migrazione billing_setup.sql mancante?):', error.message); });
+  }
+}
+
+// Gate su Oracle/Arena a prova scaduta
+function trialGateBlocks(pageId) {
+  if (pageId !== 'ai' && pageId !== 'arena') return false;
+  return getTrialState().expired;
+}
+function openTrialGate() {
+  const m = document.getElementById('trialGateModal');
+  if (m) m.classList.add('show');
+}
+function closeTrialGate() {
+  const m = document.getElementById('trialGateModal');
+  if (m) m.classList.remove('show');
+}
+
+// "Ti avviso": registra l'interesse (cloud se possibile, altrimenti locale)
+async function registerPlanInterest(plan) {
+  try { localStorage.setItem('fantaoracle_plan_interest', JSON.stringify({ plan, at: new Date().toISOString() })); } catch (e) {}
+  let cloudOk = false;
+  if (supabaseClient && currentUser) {
+    try {
+      const { error } = await supabaseClient.from('plan_interest').insert({ user_id: currentUser.id, email: currentUser.email, plan });
+      cloudOk = !error;
+      if (error) console.warn('[FantaOracle] plan_interest non salvato (migrazione billing_setup.sql mancante?):', error.message);
+    } catch (e) {}
+  }
+  if (cloudOk) showToast('✅ Sei in lista: ti avviso appena si parte!');
+  else if (currentUser) showToast('✅ Interesse registrato su questo browser');
+  else showToast('✅ Registrato qui. Accedi per essere avvisato via email!');
+  renderPlanBanner();
+}
+function getLocalPlanInterest() {
+  try { const raw = localStorage.getItem('fantaoracle_plan_interest'); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+}
+
+// --- Renderer Dashboard gestione ---
+function renderDashboardManage() {
+  renderDashLeagues();
+  renderTrialCard();
+  renderPlanBanner();
+}
+function renderDashLeagues() {
+  const box = document.getElementById('dashLeaguesList');
+  if (!box) return;
+  if (!leagues || leagues.length === 0) {
+    box.innerHTML = '<div class="mng-empty">Nessuna lega ancora. Creane una caricando il file della tua lega Fantacalcio.it.</div>';
+    return;
+  }
+  box.innerHTML = leagues.map(l => `
+    <button class="mng-league-row${l.id === activeLeagueId ? ' active' : ''}" onclick="switchToLeague('${escapeAttr(l.id)}')">
+      <span class="dot"></span>
+      <span class="nm">${escapeHtml(l.name || 'Lega senza nome')}</span>
+      ${l.id === activeLeagueId ? '<span class="tag">ATTIVA</span>' : ''}
+    </button>`).join('');
+}
+function renderTrialCard() {
+  const box = document.getElementById('trialCardBody');
+  if (!box) return;
+  const st = getTrialState();
+  if (st.plan === 'admin') {
+    box.innerHTML = '<div class="mng-trial-big" style="color:var(--gold)">∞</div><div class="mng-trial-sub">Account admin: accesso completo, per sempre.</div>';
+    return;
+  }
+  if (st.plan === 'month' || st.plan === 'year') {
+    box.innerHTML = '<div class="mng-trial-big" style="color:var(--green)">PRO</div><div class="mng-trial-sub">Abbonamento ' + (st.plan === 'month' ? 'mensile' : 'annuale') + ' attivo. Grazie!</div>';
+    return;
+  }
+  if (!st.started) {
+    box.innerHTML = '<div class="mng-trial-big" style="color:var(--oracle)">' + TRIAL_DAYS + '</div>'
+      + '<div class="mng-trial-sub"><strong>giorni di prova completa</strong> partono dal tuo primo ingresso: Oracle, Arena e tutto il resto, gratis.</div>';
+    return;
+  }
+  if (st.expired) {
+    box.innerHTML = '<div class="mng-trial-big" style="color:var(--red)">0</div>'
+      + '<div class="mng-trial-sub"><strong style="color:var(--red)">Prova terminata.</strong> Oracle e Arena sono in pausa: Campo, Dashboard e News restano tuoi. Scegli un piano qui accanto per riattivare le previsioni.</div>';
+    return;
+  }
+  box.innerHTML = '<div class="mng-trial-big" style="color:var(--oracle)">' + st.daysLeft + '</div>'
+    + '<div class="mng-trial-sub"><strong>' + (st.daysLeft === 1 ? 'ultimo giorno' : 'giorni rimasti') + ' di prova completa.</strong> Oracle e Arena inclusi: sfrutta la settimana per testare le previsioni sulla tua lega.</div>';
+}
+function renderPlanBanner() {
+  const box = document.getElementById('planBannerBody');
+  if (!box) return;
+  const st = getTrialState();
+  if (st.plan === 'admin' || st.plan === 'month' || st.plan === 'year') {
+    box.innerHTML = '<div class="mng-empty">Nessun piano da scegliere: sei già al completo. 👑</div>';
+    return;
+  }
+  const interest = getLocalPlanInterest();
+  const btn = (plan, label) => interest && interest.plan === plan
+    ? '<button class="mng-plan-btn done" disabled>✓ Sei in lista</button>'
+    : '<button class="mng-plan-btn" onclick="registerPlanInterest(\'' + plan + '\')">Ti avviso</button>';
+  box.innerHTML = `
+    <div class="mng-plans-row">
+      <div class="mng-plan">
+        <div class="mng-plan-name">MESE</div>
+        <div class="mng-plan-price">— <span>/mese</span></div>
+        ${btn('month')}
+      </div>
+      <div class="mng-plan best">
+        <div class="mng-plan-name">ANNO</div>
+        <div class="mng-plan-price">— <span>/anno</span></div>
+        ${btn('year')}
+      </div>
+    </div>
+    <div class="mng-plans-note">Prezzi in arrivo. Premi "Ti avviso" e ti scrivo appena gli abbonamenti aprono${currentUser ? '' : ' (accedi per lasciarmi la tua email)'}.</div>`;
+}
+
+// ============ ARENA — hub di giornata (dati reali dal motore esistente) ============
+function renderArenaPage() {
+  const roster = [...players.starters, ...players.bench].filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
+  const hasRoster = roster.length > 0;
+  const roleHex = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+
+  // Slot pubblicitario: visibile solo a free/trial. Admin e abbonati non vedono ads.
+  const adSlot = document.getElementById('arenaAdSlot');
+  if (adSlot) {
+    const plan = getTrialState().plan;
+    adSlot.style.display = (plan === 'admin' || plan === 'month' || plan === 'year') ? 'none' : 'flex';
+  }
+
+  // --- Testata: giornata · lega + saluto ---
+  const legaEl = document.getElementById('leagueNameDisplay');
+  const legaName = legaEl && legaEl.textContent && legaEl.textContent !== '—' ? legaEl.textContent : '';
+  let gLabel = '';
+  if (calendario.giornate.length && calendario.currentIdx >= 0) {
+    const g = calendario.giornate[calendario.currentIdx];
+    if (g) gLabel = 'GIORNATA ' + g.num;
+  }
+  const eyebrow = document.getElementById('arenaEyebrow');
+  if (eyebrow) eyebrow.textContent = [gLabel, legaName].filter(Boolean).join(' · ') || 'ARENA';
+  const userEl = document.getElementById('user-name');
+  const userName = userEl ? userEl.textContent : 'FANTALLENATORE';
+  const myTeam = (typeof getMyTeamName === 'function' && getMyTeamName()) || '';
+  const title = document.getElementById('arenaTitle');
+  if (title) title.textContent = 'CIAO ' + userName + (myTeam ? ', ' + myTeam.toUpperCase() : '');
+
+  // --- Oracle engine (silenzioso) per pick e scontro diretto ---
+  let engineOk = false;
+  if (hasRoster) { try { engineOk = runOracleEngine(true); } catch (e) {} }
+
+  // --- Pick della giornata ---
+  const pickBox = document.getElementById('arenaPick');
+  if (pickBox) {
+    if (!hasRoster || !engineOk) {
+      pickBox.innerHTML = '<div class="arena-empty">Carica la tua rosa dalla Dashboard per vedere il pick della giornata.</div>';
+    } else {
+      const alerted = getAlertedPlayerNames();
+      const titSig = titolaritaSignals();
+      const candidates = roster
+        .filter(p => typeof p.oracle === 'number' && !alerted.has(p.name))
+        .filter(p => { const t = titSig[p.name]; return !t || t.status !== 'out'; })
+        .sort((a, b) => b.oracle - a.oracle);
+      const pick = candidates[0];
+      if (!pick) {
+        pickBox.innerHTML = '<div class="arena-empty">Nessun candidato disponibile (tutti a rischio?). Controlla il Campo.</div>';
+      } else {
+        const info = pick._oracleInfo || {};
+        const ctx = info.ctx;
+        const meta = [pick.team ? pick.team.toUpperCase() : '', ctx ? 'VS ' + ctx.opponent.toUpperCase() + ' (' + (ctx.home ? 'CASA' : 'TRASFERTA') + ')' : ''].filter(Boolean).join(' · ');
+        const diff = pick.score ? pick.oracle - pick.score : 0;
+        const diffHtml = pick.score
+          ? (diff >= 0
+              ? '<span class="arena-pick-diff" style="color:var(--green)">+' + diff.toFixed(1) + ' rispetto alla sua media</span>'
+              : '<span class="arena-pick-diff" style="color:var(--orange)">' + diff.toFixed(1) + ' rispetto alla sua media</span>')
+          : '';
+        const chips = (info.factors || []).slice(0, 2)
+          .map(f => '<span class="arena-chip">' + escapeHtml(f.replace(/^[^\wÀ-ÿ]+\s*/, '')) + '</span>');
+        if (typeof info.confidence === 'number') chips.push('<span class="arena-chip">Fiducia ' + info.confidence + '%</span>');
+        if (pick.rigorista) chips.push('<span class="arena-chip rig">Rigorista</span>');
+        pickBox.innerHTML = `
+          <div class="arena-pick-photo">
+            <div class="role-big" style="background:${roleHex[pick.role] || '#888'}">${pick.role}</div>
+            <div class="role-lab">${roleLabel(pick.role)}</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="arena-card-label" style="margin-bottom:0">Pick della giornata</div>
+            <div class="arena-pick-name">${escapeHtml(pick.name)}</div>
+            ${meta ? '<div class="arena-pick-meta">' + escapeHtml(meta) + '</div>' : ''}
+            <div class="arena-pick-score-row">
+              <span class="arena-pick-score">${pick.oracle.toFixed(1)}</span>
+              ${diffHtml}
+            </div>
+            <div class="arena-chips">${chips.join('')}</div>
+          </div>`;
+      }
+    }
+  }
+
+  // --- Titolari a rischio ---
+  const riskBox = document.getElementById('arenaRisk');
+  if (riskBox) {
+    if (!hasRoster) { riskBox.style.display = 'none'; }
+    else {
+      const alerted = getAlertedPlayerNames();
+      const titSig = titolaritaSignals();
+      const risky = players.starters
+        .filter(p => p && p.name && p.name !== '---' && !p.isEmpty)
+        .map(p => {
+          if (alerted.has(p.name)) return { p, reason: 'menzionato in news infortunio' };
+          const t = titSig[p.name];
+          if (t && t.status === 'out') return { p, reason: 'dato verso la panchina dalle news' };
+          if (t && t.status === 'doubt') return { p, reason: 'in ballottaggio' };
+          return null;
+        }).filter(Boolean);
+      riskBox.style.display = 'flex';
+      if (risky.length === 0) {
+        riskBox.className = 'arena-risk ok';
+        riskBox.innerHTML = '<div class="ar-body"><div class="ar-title">Nessun titolare a rischio</div><div class="ar-text">Le news non segnalano problemi sul tuo XI. Ricontrolla prima della deadline.</div></div>'
+          + '<button class="ar-btn" onclick="showPage(\'campo\', document.getElementById(\'tab-campo\'))">VAI AL CAMPO</button>';
+      } else {
+        riskBox.className = 'arena-risk';
+        const first = risky.slice(0, 2).map(r => escapeHtml(r.p.name) + ': ' + r.reason).join(' · ');
+        riskBox.innerHTML = '<div class="ar-body"><div class="ar-title">' + risky.length + (risky.length === 1 ? ' titolare a rischio' : ' titolari a rischio') + '</div>'
+          + '<div class="ar-text">' + first + (risky.length > 2 ? ' · e altri' : '') + '</div></div>'
+          + '<button class="ar-btn" onclick="showPage(\'campo\', document.getElementById(\'tab-campo\'))">VAI AL CAMPO</button>';
+      }
+    }
+  }
+
+  // --- News sulla tua rosa ---
+  const newsBox = document.getElementById('arenaNews');
+  if (newsBox) {
+    const matches = hasRoster ? findRosterMentions().slice(0, 4) : [];
+    if (matches.length === 0) {
+      newsBox.innerHTML = '<div class="arena-empty">Nessuna menzione dei tuoi giocatori nelle ultime news.</div>';
+    } else {
+      newsBox.innerHTML = matches.map(m => {
+        const dot = m.news.category === 'infortuni' ? 'var(--red)' : m.news.category === 'formazioni' ? 'var(--gold)' : 'var(--green)';
+        return `<div class="arena-news-item">
+          <span class="an-dot" style="background:${dot}"></span>
+          <div style="flex:1;min-width:0">
+            <div class="an-title"><a href="${escapeAttr(outboundNewsUrl(m.news.link))}" target="_blank" rel="noopener">${escapeHtml(m.news.title)}</a></div>
+            <div class="an-meta">${formatRelativeTime(m.news.date)} · ${escapeHtml(m.news.source)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // --- Scontro diretto ---
+  const h2hBox = document.getElementById('arenaH2H');
+  if (h2hBox) {
+    const rivals = (typeof getRivalTeams === 'function') ? getRivalTeams() : [];
+    if (!hasRoster || rivals.length === 0) {
+      h2hBox.innerHTML = '<div class="arena-empty">Serve il file di lega con le fantasquadre per la proiezione dello scontro diretto.</div>';
+    } else {
+      const saved = getSavedOpponent();
+      const opponent = rivals.includes(saved) ? saved : '';
+      const sel = '<select onchange="onArenaOpponentChange(this)" style="width:100%;padding:9px 12px;background:#0a0714;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none;margin-bottom:14px">'
+        + '<option value="">— scegli l\'avversario —</option>'
+        + rivals.map(t => '<option value="' + escapeAttr(t) + '"' + (t === opponent ? ' selected' : '') + '>' + escapeHtml(t) + '</option>').join('')
+        + '</select>';
+      if (!opponent) {
+        h2hBox.innerHTML = sel + '<div class="arena-empty">Scegli chi affronti questa giornata.</div>';
+      } else {
+        const oppRoster = buildTeamRoster(opponent);
+        const ratings = computeTeamRatings();
+        const myProj = projectMyBestXI(ratings);
+        const oppProj = oppRoster.length ? projectBestXI(oppRoster, ratings) : null;
+        if (!myProj || !oppProj) {
+          h2hBox.innerHTML = sel + '<div class="arena-empty">Proiezione non disponibile.</div>';
+        } else {
+          const gap = myProj.total - oppProj.total;
+          const strat = h2hStrategy(gap, myProj);
+          const vColBg = gap >= 1.5 ? 'rgba(29,185,84,0.12)' : gap > -1.5 ? 'rgba(245,197,66,0.12)' : 'rgba(255,76,76,0.12)';
+          h2hBox.innerHTML = sel + `
+            <div class="arena-h2h-nums">
+              <div class="arena-h2h-side"><div class="n" style="color:var(--gold)">${myProj.total.toFixed(1)}</div><div class="t" style="color:var(--text)">${escapeHtml(getMyTeamName() || 'La tua squadra')}</div></div>
+              <div class="arena-h2h-vs">VS</div>
+              <div class="arena-h2h-side"><div class="n" style="color:var(--muted)">${oppProj.total.toFixed(1)}</div><div class="t" style="color:var(--muted)">${escapeHtml(opponent)}</div></div>
+            </div>
+            <div class="arena-h2h-verdict" style="background:${vColBg};border:1px solid ${strat.color};color:${strat.color}">${strat.verdict.toUpperCase()}</div>
+            <div class="arena-h2h-advice">${escapeHtml(strat.advice)}</div>`;
+        }
+      }
+    }
+  }
+
+  // --- La tua lega (squadre; punti quando ci sarà lo storico risultati) ---
+  const standBox = document.getElementById('arenaStandings');
+  const gEl = document.getElementById('arenaLeagueG');
+  if (gEl) gEl.textContent = gLabel ? gLabel.replace('GIORNATA ', 'G') : '';
+  if (standBox) {
+    const teams = (listone && listone.leagueTeams && listone.leagueTeams.length) ? listone.leagueTeams.slice() : [];
+    if (teams.length === 0) {
+      standBox.innerHTML = '<div class="arena-empty">Carica il file di lega con le fantasquadre per vedere le squadre.</div>';
+    } else {
+      const mine = (typeof getMyTeamName === 'function' && getMyTeamName()) || '';
+      standBox.innerHTML = teams.sort((a, b) => (a === mine ? -1 : b === mine ? 1 : a.localeCompare(b)))
+        .map((t, i) => `<div class="arena-standing-row${t === mine ? ' mine' : ''}"><span class="pos">${i + 1}</span><span class="nm">${escapeHtml(t)}</span><span class="pts">—</span></div>`).join('')
+        + '<div class="arena-empty" style="padding-top:10px">La classifica coi punti arriva quando registreremo i risultati di giornata.</div>';
+    }
+  }
+}
+function onArenaOpponentChange(sel) {
+  setSavedOpponent(sel.value);
+  renderArenaPage();
+}
+
+// Pannello Fantacalcio.it integrato (solo desktop): iframe caricato solo all'apertura
+const FC_EMBED_URL = 'https://leghe.fantacalcio.it';
+function openFcEmbed() {
+  const intro = document.getElementById('fcEmbedIntro');
+  const wrap = document.getElementById('fcEmbedWrap');
+  const frame = document.getElementById('fcEmbedFrame');
+  if (!intro || !wrap || !frame) return;
+  intro.style.display = 'none';
+  wrap.style.display = 'block';
+  if (!frame.src || frame.src === 'about:blank') frame.src = FC_EMBED_URL;
+  document.querySelector('.field-sidebar')?.classList.add('fc-wide');
+}
+function closeFcEmbed() {
+  const intro = document.getElementById('fcEmbedIntro');
+  const wrap = document.getElementById('fcEmbedWrap');
+  if (!intro || !wrap) return;
+  wrap.style.display = 'none';
+  intro.style.display = 'block';
+  document.querySelector('.field-sidebar')?.classList.remove('fc-wide');
+}
+function reloadFcEmbed() {
+  const frame = document.getElementById('fcEmbedFrame');
+  if (frame) frame.src = FC_EMBED_URL;
+}
+// Finestra vera affiancata a destra: cookie first-party, il login funziona sempre.
+// FantaOracle va tenuto nella metà sinistra dello schermo.
+function openFcWindow() {
+  const w = Math.floor((window.screen.availWidth || 1440) / 2);
+  const h = (window.screen.availHeight || 900) - 24;
+  const left = (window.screen.availWidth || 1440) - w;
+  window.open(FC_EMBED_URL, 'fantacalcio_lega',
+    `width=${w},height=${h},left=${left},top=0,resizable=yes,scrollbars=yes`);
+  showToast('Lega aperta in finestra affiancata: tieni FantaOracle nella metà sinistra dello schermo', 'info');
+}
+
+// Pannello "Selezionato" nella sidebar del campo: statistiche + lettura Oracle
+function showPlayerDetail(p) {
+  const card = document.getElementById('playerDetailCard');
+  const body = document.getElementById('playerDetailBody');
+  if (!card || !body || !p || !p.name || p.name === '---' || p.isEmpty) return;
+  const alerted = getAlertedPlayerNames();
+  const tsig = titolaritaSignals()[p.name];
+  let titTxt = '';
+  if (alerted.has(p.name)) titTxt = '<span style="color:var(--red);font-weight:600">allerta infortunio</span>';
+  else if (tsig) titTxt = {
+    in: '<span style="color:var(--green);font-weight:600">titolare (da news)</span>',
+    doubt: '<span style="color:var(--gold);font-weight:600">ballottaggio</span>',
+    out: '<span style="color:var(--red);font-weight:600">verso la panchina</span>',
+  }[tsig.status] || '';
+  const stats = [];
+  if (p.score) stats.push({ v: p.score.toFixed(1), l: 'FM', c: 'var(--gold)' });
+  if (p.mv && p.mv > 0) stats.push({ v: p.mv.toFixed(1), l: 'MV', c: 'var(--text)' });
+  if (p.quotation && p.quotation > 0) stats.push({ v: p.quotation, l: 'Quot.', c: 'var(--text)' });
+  let oracleHtml = '';
+  const info = p._oracleInfo;
+  if (info) {
+    const factors = (info.factors || []).slice(0, 3);
+    oracleHtml = `<div class="pd-oracle">Oracle prevede <b>${info.expected.toFixed(1)}</b> · fiducia ${info.confidence}%` +
+      (factors.length ? `<ul class="pd-factors">${factors.map(f => '<li>' + escapeHtml(f) + '</li>').join('')}</ul>` : '') +
+      `</div>`;
+  } else {
+    oracleHtml = `<div class="pd-oracle" style="color:var(--muted)">Attiva la modalità <b>Oracle</b> per la previsione di giornata.</div>`;
+  }
+  body.innerHTML = `
+    <div class="pd-name">${escapeHtml(p.name)}</div>
+    <div class="pd-sub">${roleLabel(p.role)}${p.team ? ' · ' + escapeHtml(p.team) : ''}${titTxt ? ' · ' + titTxt : ''}</div>
+    ${stats.length ? `<div class="pd-stats">${stats.map(s => `<div class="pd-stat"><div class="v" style="color:${s.c}">${s.v}</div><div class="l">${s.l}</div></div>`).join('')}</div>` : ''}
+    ${oracleHtml}
+  `;
+  card.style.display = 'block';
 }
 
 function updateMissingSlotsAlert(missingByRole) {
@@ -10870,6 +11966,7 @@ function renderLists() {
       else if (tsig && tsig.status === 'doubt') item.style.borderLeftColor = 'var(--gold)';
       item.addEventListener('click', (ev) => {
         ev.stopPropagation();
+        showPlayerDetail(p);
         openSwapPopover(type, pIdx, item);
       });
       item.innerHTML = `
@@ -11149,20 +12246,28 @@ function togglePill(el) {
 <!-- BOTTOM NAV MOBILE -->
 <div class="bottom-nav" id="bottomNav">
   <button class="bottom-nav-tab active" data-page="dashboard" onclick="showPage('dashboard', document.getElementById('tab-dashboard'))">
-    <span class="bn-icon">🏠</span>
+    <svg class="ico"><use href="#ico-home"/></svg>
     <span class="bn-label">Dashboard</span>
   </button>
   <button class="bottom-nav-tab" data-page="campo" onclick="showPage('campo', document.getElementById('tab-campo'))">
-    <span class="bn-icon">⚽</span>
+    <svg class="ico"><use href="#ico-field"/></svg>
     <span class="bn-label">Campo</span>
   </button>
+  <button class="bottom-nav-tab bn-oracle" data-page="ai" onclick="showPage('ai', document.getElementById('tab-ai'))">
+    <span class="bn-orb"><svg class="ico"><use href="#ico-orb"/></svg></span>
+    <span class="bn-label">Oracle</span>
+  </button>
+  <button class="bottom-nav-tab" data-page="arena" onclick="showPage('arena', document.getElementById('tab-arena'))">
+    <svg class="ico"><use href="#ico-trophy"/></svg>
+    <span class="bn-label">Arena</span>
+  </button>
   <button class="bottom-nav-tab" data-page="news" onclick="showPage('news', document.getElementById('tab-news'))">
-    <span class="bn-icon">📰</span>
+    <svg class="ico"><use href="#ico-news"/></svg>
     <span class="bn-label">News</span>
     <span class="bn-dot" id="bnNewsDot" style="display:none"></span>
   </button>
   <button class="bottom-nav-tab" id="bnTabAdmin" data-page="admin" onclick="showPage('admin', document.getElementById('tab-admin'))" style="display:none">
-    <span class="bn-icon">⚙️</span>
+    <svg class="ico"><use href="#ico-gear"/></svg>
     <span class="bn-label">Admin</span>
   </button>
 </div>
