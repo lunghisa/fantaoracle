@@ -4611,6 +4611,27 @@
           </div>
         </div>
 
+        <!-- Pupilli / Esclusi -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px">
+          <div class="admin-field" style="margin-bottom:0">
+            <label class="admin-field-label">📌 PUPILLI · li voglio comunque</label>
+            <div style="display:flex;gap:6px">
+              <input class="admin-field-input" id="astaPupilloInput" type="text" placeholder="Cerca giocatore" list="astaPrefDatalist" autocomplete="off">
+              <button class="admin-btn" style="flex:0 0 auto;padding:8px 14px" onclick="addAstaPref('pupilli')">➕</button>
+            </div>
+            <div id="astaPupilliChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+          </div>
+          <div class="admin-field" style="margin-bottom:0">
+            <label class="admin-field-label">🚫 ESCLUSI · mai consigliarli</label>
+            <div style="display:flex;gap:6px">
+              <input class="admin-field-input" id="astaEsclusoInput" type="text" placeholder="Cerca giocatore" list="astaPrefDatalist" autocomplete="off">
+              <button class="admin-btn admin-btn-secondary" style="flex:0 0 auto;padding:8px 14px" onclick="addAstaPref('esclusi')">➕</button>
+            </div>
+            <div id="astaEsclusiChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+          </div>
+        </div>
+        <datalist id="astaPrefDatalist"></datalist>
+
         <!-- Classifica ruolo corrente -->
         <div style="margin-top:16px">
           <div class="admin-field-label" style="margin-bottom:6px" id="astaRecLabel">CONSIGLIATI ORA</div>
@@ -9805,7 +9826,15 @@ let astaState = {
   budget: 500,
   needs: { P: 3, D: 8, C: 8, A: 6 },
   acquisti: [], // { name, team, role, prezzo }
+  pupilli: [],  // { name, team } — da includere comunque nella Rosa Ideale
+  esclusi: [],  // { name, team } — mai consigliati
 };
+
+function astaListMatch(list, p) {
+  return (list || []).some(e =>
+    normTeamName(e.team) === normTeamName(p.team) &&
+    rosterNormalizeName(e.name) === rosterNormalizeName(p.name));
+}
 
 function loadAstaState() {
   try {
@@ -9892,25 +9921,34 @@ function astaBuildRosaIdeale() {
       // dello slot dopo (e viceversa: lo sforo di un ripiego lo abbassa),
       // invece di restare congelati fino al prossimo acquisto reale.
       let carry = 0;
+      // I pupilli non ancora acquistati occupano gli slot per primi (dal più
+      // grande), a prescindere dal prezzo: sono scelte dell'utente, non del
+      // modello. Il carry assorbe la differenza col target come per gli altri.
+      const pinnedQueue = pool.filter(p => p._pupillo);
       targets.forEach(baseTp => {
         const tp = Math.max(1, baseTp + carry);
-        // il giocatore più forte (fantamedia corretta dalla forma) che sta nel prezzo
-        let best = null;
-        pool.forEach(p => {
-          if (used.has(key(p)) || p._q > tp) return;
-          if (!best || p._fm > best._fm) best = p;
-        });
-        if (!best) { // nessuno in quella fascia: ripiega sul più economico libero
+        let best = null, pinned = false;
+        if (pinnedQueue.length) {
+          best = pinnedQueue.shift();
+          pinned = true;
+        } else {
+          // il giocatore più forte (fantamedia corretta dalla forma) che sta nel prezzo
           pool.forEach(p => {
-            if (used.has(key(p))) return;
-            if (!best || p._q < best._q) best = p;
+            if (used.has(key(p)) || p._q > tp) return;
+            if (!best || p._fm > best._fm) best = p;
           });
+          if (!best) { // nessuno in quella fascia: ripiega sul più economico libero
+            pool.forEach(p => {
+              if (used.has(key(p))) return;
+              if (!best || p._q < best._q) best = p;
+            });
+          }
         }
         if (best) used.add(key(best));
         carry = best ? (tp - best._q) : 0;
         // Se il ripiego costa più del target, il budget del ruolo non basta per
         // quello slot: va segnalato, non spacciato per un consiglio in fascia.
-        slots.push({ acquired: false, target: best, targetPrice: tp, overBudget: !!(best && best._q > tp) });
+        slots.push({ acquired: false, target: best, targetPrice: tp, overBudget: !!(best && best._q > tp), pinned });
       });
     }
     rosa[r] = { slots, budget: budgets[r] };
@@ -10032,9 +10070,11 @@ function astaRankCandidates(role, limit) {
     const a1 = bought.find(a => a.role === 'A');
     first1Team = a1 ? normTeamName(a1.team) : null;
   }
+  const titSigListone = titolaritaSignalsListone();
   const candidates = (listone.players || [])
     .filter(p => p.role === role)
     .filter(p => !bought.some(b => normTeamName(b.team) === normTeamName(p.team) && rigoristaNameMatches(p.name, b.name)))
+    .filter(p => !astaListMatch(astaState.esclusi, p))
     .map(p => {
       const rawQ = p.quotazione || p.quotation || 0;
       const q = Math.max(1, rawQ);
@@ -10070,7 +10110,8 @@ function astaRankCandidates(role, limit) {
         else if (role === 'A') calComp = astaAtkComplement(first1Team, normTeamName(p.team), defRatings);
       }
       const fm = baseFm * (1 + formaAdj) * calMult;
-      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _fmWeight: fmWeight, _pgv: pgv, _gkCal: calScore, _gkComp: calComp, _q: q, _value: fm / q, _hasQuot: rawQ > 0 });
+      const tit = titSigListone[rosterNormalizeName(p.name) + '|' + normTeamName(p.team)] || null;
+      return Object.assign({}, p, { _fm: fm, _baseFm: baseFm, _formaAdj: formaAdj, _fmWeight: fmWeight, _pgv: pgv, _gkCal: calScore, _gkComp: calComp, _q: q, _value: fm / q, _hasQuot: rawQ > 0, _pupillo: astaListMatch(astaState.pupilli, p), _tit: tit });
     })
     .filter(p => p._hasQuot)
     // Ordino per qualità attesa, non per rapporto qualità/prezzo: senza
@@ -10078,7 +10119,7 @@ function astaRankCandidates(role, limit) {
     // prezzo va da 1 a 35, quindi fm/q premierebbe sempre i giocatori da 1
     // credito — inutile in asta. La quotazione è il segnale di mercato, e la
     // forma preseason differenzia chi sta dentro la stessa fascia di prezzo.
-    .sort((a, b) => (b._fm - a._fm) || (b._value - a._value));
+    .sort((a, b) => ((b._pupillo ? 1 : 0) - (a._pupillo ? 1 : 0)) || (b._fm - a._fm) || (b._value - a._value));
   return candidates.slice(0, limit || 10);
 }
 
@@ -10147,6 +10188,50 @@ function removeAstaAcquisto(idx) {
   renderPianoAsta();
 }
 
+// ---- PUPILLI / ESCLUSI ----
+function astaParsePlayerInput(val) {
+  const sepIdx = (val || '').lastIndexOf(' · ');
+  if (sepIdx === -1) return null;
+  const name = val.slice(0, sepIdx).trim();
+  const team = val.slice(sepIdx + 3).trim();
+  return (name && team) ? { name, team } : null;
+}
+
+function addAstaPref(kind) { // 'pupilli' | 'esclusi'
+  const inputId = kind === 'pupilli' ? 'astaPupilloInput' : 'astaEsclusoInput';
+  const el = document.getElementById(inputId);
+  const parsed = astaParsePlayerInput(el ? el.value : '');
+  if (!parsed) {
+    showAdminFeedback('Asta', '❌ Seleziona un giocatore dalla tendina (formato NOME · Squadra).', 'error');
+    return;
+  }
+  // Un giocatore non può essere insieme pupillo ed escluso: l'ultimo vince.
+  const other = kind === 'pupilli' ? 'esclusi' : 'pupilli';
+  astaState[other] = astaState[other].filter(e =>
+    !(rosterNormalizeName(e.name) === rosterNormalizeName(parsed.name) && normTeamName(e.team) === normTeamName(parsed.team)));
+  if (!astaListMatch(astaState[kind], parsed)) astaState[kind].push(parsed);
+  saveAstaState();
+  el.value = '';
+  renderPianoAsta();
+}
+
+function removeAstaPref(kind, idx) {
+  astaState[kind].splice(idx, 1);
+  saveAstaState();
+  renderPianoAsta();
+}
+
+function refreshAstaPrefDatalist() {
+  const dl = document.getElementById('astaPrefDatalist');
+  if (!dl) return;
+  dl.innerHTML = (listone.players || [])
+    .filter(p => p && p.name)
+    .slice()
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    .map(p => `<option value="${escapeHtmlSafe(p.name)} · ${escapeHtmlSafe(p.team)}"></option>`)
+    .join('');
+}
+
 // Conferma inline a doppio clic invece del confirm() nativo: Chrome può
 // sopprimere i dialoghi ("impedisci altre finestre di dialogo") e in quel
 // caso confirm() risponde subito false — il tasto sembrerebbe morto.
@@ -10192,6 +10277,18 @@ function renderPianoAsta() {
   const roleSel = document.getElementById('astaBuyRole');
   if (roleSel && phase) roleSel.value = phase;
 
+  // Pupilli / Esclusi: datalist su tutto il listone + chips
+  refreshAstaPrefDatalist();
+  const renderPrefChips = (kind, elId) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = astaState[kind].map((e, i) =>
+      `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:3px 10px;font-size:12px">${escapeHtmlSafe(e.name)} <span style="color:var(--muted);font-size:10px">${escapeHtmlSafe(e.team)}</span> <button onclick="removeAstaPref('${kind}',${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0;line-height:1">×</button></span>`
+    ).join('') || `<span style="font-size:11px;color:var(--muted)">Nessuno</span>`;
+  };
+  renderPrefChips('pupilli', 'astaPupilliChips');
+  renderPrefChips('esclusi', 'astaEsclusiChips');
+
   const statusBar = document.getElementById('astaStatusBar');
   if (statusBar) {
     statusBar.innerHTML = `
@@ -10225,8 +10322,10 @@ function renderPianoAsta() {
           <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:6px;background:${i===0?'rgba(245,197,66,0.08)':'var(--surface2)'};border:1px solid ${i===0?'rgba(245,197,66,0.3)':'var(--border)'};margin-bottom:3px">
             <div style="display:flex;align-items:center;gap:8px;min-width:0">
               <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:11px;width:14px;flex-shrink:0">${i+1}</span>
+              ${p._pupillo ? `<span title="Pupillo: lo vuoi comunque" style="font-size:11px;flex-shrink:0">📌</span>` : ''}
               <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtmlSafe(p.name)}</span>
               <span style="font-size:11px;color:var(--muted);flex-shrink:0">${escapeHtmlSafe(p.team)}</span>
+              ${p._tit ? `<span title="${titLabel(p._tit.status)} — ${escapeHtmlSafe(p._tit.newsTitle || '')}" style="font-size:10px;flex-shrink:0">${titEmoji(p._tit.status)}</span>` : ''}
               ${p.rigorista ? `<span title="Rigorista designato" style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;flex-shrink:0">RIG</span>` : ''}
               ${p._formaAdj ? `<span style="font-size:10px;flex-shrink:0;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}
               ${p._fmWeight ? `<span title="Fantamedia reale pesata sulle presenze" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--oracle);flex-shrink:0">FM ${(p.fanta_media || p.fmReal).toFixed(1)}${p._pgv ? `·${p._pgv}g` : ''}</span>` : ''}
@@ -10262,7 +10361,7 @@ function renderPianoAsta() {
           const squadra = t ? escapeHtmlSafe(t.team) : 'nessun candidato';
           const rig = (t && t.rigorista) ? ` <span style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;vertical-align:middle">RIG</span>` : '';
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;background:var(--surface);border:1px dashed ${s.overBudget ? 'rgba(255,140,66,0.4)' : 'rgba(255,255,255,0.12)'};margin-bottom:4px">
-            <div style="font-size:13px;color:var(--text)">${s.overBudget ? '⚠️' : '🎯'} ${nome}${rig} <span style="color:var(--muted);font-size:11px">${squadra}</span></div>
+            <div style="font-size:13px;color:var(--text)">${s.pinned ? '📌' : (s.overBudget ? '⚠️' : '🎯')} ${nome}${rig} <span style="color:var(--muted);font-size:11px">${squadra}</span></div>
             <div style="font-family:'DM Mono',monospace;font-size:12px;color:${s.overBudget ? 'var(--orange)' : 'var(--muted)'}">${s.overBudget ? `costa ${t._q}, budget ~${s.targetPrice}` : `~${s.targetPrice} cr${t ? ` <span style="opacity:0.7">(q ${t._q})</span>` : ''}`}</div>
           </div>`;
         }).join('');
@@ -11399,6 +11498,51 @@ function titLabel(status) {
   return status === 'in' ? 'Verso la titolarità'
     : status === 'doubt' ? 'In ballottaggio / dubbio'
     : status === 'out' ? 'Verso la panchina' : '';
+}
+
+// Variante su TUTTO il listone (per il Piano Asta): stessa euristica di
+// getTitolaritaSignals ma sul pool completo invece che sulla rosa. Chiave:
+// nome+squadra normalizzati (i cognomi si ripetono tra squadre diverse).
+let _titListoneCache = { sig: {}, key: null };
+function titolaritaSignalsListone() {
+  const key = (newsState.lastUpdate ? newsState.lastUpdate.getTime() : 0)
+    + '|' + ((listone.players || []).length);
+  if (_titListoneCache.key === key) return _titListoneCache.sig;
+  const result = {};
+  const pool = (listone.players || []).filter(p => p && p.name);
+  if (pool.length && newsState.items && newsState.items.length) {
+    const idx = pool.map(p => {
+      const parts = p.name.trim().split(/\s+/).filter(w => w.length > 2);
+      const surname = normWords(parts.length ? parts[parts.length - 1] : p.name);
+      return { player: p, surname, key: rosterNormalizeName(p.name) + '|' + normTeamName(p.team) };
+    }).filter(x => x.surname.length >= 4);
+    const rank = { out: 3, doubt: 2, in: 1 };
+    newsState.items.forEach(news => {
+      if (!['formazioni', 'consigli', 'infortuni'].includes(news.category)) return;
+      const hay = normWords((news.title || '') + '  ' + (news.description || ''));
+      if (!hay) return;
+      idx.forEach(({ player, surname, key: pk }) => {
+        let pos = hay.indexOf(surname);
+        while (pos !== -1) {
+          const win = hay.substring(Math.max(0, pos - 70), pos + surname.length + 70);
+          let status = null;
+          if (TITOLARITA_KEYWORDS.out.some(k => win.includes(k))) status = 'out';
+          else if (TITOLARITA_KEYWORDS.doubt.some(k => win.includes(k))) status = 'doubt';
+          else if (TITOLARITA_KEYWORDS.in.some(k => win.includes(k))) status = 'in';
+          if (status) {
+            const prev = result[pk];
+            if (!prev || rank[status] > rank[prev.status]) {
+              result[pk] = { status, newsTitle: news.title };
+            }
+          }
+          pos = hay.indexOf(surname, pos + surname.length);
+        }
+      });
+    });
+  }
+  _titListoneCache.sig = result;
+  _titListoneCache.key = key;
+  return result;
 }
 
 
