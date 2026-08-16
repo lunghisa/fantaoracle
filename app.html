@@ -11869,7 +11869,14 @@ function renderPlanBanner() {
   if (!box) return;
   const st = getTrialState();
   if (st.plan === 'admin' || st.plan === 'month' || st.plan === 'year') {
-    box.innerHTML = '<div class="mng-empty">Nessun piano da scegliere: sei già al completo. 👑</div>';
+    // L'admin ha accesso completo e quindi non avrebbe niente da comprare:
+    // ma senza un bottone non c'e modo di collaudare il giro del pagamento
+    // dal sito vero. Compare solo in fase di prova (PAGAMENTI_ATTIVI false)
+    // e sparisce da solo il giorno che si apre al pubblico.
+    const provaAdmin = (st.plan === 'admin' && pagamentiAperti() && !PAGAMENTI_ATTIVI)
+      ? '<div style="margin-top:12px"><button class="mng-plan-btn" onclick="avviaPagamento(this)">🧪 Prova il pagamento (sandbox)</button></div>'
+      : '';
+    box.innerHTML = '<div class="mng-empty">Nessun piano da scegliere: sei già al completo. 👑</div>' + provaAdmin;
     return;
   }
   const interest = getLocalPlanInterest();
