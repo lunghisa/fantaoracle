@@ -11970,7 +11970,7 @@ function closeTrialGate() {
 // nessuno finisce su un pagamento che non e ancora pronto. L'admin invece
 // vede sempre il bottone vero: serve a provare il giro completo sul sito
 // live mentre gli altri restano sulla lista d'attesa.
-const PAGAMENTI_ATTIVI = false;
+const PAGAMENTI_ATTIVI = true;
 function pagamentiAperti() {
   return PAGAMENTI_ATTIVI || !!(currentUser && currentUser.is_admin);
 }
