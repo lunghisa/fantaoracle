@@ -4102,41 +4102,30 @@
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)">CARICA LA TUA LEGA</div>
-          <div style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">
-            Esporta il file della lega da <strong style="color:var(--text)">Fantacalcio.it</strong> e trascinalo qui, oppure scegli un file.
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.55">
+            Esporta il file della lega da <strong style="color:var(--text)">Fantacalcio.it</strong> o
+            <strong style="color:var(--text)">Leghe Fantacalcio</strong> e trascinalo qui, oppure scegli un file —
+            <a href="#" onclick="openImportHelpModal();return false"
+               style="color:var(--oracle);text-decoration:underline;text-underline-offset:2px">istruzioni per esportare</a>
           </div>
         </div>
         <span id="listinoBadge" class="listino-badge" style="display:none">LEGA · <span>0</span> giocatori</span>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button onclick="document.getElementById('listinoUploadInput').click()"
-                style="flex:1;min-width:240px;padding:16px 22px;background:var(--gold);color:#000;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"
+                style="padding:11px 20px;background:var(--gold);color:#000;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;border:none;border-radius:10px;cursor:pointer;transition:background 0.2s"
                 onmouseover="this.style.background='#e8a800'" onmouseout="this.style.background='var(--gold)'">
           📂 SCEGLI FILE
         </button>
-        <button onclick="openImportHelpModal()"
-                style="padding:14px 16px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:10px;cursor:pointer"
-                onmouseover="this.style.borderColor='var(--oracle)';this.style.color='var(--oracle)'"
-                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-          Come esporto?
-        </button>
-        <button onclick="document.getElementById('competizioneUploadInput').click()"
-                style="padding:14px 16px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s"
-                onmouseover="this.style.borderColor='var(--oracle)';this.style.color='var(--oracle)'"
-                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"
-                title="Calendari di campionato, coppa e altre competizioni della tua lega">
-          📅 Calendari
-        </button>
+        <span style="font-size:11px;color:var(--muted);letter-spacing:0.5px">.xlsx · .xls · .csv</span>
         <input type="file" id="listinoUploadInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleListinoUpload(event)">
         <input type="file" id="calendarioUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCalendarioUpload(event)">
         <input type="file" id="competizioneUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCompetizioneUpload(event)">
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:10px;letter-spacing:0.5px;text-align:center">
-        Formati supportati: .xlsx, .xls, .csv
-      </div>
-      <!-- Quali calendari sono gia dentro: senza, non c'e modo di sapere se
-           un import e andato a buon fine se non aprendo la scheda Oracle. -->
-      <div id="calendariCaricati" style="margin-top:12px"></div>
+      <!-- Una riga per lega, coi suoi calendari a fianco e il bottone per
+           aggiungerne: il caricamento dei calendari e per-lega, quindi il
+           comando sta accanto alla lega a cui si riferisce, non in generale. -->
+      <div id="legheImportate" style="margin-top:16px"></div>
     </div>
 
   </div>
@@ -6608,28 +6597,60 @@ function selezionaCompetizione(leagueId, nome) {
   showToast('🏅 ' + nome);
 }
 
-// Elenco dei calendari importati, sotto il riquadro di caricamento.
-// Ordinati come arrivano: campionato per primo, poi coppa, poi le altre.
+// Carica un calendario dentro una lega precisa. Se non e quella attiva ci si
+// sposta prima: i calendari sono salvati per lega, caricarne uno "da fuori"
+// lo scriverebbe nella lega sbagliata senza dirlo.
+function caricaCalendarioPerLega(leagueId) {
+  if (leagueId && leagueId !== activeLeagueId) {
+    switchToLeague(leagueId);
+    showToast('Lega attiva: ' + (leagues.find(l => l.id === leagueId) || {}).name);
+  }
+  const input = document.getElementById('competizioneUploadInput');
+  if (input) input.click();
+}
+
+// Una riga per lega, coi suoi calendari a fianco e il bottone per aggiungerne.
+// Prima l'elenco era globale e non si capiva a quale lega appartenessero.
 function renderCalendariCaricati() {
-  const box = document.getElementById('calendariCaricati');
+  const box = document.getElementById('legheImportate');
   if (!box) return;
-  const lista = loadCompetizioni();
-  if (lista.length === 0) {
-    box.innerHTML = '<div style="font-size:11px;color:var(--muted);text-align:center;opacity:.8">'
-      + 'Nessun calendario caricato. Serve a far sapere all\'Oracle contro chi giochi.</div>';
+
+  if (!leagues || leagues.length === 0) {
+    box.innerHTML = '<div style="font-size:11.5px;color:var(--muted);opacity:.8;text-align:center">'
+      + 'Nessuna lega ancora. Carica il file della tua lega qui sopra.</div>';
     return;
   }
-  box.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">'
-    + lista.map(c => {
-        const giornate = new Set((c.partite || []).map(p => p.giornataLega)).size;
-        const gg = (c.partite || []).map(p => p.giornataSerieA).filter(n => n > 0);
-        const arco = gg.length ? Math.min.apply(null, gg) + 'ª–' + Math.max.apply(null, gg) + 'ª di Serie A' : '';
-        return '<span title="' + escapeAttr(giornate + ' giornate · ' + arco) + '" '
-          + 'style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text);background:rgba(29,185,84,0.10);border:1px solid rgba(29,185,84,0.30);border-radius:999px;padding:5px 11px">'
-          + '<span style="color:var(--green)">✓</span>' + escapeHtml(c.nome)
-          + '<span style="color:var(--muted)">· ' + giornate + ' giornate</span></span>';
-      }).join('')
-    + '</div>';
+
+  const compsDi = (id) => {
+    try {
+      const raw = localStorage.getItem(COMPETIZIONI_STORAGE_KEY + '__' + id);
+      const v = raw ? JSON.parse(raw) : null;
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  };
+
+  box.innerHTML = leagues.map(l => {
+    const comps = compsDi(l.id);
+    const chip = comps.length
+      ? comps.map(c => {
+          const g = new Set((c.partite || []).map(p => p.giornataLega)).size;
+          const sa = (c.partite || []).map(p => p.giornataSerieA).filter(n => n > 0);
+          const arco = sa.length ? Math.min.apply(null, sa) + 'ª–' + Math.max.apply(null, sa) + 'ª di Serie A' : '';
+          return '<span title="' + escapeAttr(g + ' giornate · ' + arco) + '" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text);background:rgba(29,185,84,0.10);border:1px solid rgba(29,185,84,0.30);border-radius:999px;padding:4px 10px;white-space:nowrap">'
+            + '<span style="color:var(--green)">✓</span>' + escapeHtml(c.nome) + '</span>';
+        }).join('')
+      : '<span style="font-size:11px;color:var(--muted);opacity:.75">nessun calendario</span>';
+
+    return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--border)">'
+      + '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:15px;letter-spacing:1.5px;color:' + (l.id === activeLeagueId ? 'var(--gold)' : 'var(--text)') + ';min-width:120px">'
+      + escapeHtml(nomeLegaVisibile(l)) + '</span>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1">' + chip + '</div>'
+      + '<button onclick="caricaCalendarioPerLega(\'' + escapeAttr(l.id) + '\')" '
+      + 'title="Aggiungi un calendario a ' + escapeAttr(nomeLegaVisibile(l)) + '" '
+      + 'style="padding:7px 12px;background:transparent;color:var(--muted);font-family:\'DM Sans\',sans-serif;font-size:12px;border:1px solid var(--border);border-radius:9px;cursor:pointer;white-space:nowrap">'
+      + '📅 Calendari</button>'
+      + '</div>';
+  }).join('');
 }
 
 // Aggiorna i punti che mostrano le competizioni. Non c'e piu un selettore in
