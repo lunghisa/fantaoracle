@@ -7793,8 +7793,9 @@ function extractLeagueNameFromFilename(filename) {
   // finiva per contenere il timestamp o ripiegava su "La mia lega".
   n = n.replace(/[_\s-]*rosters?[_\s-]*\d*$/i, '');
   n = n.replace(/[_\s-]*calendario[_\s-]*/i, '');
-  n = n.replace(/^fanta[_\s-]+/i, '');
   n = n.replace(/[_\s-]+\d{6,}$/g, '');   // timestamp in coda
+  // NB: "fanta" in testa NON si toglie. Sembra un prefisso della piattaforma,
+  // ma nella lega di prova fa parte del nome vero: "Fanta Molnar".
   // pulizia residui: anche apici e parentesi, che capitano nei nomi scaricati
   n = n.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
   if (!n) return '';
