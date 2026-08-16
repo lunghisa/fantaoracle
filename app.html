@@ -8219,6 +8219,40 @@ window.initSupabase = initSupabase;
   else boot();
 })();
 
+// === Registrazione diretta dalla landing ===
+// Le CTA "Prova gratis" della landing puntano a /app?signup=1: chi arriva da lì
+// ha già deciso di iscriversi, e farlo passare da splash → ACCEDI → REGISTRATI
+// gli costa due click di troppo. Qui si apre il modal già sulla scheda giusta.
+// Se invece la sessione c'è, non si tocca niente: pensa autoEnterOnLoad a
+// portarlo dentro, e il parametro viene semplicemente ignorato.
+(function signupIntentFromLanding() {
+  if (!/[?&]signup=1(&|$)/.test(window.location.search || '')) return;
+  const boot = () => {
+    if (window._oauthReturn) return; // il ritorno OAuth ha la sua gestione
+    let waited = 0;
+    const tick = () => {
+      if (document.body.classList.contains('app-ready')) return; // già entrato
+      if (currentSession) return;                                // ha una sessione valida
+      if (waited >= 1200) {
+        // Nessuna sessione dopo l'attesa: è un utente nuovo, apri la registrazione.
+        const modal = document.getElementById('authModal');
+        if (modal && !modal.classList.contains('show')) {
+          openAuthModal();
+          if (typeof switchAuthTab === 'function') switchAuthTab('signup');
+        }
+        // Pulisci l'URL: a un refresh deve ripartire lo splash normale.
+        try { window.history.replaceState(null, '', window.location.pathname); } catch (e) {}
+        return;
+      }
+      waited += 200;
+      setTimeout(tick, 200);
+    };
+    setTimeout(tick, 200);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
 // Garantisce che il client sia pronto. Aspetta fino a 5 secondi.
 async function ensureSupabaseReady() {
   if (supabaseClient) return supabaseClient;
