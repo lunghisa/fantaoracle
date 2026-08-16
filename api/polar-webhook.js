@@ -47,15 +47,22 @@ async function leggiCorpoGrezzo(req) {
 // Standard Webhooks: si firma "{id}.{timestamp}.{corpo}" in HMAC-SHA256.
 // Il segreto puo essere scritto in due modi a seconda di come lo si e
 // impostato: proviamo entrambe le interpretazioni dello stesso segreto.
-function chiaviCandidate(secret) {
-  const pulito = secret.startsWith('whsec_') ? secret.slice(6) : secret;
-  const chiavi = [Buffer.from(pulito, 'utf8')];
-  try {
-    const decodificato = Buffer.from(pulito, 'base64');
-    if (decodificato.length > 0 && decodificato.toString('base64').replace(/=+$/, '') === pulito.replace(/=+$/, '')) {
-      chiavi.push(decodificato);
-    }
-  } catch (e) { /* non era base64 */ }
+function chiaviCandidate(secretRaw) {
+  // trim(): un copia-incolla dall'interfaccia porta con se spazi o a capo
+  // invisibili, e un solo byte di troppo cambia tutta la firma.
+  const secret = String(secretRaw).trim();
+  const senza = secret.startsWith('whsec_') ? secret.slice(6) : secret;
+  const chiavi = [];
+  const aggiungi = (buf, nome) => { if (buf && buf.length) chiavi.push({ buf, nome }); };
+
+  // Lo standard dice: togli il prefisso, decodifica da base64. Ma le
+  // implementazioni divergono, quindi si provano tutte le letture
+  // ragionevoli dello STESSO segreto. Non indebolisce niente: chi non ha
+  // il segreto non ne indovina nessuna.
+  try { aggiungi(Buffer.from(senza,  'base64'), 'base64-senza-prefisso'); } catch (e) {}
+  aggiungi(Buffer.from(senza,  'utf8'),   'utf8-senza-prefisso');
+  aggiungi(Buffer.from(secret, 'utf8'),   'utf8-completo');
+  try { aggiungi(Buffer.from(secret, 'base64'), 'base64-completo'); } catch (e) {}
   return chiavi;
 }
 
@@ -65,25 +72,39 @@ function confrontoSicuro(a, b) {
   return crypto.timingSafeEqual(ba, bb);
 }
 
+// Ritorna il nome della lettura del segreto che ha funzionato, oppure null.
 function firmaValida(raw, headers, secret) {
   const id        = headers['webhook-id'];
   const timestamp = headers['webhook-timestamp'];
   const firme     = headers['webhook-signature'];
-  if (!id || !timestamp || !firme) return false;
+  if (!id || !timestamp || !firme) return null;
 
   // Antireplay: un avviso vecchio intercettato non deve poter essere rigiocato.
   const eta = Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp));
-  if (!Number.isFinite(eta) || eta > TOLLERANZA_SECONDI) return false;
+  if (!Number.isFinite(eta) || eta > TOLLERANZA_SECONDI) return null;
 
   const daFirmare = `${id}.${timestamp}.${raw}`;
-  const attese = chiaviCandidate(secret)
-    .map(k => crypto.createHmac('sha256', k).update(daFirmare).digest('base64'));
+  const attese = chiaviCandidate(secret).map(k => ({
+    nome: k.nome,
+    firma: crypto.createHmac('sha256', k.buf).update(daFirmare).digest('base64'),
+  }));
 
   // L'header puo contenere piu firme separate da spazio: "v1,xxx v1,yyy"
-  return String(firme).split(' ').some(parte => {
-    const valore = parte.includes(',') ? parte.split(',')[1] : parte;
-    return attese.some(a => confrontoSicuro(a, valore));
-  });
+  const ricevute = String(firme).split(' ')
+    .map(p => (p.includes(',') ? p.split(',')[1] : p));
+
+  for (const a of attese) {
+    for (const r of ricevute) {
+      if (confrontoSicuro(a.firma, r)) return a.nome;
+    }
+  }
+  // Nessuna corrispondenza: si restituiscono i prefissi per la diagnosi,
+  // mai le firme intere.
+  firmaValida.ultimaDiagnosi = {
+    calcolate: attese.map(a => a.nome + '=' + a.firma.slice(0, 10)),
+    ricevute: ricevute.map(r => r.slice(0, 10)),
+  };
+  return null;
 }
 
 // ---------- Supabase (chiave di servizio) ----------
@@ -189,8 +210,9 @@ export default async function handler(req, res) {
   }
 
   const { testo: raw, origine } = await leggiCorpoGrezzo(req);
+  const letturaOk = firmaValida(raw, req.headers, secret);
 
-  if (!firmaValida(raw, req.headers, secret)) {
+  if (!letturaOk) {
     // Diagnostica volutamente prolissa: senza queste righe, capire perche
     // una firma non torna richiede tentativi alla cieca. Non si stampa mai
     // ne il segreto ne la firma per intero.
@@ -205,13 +227,15 @@ export default async function handler(req, res) {
       etaSecondi: h['webhook-timestamp']
         ? Math.abs(Math.floor(Date.now() / 1000) - Number(h['webhook-timestamp']))
         : null,
-      firmaRicevutaInizio: String(h['webhook-signature'] || '').slice(0, 12),
       formatoSegreto: secret.startsWith('whsec_') ? 'whsec_' : 'testo',
+      segretoHaSpaziEstremi: secret !== secret.trim(),
+      lunghezzaSegreto: secret.trim().length,
+      confronto: firmaValida.ultimaDiagnosi || null,
     }));
     res.status(401).end();
     return;
   }
-  console.log('[webhook] firma ok (corpo letto da:', origine + ')');
+  console.log('[webhook] firma OK — corpo da:', origine, '· segreto letto come:', letturaOk);
 
   let evento;
   try { evento = JSON.parse(raw); }
