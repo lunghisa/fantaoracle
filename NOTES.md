@@ -225,7 +225,27 @@ Se a inizio stagione l'import smette di funzionare, la prima cosa da guardare e
 se l'export ha cambiato struttura: le funzioni sono `sembraExportRose` e
 `traduciExportRose` in `app.html`.
 
-## 4. La casella di posta
+## 4. I calendari delle competizioni
+
+Leghe Fantacalcio esporta **un calendario per competizione** (campionato, coppa,
+ecc.). Si caricano dal bottone **📅 Calendari** in fondo alla Dashboard, e sotto
+compare l'elenco di quelli importati.
+
+Ogni file dice a quale **giornata di Serie A** corrisponde ogni giornata di lega:
+e quella corrispondenza che permette all'Oracle di sapere contro chi si gioca.
+Nella lega di prova il campionato va 1:1 (giornate 1-38) mentre la coppa occupa
+le giornate **13-22** di Serie A.
+
+I due formati sono diversi: la coppa ha una colonna girone in piu (le colonne
+slittano) e righe `Riposa X` per chi sta fermo quel turno. Il lettore
+(`leggiCalendarioLega`) gestisce entrambi.
+
+La competizione in uso si sceglie dall'alberatura in **LE MIE LEGHE**.
+
+⚠️ **A inizio stagione i calendari vanno ricaricati**, come il listone: sono
+salvati per lega e riferiti alle giornate di quella stagione.
+
+## 5. La casella di posta
 
 `support@fantaoracle.ch` — creata il 16.08.2026 su **Infomaniak**, pacchetto
 **Starter** (1 indirizzo), **gratuito, durata 1 anno**.
@@ -237,7 +257,7 @@ restano indipendenti.
 L'indirizzo è quello dichiarato a Polar come contatto di supporto: se lo cambi
 qui, cambialo anche là, altrimenti i clienti scrivono a una casella morta.
 
-## 5. La prova gratuita e i prezzi
+## 6. La prova gratuita e i prezzi
 
 - `TRIAL_DAYS` in `app.html` (oggi 30 giorni) deve restare coerente con i testi
   della landing in `index.html`, che dicono "1 mese" in tre punti.
