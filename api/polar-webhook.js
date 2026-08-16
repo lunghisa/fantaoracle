@@ -25,16 +25,23 @@ export const config = { api: { bodyParser: false } };
 
 const TOLLERANZA_SECONDI = 5 * 60; // avvisi piu vecchi di 5 minuti: rifiutati
 
+// ATTENZIONE ALL'ORDINE. Il flusso va letto PRIMA di toccare req.body:
+// su Vercel accedere a req.body fa digerire il corpo alla piattaforma, e
+// il testo originale — l'unico su cui la firma torna — non e piu
+// recuperabile. Reinventarlo con JSON.stringify quasi funziona, ed e il
+// "quasi" che fa rifiutare i pagamenti veri.
 async function leggiCorpoGrezzo(req) {
-  if (typeof req.body === 'string') return req.body;
-  if (Buffer.isBuffer(req.body)) return req.body.toString('utf8');
   const chunks = [];
   try {
     for await (const chunk of req) chunks.push(chunk);
   } catch (e) { /* flusso gia consumato */ }
-  if (chunks.length) return Buffer.concat(chunks).toString('utf8');
-  // Ultima spiaggia: se la piattaforma ha gia digerito il corpo.
-  return req.body ? JSON.stringify(req.body) : '';
+  if (chunks.length) {
+    return { testo: Buffer.concat(chunks).toString('utf8'), origine: 'flusso' };
+  }
+  if (typeof req.body === 'string')  return { testo: req.body, origine: 'stringa' };
+  if (Buffer.isBuffer(req.body))     return { testo: req.body.toString('utf8'), origine: 'buffer' };
+  if (req.body)                      return { testo: JSON.stringify(req.body), origine: 'ricostruito' };
+  return { testo: '', origine: 'vuoto' };
 }
 
 // Standard Webhooks: si firma "{id}.{timestamp}.{corpo}" in HMAC-SHA256.
@@ -181,13 +188,30 @@ export default async function handler(req, res) {
     return;
   }
 
-  const raw = await leggiCorpoGrezzo(req);
+  const { testo: raw, origine } = await leggiCorpoGrezzo(req);
 
   if (!firmaValida(raw, req.headers, secret)) {
-    console.warn('[webhook] firma non valida: avviso ignorato');
+    // Diagnostica volutamente prolissa: senza queste righe, capire perche
+    // una firma non torna richiede tentativi alla cieca. Non si stampa mai
+    // ne il segreto ne la firma per intero.
+    const h = req.headers;
+    console.warn('[webhook] firma non valida — diagnosi:', JSON.stringify({
+      origineCorpo: origine,
+      lunghezzaCorpo: raw.length,
+      primi60: raw.slice(0, 60),
+      headerPresenti: Object.keys(h).filter(k => k.startsWith('webhook')),
+      idPresente: !!h['webhook-id'],
+      timestampPresente: !!h['webhook-timestamp'],
+      etaSecondi: h['webhook-timestamp']
+        ? Math.abs(Math.floor(Date.now() / 1000) - Number(h['webhook-timestamp']))
+        : null,
+      firmaRicevutaInizio: String(h['webhook-signature'] || '').slice(0, 12),
+      formatoSegreto: secret.startsWith('whsec_') ? 'whsec_' : 'testo',
+    }));
     res.status(401).end();
     return;
   }
+  console.log('[webhook] firma ok (corpo letto da:', origine + ')');
 
   let evento;
   try { evento = JSON.parse(raw); }
