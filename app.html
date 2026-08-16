@@ -3894,10 +3894,10 @@
       <div class="mng-plan best">
         <div class="mng-plan-name">STAGIONE INTERA</div>
         <div class="mng-plan-price">9.90 <span>CHF o EUR</span></div>
-        <button class="mng-plan-btn" onclick="registerPlanInterest('year')">Ti avviso</button>
+        <button class="mng-plan-btn" id="trialGateBuyBtn" onclick="pagamentiAperti() ? avviaPagamento(this) : registerPlanInterest('year')">Ti avviso</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Un prezzo solo, per tutta la stagione. Gli abbonamenti aprono a breve: lasciami l'interesse e ti scrivo io.</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Un prezzo solo, per tutta la stagione. Rinnovo automatico ogni anno, disdici quando vuoi.</div>
     <button class="profile-btn secondary" style="width:100%" onclick="closeTrialGate(); showPage('dashboard', document.getElementById('tab-dashboard'))">Torna alla Dashboard</button>
   </div>
 </div>
@@ -8248,6 +8248,43 @@ window.initSupabase = initSupabase;
   else boot();
 })();
 
+// === Rientro dal pagamento ===
+// Polar rimanda su /app?abbonamento=ok. L'attivazione vera arriva dal
+// webhook, che puo metterci qualche secondo: quindi si ricarica il profilo
+// un paio di volte invece di fidarsi del primo colpo, altrimenti l'utente
+// che ha appena pagato si vede ancora la schermata "prova finita".
+(function rientroDalPagamento() {
+  if (!/[?&]abbonamento=ok(&|$)/.test(window.location.search || '')) return;
+  try { window.history.replaceState(null, '', window.location.pathname); } catch (e) {}
+  const boot = () => {
+    let tentativi = 0;
+    const ricontrolla = async () => {
+      tentativi++;
+      try {
+        if (currentSession && currentSession.user && typeof loadUserProfile === 'function') {
+          await loadUserProfile(currentSession.user);
+        }
+      } catch (e) {}
+      const st = (typeof getTrialState === 'function') ? getTrialState() : null;
+      if (st && (st.plan === 'month' || st.plan === 'year')) {
+        if (typeof showToast === 'function') showToast('✅ Abbonamento attivo. Grazie!');
+        if (typeof closeTrialGate === 'function') closeTrialGate();
+        if (typeof renderDashboardManage === 'function') renderDashboardManage();
+        return;
+      }
+      if (tentativi < 6) { setTimeout(ricontrolla, 2000); return; }
+      // Pagamento fatto ma attivazione non ancora vista: meglio dirlo che
+      // lasciarlo davanti a una schermata che sembra non aver capito.
+      if (typeof showToast === 'function') {
+        showToast('Pagamento ricevuto. L\'attivazione arriva entro un minuto: ricarica la pagina.');
+      }
+    };
+    setTimeout(ricontrolla, 1500);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
 // Garantisce che il client sia pronto. Aspetta fino a 5 secondi.
 async function ensureSupabaseReady() {
   if (supabaseClient) return supabaseClient;
@@ -11708,6 +11745,7 @@ function trialGateBlocks(pageId) {
 }
 function openTrialGate() {
   const m = document.getElementById('trialGateModal');
+  if (typeof aggiornaEtichettaPiano === 'function') aggiornaEtichettaPiano();
   if (m) m.classList.add('show');
 }
 function closeTrialGate() {
@@ -11716,6 +11754,52 @@ function closeTrialGate() {
 }
 
 // "Ti avviso": registra l'interesse (cloud se possibile, altrimenti locale)
+// ============================================================
+// PAGAMENTI (Polar)
+// ------------------------------------------------------------
+// Interruttore generale. Finche e false, il pubblico vede "Ti avviso" e
+// nessuno finisce su un pagamento che non e ancora pronto. L'admin invece
+// vede sempre il bottone vero: serve a provare il giro completo sul sito
+// live mentre gli altri restano sulla lista d'attesa.
+const PAGAMENTI_ATTIVI = false;
+function pagamentiAperti() {
+  return PAGAMENTI_ATTIVI || !!(currentUser && currentUser.is_admin);
+}
+
+// Il link di pagamento lo crea il SERVER, non questa pagina: e li che
+// l'identita di chi compra viene letta dal token e attaccata all'ordine.
+// Se lo costruisse il browser, chiunque potrebbe intestarlo a un altro.
+async function avviaPagamento(btnEl) {
+  if (!currentUser || !currentSession) {
+    showToast('Accedi per abbonarti');
+    if (typeof openAuthModal === 'function') openAuthModal();
+    return;
+  }
+  const etichetta = btnEl ? btnEl.textContent : '';
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Apro il pagamento…'; }
+  try {
+    const r = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + currentSession.access_token },
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.url) throw new Error(data.error || 'errore');
+    window.location.href = data.url;
+  } catch (e) {
+    console.error('[FantaOracle] checkout fallito:', e.message);
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = etichetta; }
+    showToast('❌ Pagamento non disponibile in questo momento. Riprova tra poco.');
+  }
+}
+
+// Il bottone del blocco "prova finita" e HTML statico: qui gli si mette
+// l'etichetta giusta a seconda che i pagamenti siano aperti o no.
+function aggiornaEtichettaPiano() {
+  const b = document.getElementById('trialGateBuyBtn');
+  if (!b) return;
+  b.textContent = pagamentiAperti() ? 'Abbonati — 9.90' : 'Ti avviso';
+}
+
 async function registerPlanInterest(plan) {
   try { localStorage.setItem('fantaoracle_plan_interest', JSON.stringify({ plan, at: new Date().toISOString() })); } catch (e) {}
   let cloudOk = false;
@@ -11778,7 +11862,7 @@ function renderTrialCard() {
     return;
   }
   box.innerHTML = '<div class="mng-trial-big" style="color:var(--oracle)">' + st.daysLeft + '</div>'
-    + '<div class="mng-trial-sub"><strong>' + (st.daysLeft === 1 ? 'ultimo giorno' : 'giorni rimasti') + ' di prova completa.</strong> Oracle e Arena inclusi: sfrutta la settimana per testare le previsioni sulla tua lega.</div>';
+    + '<div class="mng-trial-sub"><strong>' + (st.daysLeft === 1 ? 'ultimo giorno' : 'giorni rimasti') + ' di prova completa.</strong> Oracle e Arena inclusi: sfrutta il mese per testare le previsioni sulla tua lega.</div>';
 }
 function renderPlanBanner() {
   const box = document.getElementById('planBannerBody');
@@ -11789,9 +11873,11 @@ function renderPlanBanner() {
     return;
   }
   const interest = getLocalPlanInterest();
-  const btn = (plan, label) => interest && interest.plan === plan
-    ? '<button class="mng-plan-btn done" disabled>✓ Sei in lista</button>'
-    : '<button class="mng-plan-btn" onclick="registerPlanInterest(\'' + plan + '\')">Ti avviso</button>';
+  const btn = (plan, label) => pagamentiAperti()
+    ? '<button class="mng-plan-btn" onclick="avviaPagamento(this)">Abbonati — 9.90</button>'
+    : (interest && interest.plan === plan
+        ? '<button class="mng-plan-btn done" disabled>✓ Sei in lista</button>'
+        : '<button class="mng-plan-btn" onclick="registerPlanInterest(\'' + plan + '\')">Ti avviso</button>');
   box.innerHTML = `
     <div class="mng-plans-row">
       <div class="mng-plan best">
