@@ -1,2 +1,7 @@
 # La cartella dati (listone, calendario) resta locale/git: non va pubblicata sul sito
 dati/
+
+# Le migrazioni SQL restano in git ma NON sul web. Non contengono password,
+# ma descrivono il modello di sicurezza (RLS, trigger, chi puo scrivere cosa):
+# e la mappa di cosa e protetto, e non ha motivo di essere scaricabile.
+*.sql
