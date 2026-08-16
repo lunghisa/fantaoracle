@@ -225,6 +225,44 @@ originale — l'unico su cui la firma torna — non è più recuperabile.
 Ricostruirlo con `JSON.stringify` produce qualcosa di *quasi* identico, ed
 è il "quasi" che fa fallire la verifica.
 
+## 🔴 PROCEDURA: come si rimborsa un cliente
+
+Rimborsare i soldi **non chiude l'abbonamento**. Sono due azioni distinte, e
+saltare la seconda significa restituire il denaro lasciando il prodotto
+attivo — e lasciare in piedi un rinnovo automatico che riaddebitera l'anno
+dopo un cliente convinto di aver chiuso.
+
+**Fai sempre entrambe:**
+
+1. **Sales → Orders** → l'ordine → **Refund**
+   - l'importo proposto e al NETTO dell'imposta (es. 9.16 su 9.90): e giusto
+     cosi, il cliente riceve comunque 9.90. Non alzarlo.
+   - se c'e un'opzione **Revoke Benefits**, ATTIVALA: fa fare a Polar anche
+     il passo 2
+2. **Sales → Subscriptions** → l'abbonamento → **Cancel Subscription**
+
+Il passo 2 genera `subscription.revoked`, che il webhook gestisce e che
+chiude l'accesso. Verificato piu volte il 16/8/2026.
+
+Verifica finale a database:
+
+```sql
+select s.status, p.plan from public.subscriptions s
+  left join public.profiles p on p.id = s.user_id
+ where s.provider_ref = '<id abbonamento>';
+-- atteso: expired / free
+```
+
+## Nota: `order.refunded` non arriva sempre
+
+Il webhook gestisce anche `order.refunded` come rete di sicurezza, ma il
+16/8 quell'evento **non e stato consegnato** dopo un rimborso reale (nella
+lista Deliveries comparivano solo gli eventi `subscription.*`). Probabile
+legame con il flag `Revoke Benefits: False` sul rimborso.
+
+Quindi: **non contare su `order.refunded`.** La procedura affidabile e quella
+sopra, in due passi.
+
 ## ⚠️ Trappola trovata il 16/8: rimborsare NON toglie l'accesso
 
 Su Polar **rimborsare un ordine e revocare un abbonamento sono due azioni
