@@ -64,6 +64,32 @@ Finché `PAGAMENTI_ATTIVI` è `false`, il pubblico vede "Ti avviso" e solo
 l'admin vede il bottone di pagamento: serve a provare sul sito vero senza
 esporre nessun altro.
 
+## ⚠️ Trappola trovata il 16/8: come Polar firma i webhook
+
+Lo standard "Standard Webhooks" dice: togli il prefisso `whsec_` dal
+segreto e **decodificalo da base64**, poi firma con quei byte.
+
+**Polar non fa così.** Firma usando il **segreto intero, prefisso
+`whsec_` compreso, come testo semplice UTF-8.**
+
+Implementare la specifica alla lettera produce un webhook che rifiuta
+*tutti* i pagamenti veri — il caso peggiore, perché il cliente paga e non
+ottiene niente. Per questo `api/polar-webhook.js` prova tutte le letture
+ragionevoli dello stesso segreto invece di sceglierne una. Non indebolisce
+la sicurezza: chi non ha il segreto non ne indovina nessuna.
+
+Se un giorno i webhook smettono di funzionare, il log stampa quale
+lettura ha funzionato (`segreto letto come: ...`): è il primo posto da
+guardare.
+
+## Come si legge il corpo del messaggio
+
+Il corpo va letto **dal flusso, prima di toccare `req.body`**. Su Vercel
+accedere a `req.body` fa digerire il corpo alla piattaforma e il testo
+originale — l'unico su cui la firma torna — non è più recuperabile.
+Ricostruirlo con `JSON.stringify` produce qualcosa di *quasi* identico, ed
+è il "quasi" che fa fallire la verifica.
+
 ## Eventi webhook attesi
 
 `subscription.active`, `.cycled`, `.uncanceled`, `.resumed` → accesso attivo
