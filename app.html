@@ -5955,12 +5955,19 @@ function parseListinoWithSheetJS(data, fileName, opts) {
   // scelto, e restavano li per sempre perche il rinomina era nascosto.
   {
     const estratto = extractLeagueNameFromFilename(fileName);
-    const generico = /^(la mia lega|nuova lega|lega senza nome)$/i;
+    // Nome "d'ufficio": mai scelto da una persona. Oltre ai generici, anche
+    // quelli che contengono un timestamp — venivano da import fatti prima
+    // che l'estrattore conoscesse lo schema di Leghe Fantacalcio, e
+    // restavano li per sempre perche non sembravano generici.
+    const daSostituire = (nome) => !nome
+      || /^(la mia lega|nuova lega|lega senza nome)$/i.test(nome)
+      || /\d{6,}/.test(nome)
+      || /\brosters?\b/i.test(nome);
     const attuale = getLeagueName();
-    if (estratto && (!attuale || generico.test(attuale))) {
+    if (estratto && daSostituire(attuale)) {
       setLeagueName(estratto);
       const lg = leagues.find(l => l.id === activeLeagueId);
-      if (lg && (!lg.name || generico.test(lg.name))) {
+      if (lg && daSostituire(lg.name)) {
         lg.name = estratto;
         saveLeaguesRegistry();
         try { renderLeagueSwitcher(); } catch (e) {}
@@ -12477,7 +12484,10 @@ function renderArenaPage() {
   const userName = userEl ? userEl.textContent : 'FANTALLENATORE';
   const myTeam = (typeof getMyTeamName === 'function' && getMyTeamName()) || '';
   const title = document.getElementById('arenaTitle');
-  if (title) title.textContent = 'CIAO ' + userName + (myTeam ? ', ' + myTeam.toUpperCase() : '');
+  // Si saluta il fantallenatore, non la squadra: sono due cose diverse
+  // (l'allenatore e 'giongiahunter', la squadra 'GiongiaBomber'). La squadra
+  // ha gia il suo posto nella card dedicata.
+  if (title) title.textContent = 'CIAO ' + userName;
 
   // --- Oracle engine (silenzioso) per pick e scontro diretto ---
   let engineOk = false;
