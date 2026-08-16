@@ -7656,9 +7656,11 @@ function handleListinoDrop(event) {
 // 100. Le fonti fantacalcistiche hanno quota doppia perche sono quelle che
 // portano infortuni e titolarita, cioe le uniche che cambiano una formazione.
 const NEWS_FEEDS = [
-  // Fantacalcistiche — le piu utili, quota alta
-  { name: 'FantaMaster',   url: 'https://www.fantamaster.it/feed/',                              color: '#e74c3c', quota: 20 },
-  { name: 'SOS Fanta',     url: 'https://www.sosfanta.com/feed/',                                color: '#0073e6', quota: 20 },
+  // Fantacalcistiche — 'priority' garantisce che compaiano sempre e in
+  // maggioranza: si riservano loro i primi 30 posti dei 50 finali, prima
+  // ancora di guardare le altre.
+  { name: 'FantaMaster',   url: 'https://www.fantamaster.it/feed/',                              color: '#e74c3c', quota: 20, priority: true },
+  { name: 'SOS Fanta',     url: 'https://www.sosfanta.com/feed/',                                color: '#0073e6', quota: 20, priority: true },
   // Generaliste — contorno. Quote dimezzate il 16/8 su richiesta: portavano
   // troppo calciomercato. Insieme non superano 18 posti sui 50 finali, quindi
   // almeno due terzi della lista resta fantacalcistico.
@@ -7681,6 +7683,25 @@ const CORS_PROXIES = [
   url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
+// Le 20 squadre di Serie A, prese dallo stesso calendario che usa l'app:
+// cosi l'anno prossimo basta aggiornare il CSV e questo elenco segue.
+// Serve a riconoscere le notizie che NON riguardano il campionato italiano
+// (tipo Calafiori all'Arsenal): sono calcio, ma non cambiano una formazione
+// al fantacalcio, quindi finiscono in fondo.
+const SQUADRE_SERIE_A = ['Atalanta','Bologna','Cagliari','Como','Fiorentina','Frosinone','Genoa','Inter','Juventus','Lazio','Lecce','Milan','Monza','Napoli','Parma','Roma','Sassuolo','Torino','Udinese','Venezia'];
+// Nei titoli le squadre si chiamano quasi sempre in modo abbreviato: senza
+// queste, "Juve, Lucumi al J Medical" finiva tra le notizie estere.
+const SOPRANNOMI = ['Juve','nerazzurr\\w*','rossoner\\w*','bianconer\\w*','giallorss\\w*','giallorss','giallorossi','biancocelest\\w*','partenope\\w*','granata','viola','friulani','salentini','felsinei','scaligeri','dea\\b'];
+const RE_SERIE_A = new RegExp(
+  '\\b(' + SQUADRE_SERIE_A.join('|') + '|' + SOPRANNOMI.join('|') +
+  '|serie a|fantacalcio|giornata|probabili formazioni|coppa italia)\\b', 'i');
+
+function riguardaSerieA(item) {
+  // Le fonti fantacalcistiche parlano solo di Serie A: non serve indovinare.
+  if (item.priority) return true;
+  return RE_SERIE_A.test((item.title || '') + ' ' + (item.description || ''));
+}
+
 const NEWS_CACHE_KEY = 'fantaoracle_news_cache_v1';
 const NEWS_CACHE_TTL_MIN = 3;
 const NEWS_FETCH_TIMEOUT_MS = 8000;
@@ -7834,7 +7855,11 @@ async function fetchAllFeeds(silent) {
     if (r.status === 'fulfilled' && r.value.items.length > 0) {
       // Si prende solo la quota della fonte: le notizie sono gia ordinate
       // dalla piu recente, quindi tagliare in coda scarta le piu vecchie.
-      allItems = allItems.concat(r.value.items.slice(0, r.value.feed.quota || 10));
+      const prioritaria = !!r.value.feed.priority;
+      allItems = allItems.concat(
+        r.value.items.slice(0, r.value.feed.quota || 10)
+          .map(it => Object.assign({}, it, { priority: prioritaria }))
+      );
       loadedSources.push(r.value.feed);
     }
   });
@@ -7853,7 +7878,25 @@ async function fetchAllFeeds(silent) {
   allItems = allItems.filter(i => {
     const k = i.title.toLowerCase().substring(0, 60);
     if (seen.has(k)) return false; seen.add(k); return true;
-  }).slice(0, 50);
+  });
+
+  // Composizione della lista, invece del semplice "i 50 piu recenti".
+  // Ordinare solo per data non basta: le generaliste pubblicano in continuo
+  // e scalzerebbero comunque le fantacalcistiche, che escono a raffiche.
+  // Qui i posti si assegnano prima per importanza, poi si riordina per data.
+  const fanta      = allItems.filter(i => i.priority);
+  const serieAaltre = allItems.filter(i => !i.priority && riguardaSerieA(i));
+  const nonSerieA   = allItems.filter(i => !i.priority && !riguardaSerieA(i));
+
+  allItems = [
+    ...fanta.slice(0, 30),        // FantaMaster e SOS Fanta: sempre, e in maggioranza
+    ...serieAaltre.slice(0, 15),  // generaliste, ma solo se parlano di Serie A
+    ...nonSerieA.slice(0, 5),     // calcio estero: tollerato in coda, mai piu di 5
+  ].slice(0, 50);
+
+  // Riordino finale per data: la composizione e decisa, la lettura resta
+  // cronologica come uno si aspetta.
+  allItems.sort((a, b) => b.date - a.date);
   newsState.items = allItems; newsState.loadedSources = loadedSources;
   newsState.status = 'live'; newsState.lastUpdate = new Date();
   saveCache(allItems);
