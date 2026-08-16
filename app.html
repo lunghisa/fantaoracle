@@ -7702,8 +7702,15 @@ function extractLeagueNameFromFilename(filename) {
   n = n.replace(/^lista[_\s-]*calciatori[_\s-]*/i, '');
   n = n.replace(/^(classic|mantra)[_\s-]*/i, '');
   n = n.replace(/[_\s-]*(classic|mantra)[_\s-]*$/i, '');
-  // pulizia residui
-  n = n.replace(/^[_\s-]+|[_\s-]+$/g, '');
+  // Schema di Leghe Fantacalcio: "fanta-<lega>-rosters-<timestamp>" oppure
+  // "Calendario_<Competizione>-<lega>". Senza queste, il nome della lega
+  // finiva per contenere il timestamp o ripiegava su "La mia lega".
+  n = n.replace(/[_\s-]*rosters?[_\s-]*\d*$/i, '');
+  n = n.replace(/[_\s-]*calendario[_\s-]*/i, '');
+  n = n.replace(/^fanta[_\s-]+/i, '');
+  n = n.replace(/[_\s-]+\d{6,}$/g, '');   // timestamp in coda
+  // pulizia residui: anche apici e parentesi, che capitano nei nomi scaricati
+  n = n.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
   if (!n) return '';
   // sostituisci separatori con spazi
   n = n.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -12305,7 +12312,9 @@ function renderPlanBanner() {
         ${btn('year')}
       </div>
     </div>
-    <div class="mng-plans-note">Un prezzo solo, per tutta la stagione. Premi "Ti avviso" e ti scrivo appena si parte${currentUser ? '' : ' (accedi per lasciarmi la tua email)'}.</div>`;
+    <div class="mng-plans-note">${pagamentiAperti()
+        ? 'Un prezzo solo, per tutta la stagione. Rinnovo automatico ogni anno, disdici quando vuoi.'
+        : 'Un prezzo solo, per tutta la stagione. Premi "Ti avviso" e ti scrivo appena si parte' + (currentUser ? '' : ' (accedi per lasciarmi la tua email)') + '.'}</div>`;
 }
 
 // ============ ARENA — hub di giornata (dati reali dal motore esistente) ============
