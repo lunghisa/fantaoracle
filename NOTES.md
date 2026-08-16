@@ -202,7 +202,19 @@ Una fonte con **0 notizie è morta**, anche se risponde 200. Aggiungerne di
 nuove richiede due modifiche: `NEWS_FEEDS` in `app.html` **e** `ALLOWED_HOSTS`
 in `api/feed.js`. Se salti la seconda, il proxy la blocca.
 
-## 3. La prova gratuita e i prezzi
+## 3. La casella di posta
+
+`support@fantaoracle.ch` — creata il 16.08.2026 su **Infomaniak**, pacchetto
+**Starter** (1 indirizzo), **gratuito, durata 1 anno**.
+
+**Controlla ad agosto 2027 che non si rinnovi a pagamento** senza accorgertene.
+Il servizio mail è separato da quello di `milliemes.ch`, quindi i due progetti
+restano indipendenti.
+
+L'indirizzo è quello dichiarato a Polar come contatto di supporto: se lo cambi
+qui, cambialo anche là, altrimenti i clienti scrivono a una casella morta.
+
+## 4. La prova gratuita e i prezzi
 
 - `TRIAL_DAYS` in `app.html` (oggi 30 giorni) deve restare coerente con i testi
   della landing in `index.html`, che dicono "1 mese" in tre punti.
