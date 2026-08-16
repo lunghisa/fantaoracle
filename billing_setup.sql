@@ -1,5 +1,5 @@
 -- ============================================================
--- FantaOracle — Setup prova 7 giorni + interesse abbonamento
+-- FantaOracle — Setup prova 15 giorni + interesse abbonamento
 -- Eseguire UNA VOLTA nel SQL Editor di Supabase (come oracle_states_setup.sql)
 -- L'app funziona anche senza questa migrazione (fallback localStorage),
 -- ma senza: la prova non segue l'account tra dispositivi e "Ti avviso"

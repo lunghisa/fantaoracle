@@ -3893,16 +3893,16 @@
     <div class="mng-plans-row" style="margin-bottom:14px">
       <div class="mng-plan">
         <div class="mng-plan-name">MESE</div>
-        <div class="mng-plan-price">— <span>/mese</span></div>
+        <div class="mng-plan-price">1.90 <span>CHF/mese</span></div>
         <button class="mng-plan-btn" onclick="registerPlanInterest('month')">Ti avviso</button>
       </div>
       <div class="mng-plan best">
-        <div class="mng-plan-name">ANNO</div>
-        <div class="mng-plan-price">— <span>/anno</span></div>
+        <div class="mng-plan-name">STAGIONE</div>
+        <div class="mng-plan-price">9.90 <span>CHF/stagione</span></div>
         <button class="mng-plan-btn" onclick="registerPlanInterest('year')">Ti avviso</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Gli abbonamenti aprono a breve: lasciami l'interesse e ti scrivo io.</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Gli abbonamenti aprono a breve a questi prezzi: lasciami l'interesse e ti scrivo io.</div>
     <button class="profile-btn secondary" style="width:100%" onclick="closeTrialGate(); showPage('dashboard', document.getElementById('tab-dashboard'))">Torna alla Dashboard</button>
   </div>
 </div>
@@ -11769,7 +11769,7 @@ function renderTrialCard() {
     return;
   }
   if (st.plan === 'month' || st.plan === 'year') {
-    box.innerHTML = '<div class="mng-trial-big" style="color:var(--green)">PRO</div><div class="mng-trial-sub">Abbonamento ' + (st.plan === 'month' ? 'mensile' : 'annuale') + ' attivo. Grazie!</div>';
+    box.innerHTML = '<div class="mng-trial-big" style="color:var(--green)">PRO</div><div class="mng-trial-sub">Abbonamento ' + (st.plan === 'month' ? 'mensile' : 'stagionale') + ' attivo. Grazie!</div>';
     return;
   }
   if (!st.started) {
@@ -11801,16 +11801,16 @@ function renderPlanBanner() {
     <div class="mng-plans-row">
       <div class="mng-plan">
         <div class="mng-plan-name">MESE</div>
-        <div class="mng-plan-price">— <span>/mese</span></div>
+        <div class="mng-plan-price">1.90 <span>CHF/mese</span></div>
         ${btn('month')}
       </div>
       <div class="mng-plan best">
-        <div class="mng-plan-name">ANNO</div>
-        <div class="mng-plan-price">— <span>/anno</span></div>
+        <div class="mng-plan-name">STAGIONE</div>
+        <div class="mng-plan-price">9.90 <span>CHF/stagione</span></div>
         ${btn('year')}
       </div>
     </div>
-    <div class="mng-plans-note">Prezzi in arrivo. Premi "Ti avviso" e ti scrivo appena gli abbonamenti aprono${currentUser ? '' : ' (accedi per lasciarmi la tua email)'}.</div>`;
+    <div class="mng-plans-note">Gli abbonamenti aprono a breve a questi prezzi. Premi "Ti avviso" e ti scrivo appena si parte${currentUser ? '' : ' (accedi per lasciarmi la tua email)'}.</div>`;
 }
 
 // ============ ARENA — hub di giornata (dati reali dal motore esistente) ============
