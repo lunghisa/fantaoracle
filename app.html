@@ -5576,6 +5576,97 @@ function proceedWithUpload(file) {
   else reader.readAsArrayBuffer(file);
 }
 
+// Riconosce l'export "ROSE" di Leghe Fantacalcio: la prima riga alterna nome
+// fantasquadra e la parola "costo". Due o piu "costo" in intestazione non
+// capitano per caso in nessun altro formato.
+function sembraExportRose(rows) {
+  if (!rows || !rows.length) return false;
+  const intestazione = rows[0].map(c => String(c || '').trim().toLowerCase());
+  return intestazione.filter(c => c === 'costo').length >= 2;
+}
+
+// Variante CSV dello stesso export: righe "fantasquadra,idGiocatore,costo"
+// separate da righe "$,$,$". Riconoscibile dal separatore e dal fatto che la
+// colonna centrale e sempre numerica.
+function sembraExportRoseCSV(rows) {
+  if (!rows || rows.length < 5) return false;
+  const separatori = rows.filter(r => r && String(r[0] || '').trim() === '$').length;
+  if (separatori < 2) return false;
+  const conNumero = rows.filter(r => r && r.length >= 3 && /^\d+$/.test(String(r[1] || '').trim())).length;
+  return conNumero >= 10;
+}
+
+// Traduce l'export ROSE nella tabella standard che parseListinoWithSheetJS
+// gia sa leggere. Ruolo, squadra e quotazione NON sono nel file: si prendono
+// dal listone caricato, incrociando per nome normalizzato.
+function traduciExportRose(rows) {
+  const daListone = (listone && Array.isArray(listone.players)) ? listone.players : [];
+  if (daListone.length === 0) {
+    showToast('❌ Carica prima il listone: questo file contiene solo le rose, senza ruoli.');
+    return null;
+  }
+  const indice = new Map();
+  daListone.forEach(p => {
+    const k = rosterNormalizeName(p.name);
+    if (k && !indice.has(k)) indice.set(k, p);
+  });
+
+  // 1) Dal file: chi possiede chi, e a che prezzo.
+  const intestazione = rows[0].map(c => String(c || '').trim());
+  const possesso = new Map();
+  let nonTrovati = 0;
+
+  intestazione.forEach((cella, col) => {
+    const squadra = String(cella || '').trim();
+    if (!squadra || squadra.toLowerCase() === 'costo') return;
+
+    for (let r = 1; r < rows.length; r++) {
+      const riga = rows[r] || [];
+      const nome = String(riga[col] || '').trim();
+      if (!nome) continue;
+      // Ogni colonna finisce con una riga "totale": non e un giocatore.
+      if (nome.toLowerCase() === 'totale') continue;
+
+      const chiave = rosterNormalizeName(nome);
+      if (!indice.has(chiave)) { nonTrovati++; continue; }
+      possesso.set(chiave, { squadra: squadra, costo: String(riga[col + 1] || '').trim() });
+    }
+  });
+
+  if (possesso.size === 0) {
+    showToast('❌ Nessun giocatore del file corrisponde al listone caricato.');
+    return null;
+  }
+
+  // 2) Si riemette il listone INTERO, non solo i giocatori in rosa: gli
+  //    svincolati servono al Piano Asta, e i campi FM/FVM/Mv/Pg all'Oracle.
+  //    Emettere solo le rose li cancellerebbe in silenzio.
+  const out = [['Nome', 'R', 'Squadra', 'Qt.A', 'FM', 'FVM', 'Mv', 'Pg', 'FantaSquadra', 'Costo']];
+  const val = v => (v === null || v === undefined || v === '' || v === 0) ? '' : String(v);
+
+  daListone.forEach(p => {
+    const pos = possesso.get(rosterNormalizeName(p.name));
+    out.push([
+      p.name,
+      p.role || '',
+      p.team || '',
+      val(p.quotation),
+      val(p.fmReal),
+      val(p.fvm),
+      val(p.mv),
+      val(p.pgv),
+      pos ? pos.squadra : '',
+      pos ? pos.costo : '',
+    ]);
+  });
+
+  if (nonTrovati > 0) {
+    console.warn('[FantaOracle] rose: ' + nonTrovati + ' nomi non trovati nel listone');
+  }
+  console.log('[FantaOracle] rose importate: ' + possesso.size + ' giocatori assegnati su ' + daListone.length + ' del listone');
+  return out;
+}
+
 function parseListinoWithSheetJS(data, fileName, opts) {
   const workbook = XLSX.read(data, opts);
   
@@ -5593,8 +5684,28 @@ function parseListinoWithSheetJS(data, fileName, opts) {
   if (!sheet) { showToast('❌ Foglio Excel vuoto.'); return; }
   
   // Converte tutto il foglio in array of arrays (incluse righe vuote)
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+  let rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
   if (rows.length < 2) { showToast('❌ File con meno di 2 righe.'); return; }
+
+  // === Export "ROSE" di Leghe Fantacalcio ===
+  // Formato diverso da quello di Fantacalcio.it: contiene SOLO le rose, con le
+  // fantasquadre affiancate a coppie di colonne (nome, costo) e una colonna
+  // vuota di separazione. Niente intestazioni, niente ruoli, niente squadre di
+  // Serie A — per questo il parser normale si fermava.
+  // Qui lo si traduce nella tabella che il parser sa gia leggere, pescando
+  // ruolo, squadra e quotazione dal listone gia caricato.
+  if (sembraExportRose(rows)) {
+    const tradotte = traduciExportRose(rows);
+    if (!tradotte) return; // il messaggio l'ha gia dato la funzione
+    rows = tradotte;
+  } else if (sembraExportRoseCSV(rows)) {
+    // Stesso export ma in CSV: contiene gli ID numerici di Fantacalcio.it al
+    // posto dei nomi, e il listone caricato non conserva quegli ID. Invece di
+    // far fallire il parser con un errore incomprensibile, si dice cosa fare:
+    // l'Excel dello stesso export ha i nomi e funziona.
+    showToast('❌ Questo CSV contiene solo codici numerici. Scarica la versione Excel (.xlsx) delle rose: contiene i nomi.');
+    return;
+  }
   
   // Trova la riga header: cerca nelle prime 10 righe quella che ha "Nome"+"R" o "Ruolo"
   let headerIdx = -1;
