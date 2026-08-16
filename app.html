@@ -5157,7 +5157,7 @@ function renderLeagueSwitcher() {
   // Stato normale: trofeo + nome lega
   trigger.innerHTML = `
     <span style="font-size:13px">🏆</span>
-    <span style="font-weight:700;letter-spacing:0.5px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(active ? active.name : 'Nessuna lega')}</span>
+    <span style="font-weight:700;letter-spacing:0.5px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(active ? nomeLegaVisibile(active) : 'Nessuna lega')}</span>
     <span style="font-size:9px;color:var(--muted)">▾</span>
   `;
   
@@ -5955,14 +5955,7 @@ function parseListinoWithSheetJS(data, fileName, opts) {
   // scelto, e restavano li per sempre perche il rinomina era nascosto.
   {
     const estratto = extractLeagueNameFromFilename(fileName);
-    // Nome "d'ufficio": mai scelto da una persona. Oltre ai generici, anche
-    // quelli che contengono un timestamp — venivano da import fatti prima
-    // che l'estrattore conoscesse lo schema di Leghe Fantacalcio, e
-    // restavano li per sempre perche non sembravano generici.
-    const daSostituire = (nome) => !nome
-      || /^(la mia lega|nuova lega|lega senza nome)$/i.test(nome)
-      || /\d{6,}/.test(nome)
-      || /\brosters?\b/i.test(nome);
+    const daSostituire = nomeLegaDaSostituire;
     const attuale = getLeagueName();
     if (estratto && daSostituire(attuale)) {
       setLeagueName(estratto);
@@ -7804,6 +7797,41 @@ function extractLeagueNameFromFilename(filename) {
   // capitalizza ogni parola
   n = n.split(' ').map(w => w.length > 0 ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w).join(' ');
   return n;
+}
+
+// Nome "d'ufficio": mai scelto da una persona. Oltre ai generici, anche quelli
+// che contengono un timestamp o la parola "rosters" — venivano da import fatti
+// prima che l'estrattore conoscesse lo schema di Leghe Fantacalcio, e
+// restavano li per sempre perche non sembravano generici. Non lo erano: erano
+// solo sbagliati.
+function nomeLegaDaSostituire(nome) {
+  return !nome
+    || /^(la mia lega|nuova lega|lega senza nome)$/i.test(nome)
+    || /\d{6,}/.test(nome)
+    || /\brosters?\b/i.test(nome);
+}
+
+// Il nome della lega vive in DUE posti — il registro delle leghe e la chiave
+// per-lega — e si erano disallineati: la scheda "LE MIE LEGHE" leggeva uno e
+// la hero l'altro, mostrando due nomi diversi per la stessa lega.
+// Qui si sceglie il migliore dei due e si riallineano.
+function nomeLegaVisibile(l) {
+  if (!l) return '';
+  let perLega = '';
+  try { perLega = localStorage.getItem(LEAGUE_NAME_KEY + '__' + l.id) || ''; } catch (e) {}
+  const registro = l.name || '';
+  const scelto = !nomeLegaDaSostituire(registro) ? registro
+               : (!nomeLegaDaSostituire(perLega) ? perLega
+               : (registro || perLega || 'Lega senza nome'));
+  // Riallineo, cosi il disallineamento non si ripresenta altrove
+  if (scelto && registro !== scelto) {
+    l.name = scelto;
+    try { saveLeaguesRegistry(); } catch (e) {}
+  }
+  if (scelto && perLega !== scelto) {
+    try { localStorage.setItem(LEAGUE_NAME_KEY + '__' + l.id, scelto); } catch (e) {}
+  }
+  return scelto;
 }
 
 function getMyTeamName() {
@@ -12389,7 +12417,7 @@ function renderDashLeagues() {
       <div style="display:flex;align-items:center;gap:6px">
         <button class="mng-league-row${l.id === activeLeagueId ? ' active' : ''}" style="flex:1" onclick="switchToLeague('${escapeAttr(l.id)}')">
           <span class="dot"></span>
-          <span class="nm">${escapeHtml(l.name || 'Lega senza nome')}</span>
+          <span class="nm">${escapeHtml(nomeLegaVisibile(l))}</span>
           ${l.id === activeLeagueId ? '<span class="tag">ATTIVA</span>' : ''}
         </button>
         <button onclick="renameLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Rinomina la lega"
