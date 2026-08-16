@@ -3955,7 +3955,7 @@
     <!-- GESTIONE: leghe · prova · piani (roadmap punto 2) -->
     <div class="dash-manage-grid">
       <div class="card mng-card">
-        <div class="card-title">LE TUE LEGHE</div>
+        <div class="card-title">LE MIE LEGHE</div>
         <div id="dashLeaguesList"></div>
         <button class="mng-add-league" onclick="addNewLeague()">+ Nuova lega</button>
       </div>
@@ -5964,6 +5964,10 @@ function parseListinoWithSheetJS(data, fileName, opts) {
         lg.name = estratto;
         saveLeaguesRegistry();
         try { renderLeagueSwitcher(); } catch (e) {}
+        try { renderDashLeagues(); } catch (e) {}
+        // Detto a voce: un rinomina silenzioso lascia il dubbio che il nome
+        // sia sbagliato e non si sappia da dove arriva.
+        showToast('🏆 Lega rinominata in "' + estratto + '" (dal nome del file)');
       }
     }
   }
