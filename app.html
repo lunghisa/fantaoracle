@@ -3887,7 +3887,7 @@
     <div style="font-size:40px;margin-bottom:10px">🔮</div>
     <div class="profile-title" style="margin-bottom:6px">LA PROVA È FINITA</div>
     <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px">
-      La tua settimana di prova completa è terminata: <strong style="color:var(--text)">Oracle e Arena</strong> sono in pausa.<br>
+      Il tuo periodo di prova completa è terminato: <strong style="color:var(--text)">Oracle e Arena</strong> sono in pausa.<br>
       Campo, Dashboard e News restano gratis, sempre.
     </div>
     <div class="mng-plans-row" style="margin-bottom:14px">
@@ -8041,7 +8041,7 @@ function enterApp(ev) {
     renderLeagueSwitcher();
     updateRosterStats();          // <- attiva onboarding hero se rosa vuota (punto 2)
     updateLeagueBanner();         // <- imposta saluto dinamico (punto 8)
-    ensureTrialStarted();         // <- la settimana di prova parte dal primo ingresso
+    ensureTrialStarted();         // <- il periodo di prova parte dal primo ingresso
     renderDashboardManage();      // <- leghe / prova / piani in Dashboard
     updateUserPill();              // <- mostra il tab Admin per gli account admin, prima del routing sotto
     // Landing: admin → Admin Panel (gestione asta/listone); tutti gli altri →
@@ -11671,7 +11671,7 @@ function roleLabel(r) {
 }
 
 // ============ PROVA 7 GIORNI + PIANI (roadmap punto 2) ============
-const TRIAL_DAYS = 7;
+const TRIAL_DAYS = 15;
 const TRIAL_LOCAL_KEY = 'fantaoracle_trial_start'; // globale, non per-lega
 
 // Stato prova/piano. Admin e abbonati: mai scaduti.
