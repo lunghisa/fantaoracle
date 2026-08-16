@@ -5954,11 +5954,23 @@ function parseListinoWithSheetJS(data, fileName, opts) {
   }
   
   saveListinoToStorage();
-  
-  // Estrai nome lega dal filename se non già impostato
-  if (!getLeagueName()) {
-    const extracted = extractLeagueNameFromFilename(fileName);
-    if (extracted) setLeagueName(extracted);
+
+  // Nome della lega dal nome del file. Si applica anche se la lega si chiama
+  // ancora con un nome generico assegnato d'ufficio: sono nomi che nessuno ha
+  // scelto, e restavano li per sempre perche il rinomina era nascosto.
+  {
+    const estratto = extractLeagueNameFromFilename(fileName);
+    const generico = /^(la mia lega|nuova lega|lega senza nome)$/i;
+    const attuale = getLeagueName();
+    if (estratto && (!attuale || generico.test(attuale))) {
+      setLeagueName(estratto);
+      const lg = leagues.find(l => l.id === activeLeagueId);
+      if (lg && (!lg.name || generico.test(lg.name))) {
+        lg.name = estratto;
+        saveLeaguesRegistry();
+        try { renderLeagueSwitcher(); } catch (e) {}
+      }
+    }
   }
   
   updateListinoBadge();
@@ -12337,18 +12349,45 @@ function renderDashLeagues() {
     box.innerHTML = '<div class="mng-empty">Nessuna lega ancora. Creane una caricando il file della tua lega Fantacalcio.it.</div>';
     return;
   }
-  // Il rinomina c'era solo come iconcina nel menù in alto e cliccando il nome
-  // nella hero: nessuno lo trovava. Qui e esplicito.
-  box.innerHTML = leagues.map(l => `
-    <div style="display:flex;align-items:center;gap:6px">
-      <button class="mng-league-row${l.id === activeLeagueId ? ' active' : ''}" style="flex:1" onclick="switchToLeague('${escapeAttr(l.id)}')">
-        <span class="dot"></span>
-        <span class="nm">${escapeHtml(l.name || 'Lega senza nome')}</span>
-        ${l.id === activeLeagueId ? '<span class="tag">ATTIVA</span>' : ''}
-      </button>
-      <button onclick="renameLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Rinomina la lega"
-              style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;padding:7px 9px;font-size:12px">✏️</button>
-    </div>`).join('');
+  // Sotto ogni lega, le sue competizioni: sola lettura, servono a vedere cosa
+  // c'e dentro. Si leggono dalla chiave namespacizzata di QUELLA lega, non
+  // dell'attiva, altrimenti tutte mostrerebbero le stesse.
+  const competizioniDi = (leagueId) => {
+    try {
+      const raw = localStorage.getItem(COMPETIZIONI_STORAGE_KEY + '__' + leagueId);
+      const v = raw ? JSON.parse(raw) : null;
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  };
+
+  box.innerHTML = leagues.map(l => {
+    const comps = competizioniDi(l.id);
+    const rami = comps.length === 0
+      ? `<div style="font-size:11px;color:var(--muted);opacity:.7;padding:4px 0 2px 22px">nessuna competizione caricata</div>`
+      : comps.map((c, i) => {
+          const giornate = new Set((c.partite || []).map(p => p.giornataLega)).size;
+          const ultimo = i === comps.length - 1;
+          return `<div style="display:flex;align-items:center;gap:7px;padding:3px 0 3px 10px;font-size:12px;color:var(--muted)">
+            <span style="font-family:'DM Mono',monospace;opacity:.5">${ultimo ? '└' : '├'}─</span>
+            <span style="color:var(--text)">${escapeHtml(c.nome)}</span>
+            <span style="font-size:10.5px;opacity:.75">${giornate} giornate</span>
+          </div>`;
+        }).join('');
+
+    return `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="mng-league-row${l.id === activeLeagueId ? ' active' : ''}" style="flex:1" onclick="switchToLeague('${escapeAttr(l.id)}')">
+          <span class="dot"></span>
+          <span class="nm">${escapeHtml(l.name || 'Lega senza nome')}</span>
+          ${l.id === activeLeagueId ? '<span class="tag">ATTIVA</span>' : ''}
+        </button>
+        <button onclick="renameLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Rinomina la lega"
+                style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;padding:7px 9px;font-size:12px">✏️</button>
+      </div>
+      ${rami}
+    </div>`;
+  }).join('');
 }
 function renderTrialCard() {
   const box = document.getElementById('trialCardBody');
