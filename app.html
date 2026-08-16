@@ -7650,11 +7650,25 @@ function handleListinoDrop(event) {
 // ============================================================
 // NEWS ENGINE
 // ============================================================
+// 'quota' = quante notizie al massimo prendere da questa fonte prima di unire
+// tutto. Senza, le generaliste soffocherebbero le fantacalcistiche: la lista
+// finale tiene 50 pezzi ordinati per data, e la Gazzetta da sola ne pubblica
+// 100. Le fonti fantacalcistiche hanno quota doppia perche sono quelle che
+// portano infortuni e titolarita, cioe le uniche che cambiano una formazione.
 const NEWS_FEEDS = [
-  { name: 'Fantacalcio.it',  url: 'https://www.fantacalcio.it/feed/news',  color: '#00a651' },
-  { name: 'FantaMaster',     url: 'https://www.fantamaster.it/feed/',      color: '#e74c3c' },
-  { name: 'SOS Fanta',       url: 'https://www.sosfanta.com/feed/',        color: '#0073e6' },
-  // FantaGazzetta rimossa (7 ago 2026): dominio morto, solo timeout — verificato.
+  // Fantacalcistiche — le piu utili, quota alta
+  { name: 'FantaMaster',   url: 'https://www.fantamaster.it/feed/',                              color: '#e74c3c', quota: 20 },
+  { name: 'SOS Fanta',     url: 'https://www.sosfanta.com/feed/',                                color: '#0073e6', quota: 20 },
+  // Generaliste — contorno, quota bassa
+  { name: 'Gazzetta',      url: 'https://www.gazzetta.it/rss/calcio.xml',                        color: '#e6007e', quota: 8  },
+  { name: 'TMW',           url: 'https://www.tuttomercatoweb.com/rss/',                          color: '#f5a623', quota: 8  },
+  { name: 'CalcioMercato', url: 'https://www.calciomercato.it/feed/',                            color: '#a86ef5', quota: 8  },
+  { name: 'ANSA',          url: 'https://www.ansa.it/sito/notizie/sport/calcio/calcio_rss.xml',  color: '#1db954', quota: 6  },
+  { name: 'Spaziocalcio',  url: 'https://www.spaziocalcio.it/feed',                              color: '#00b8d4', quota: 6  },
+  // Rimosse dopo verifica: FantaGazzetta (7 ago 2026, dominio morto) e
+  // Fantacalcio.it (16 ago 2026: /feed/news risponde 200 ma serve una pagina
+  // "404 pagina non trovata", zero item — provate anche /rss, /feed, /rss.xml
+  // e altre quattro varianti, nessuna esiste piu).
 ];
 const CORS_PROXIES = [
   // Proxy affidabile ospitato su Vercel (stesso dominio): nessuna dipendenza
@@ -7816,7 +7830,9 @@ async function fetchAllFeeds(silent) {
   let allItems = []; const loadedSources = [];
   results.forEach(r => {
     if (r.status === 'fulfilled' && r.value.items.length > 0) {
-      allItems = allItems.concat(r.value.items);
+      // Si prende solo la quota della fonte: le notizie sono gia ordinate
+      // dalla piu recente, quindi tagliare in coda scarta le piu vecchie.
+      allItems = allItems.concat(r.value.items.slice(0, r.value.feed.quota || 10));
       loadedSources.push(r.value.feed);
     }
   });

@@ -11,11 +11,20 @@
 // Nessuna configurazione aggiuntiva necessaria.
 // ============================================================
 
+// Lista bianca: senza, questa funzione diventerebbe un proxy aperto che
+// chiunque puo usare per rimbalzare richieste attraverso il tuo dominio.
+// Ogni host qui e stato verificato: risponde RSS valido con l'User-Agent
+// qui sotto (alcuni, come TMW, rifiutano gli agenti non identificati).
 const ALLOWED_HOSTS = [
-  'fantacalcio.it', 'www.fantacalcio.it',
+  // Fantacalcistiche
   'fantamaster.it', 'www.fantamaster.it',
   'sosfanta.com', 'www.sosfanta.com',
-  'fantagazzetta.com', 'www.fantagazzetta.com',
+  // Generaliste
+  'gazzetta.it', 'www.gazzetta.it',
+  'tuttomercatoweb.com', 'www.tuttomercatoweb.com',
+  'calciomercato.it', 'www.calciomercato.it',
+  'ansa.it', 'www.ansa.it',
+  'spaziocalcio.it', 'www.spaziocalcio.it',
 ];
 
 export default async function handler(req, res) {
@@ -47,7 +56,9 @@ export default async function handler(req, res) {
     const upstream = await fetch(parsed.toString(), {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'FantaOracle/1.0 (+https://www.lunghi.ch)',
+        // Identificarsi con un indirizzo raggiungibile non e cortesia: alcune
+        // testate rifiutano gli agenti anonimi. lunghi.ch non esiste piu.
+        'User-Agent': 'FantaOracle/1.0 (+https://fantaoracle.ch)',
         'Accept': 'application/rss+xml, application/xml, text/xml, */*',
       },
     });
