@@ -6722,11 +6722,26 @@ function renderHeadToHead() {
         + ' — ' + (daCalendario.inCasa ? 'in casa' : 'in trasferta')
         + ' contro <strong style="color:var(--oracle)">' + escapeHtml(daCalendario.avversario) + '</strong>'
         + '</div>';
-    } else if (gSA) {
+    } else if (gSA && comp) {
+      // Dire "non gioca" e vero ma inutile: sembra un guasto. Meglio dire
+      // PERCHE — non e ancora cominciata, e finita, o la squadra riposa.
+      const gg = (comp.partite || []).map(p => p.giornataSerieA).filter(n => n > 0);
+      const prima = gg.length ? Math.min.apply(null, gg) : null;
+      const ultima = gg.length ? Math.max.apply(null, gg) : null;
+      let spiega;
+      if (prima && gSA < prima) {
+        const manca = prima - gSA;
+        spiega = escapeHtml(comp.nome) + ' comincia dalla <strong style="color:var(--text)">' + prima + 'ª giornata</strong> di Serie A: '
+               + (manca === 1 ? 'manca una giornata.' : 'mancano ' + manca + ' giornate.');
+      } else if (ultima && gSA > ultima) {
+        spiega = escapeHtml(comp.nome) + ' si è conclusa alla ' + ultima + 'ª giornata di Serie A.';
+      } else if ((comp.partite || []).some(p => p.giornataSerieA === gSA)) {
+        spiega = 'In questa giornata di ' + escapeHtml(comp.nome) + ' <strong style="color:var(--text)">la tua squadra riposa</strong>.';
+      } else {
+        spiega = escapeHtml(comp.nome) + ' non si gioca alla ' + gSA + 'ª di Serie A.';
+      }
       html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:12px;border-left:2px solid var(--border);padding-left:10px;line-height:1.5">'
-        + 'Alla ' + gSA + 'ª di Serie A ' + escapeHtml(comp ? comp.nome : '') + ' non gioca'
-        + (comp && (comp.partite || []).some(p => p.giornataSerieA === gSA) ? ' — la tua squadra riposa.' : '.')
-        + ' Scegli l\'avversario a mano per simulare.'
+        + spiega + '<br>Puoi comunque scegliere un avversario a mano per simulare.'
         + '</div>';
     }
   }
