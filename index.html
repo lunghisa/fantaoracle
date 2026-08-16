@@ -450,6 +450,18 @@ footer{
   font-size:13.5px;color:var(--muted);
   text-align:center;
 }
+.disclaimer{
+  max-width:760px;
+  margin:0 auto 26px;
+  padding:18px 20px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:rgba(22,15,44,0.5);
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.65;
+}
+.disclaimer strong{color:var(--text);font-weight:500}
 .foot .sep{opacity:.4}
 @media(max-width:479px){.foot .sep:last-of-type{display:none}}
 .foot .fo{font-family:var(--font-display);letter-spacing:0.12em;font-size:16px;color:var(--text)}
@@ -735,10 +747,21 @@ footer{
 
 <!-- ===== 6. FOOTER ===== -->
 <footer>
+  <div class="wrap">
+    <div class="disclaimer">
+      <strong>Come leggere le previsioni.</strong>
+      FantaOracle elabora dati statistici — fantamedia, forma, calendario, notizie —
+      e produce <strong>stime, non garanzie</strong>. Le stime sbagliano: nessun modello
+      prevede una partita di calcio. La formazione la scegli tu, il risultato dipende da
+      fattori che nessuno controlla, e la responsabilità delle tue decisioni resta tua.
+      FantaOracle è uno strumento di analisi: non promette vincite, non gestisce denaro
+      dei partecipanti e non ha alcun ruolo negli accordi interni alla tua lega.
+    </div>
+  </div>
   <div class="wrap foot">
     <span class="fo">Fanta<b>Oracle</b></span>
     <span class="sep">·</span>
-    <span>made by Sacha Lunghi</span>
+    <span>made by schlngh</span>
     <span class="sep">·</span>
     <span class="mono">© 2026</span>
   </div>
