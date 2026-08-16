@@ -60,9 +60,47 @@ L'ordine conta. I passi 1-5 non cambiano niente per il pubblico — è il
 passo 7 che apre i pagamenti a tutti. Fino ad allora vede ancora
 "Ti avviso", quindi si può sbagliare senza conseguenze.
 
-## Prima: prerequisiti
+## Stato della verifica
 
-- [ ] Account Polar di **produzione** verificato (documento + coordinate)
+**Richiesta inviata il 16.08.2026.** Polar dichiara fino a **14 giorni**
+lavorativi → risposta attesa **entro il 30.08.2026 circa**.
+
+Il campionato parte il **23.08.2026**: nella peggiore delle ipotesi si incassa
+a stagione già iniziata. Non è un dramma — la prova gratuita è di un mese,
+quindi chi si iscrive ad agosto non pagherebbe comunque prima di settembre.
+
+Cosa era già pronto al momento dell'invio (tutte le voci verdi):
+prodotto, checkout via API, identità, conto di payout, descrizione, sito,
+email di supporto, link LinkedIn.
+
+⚠️ **Se Polar scrive, rispondi entro 48 ore.** La loro documentazione indica
+la mancata risposta entro quel termine tra le cause di ritardo o rifiuto.
+Le loro mail arrivano all'indirizzo dell'account, non a support@.
+
+### Credenziali di produzione: già create, NON ancora su Vercel
+
+Chiave API e segreto webhook di produzione sono stati creati il 16.08.2026 e
+sono **nel gestore di password di Sacha**. Non vanno messi su Vercel prima
+dell'approvazione: un token di produzione su `POLAR_SERVER=sandbox` viene
+rifiutato e romperebbe il collaudo che oggi funziona.
+
+L'endpoint webhook di produzione punta già a `fantaoracle.ch/api/polar-webhook`,
+quindi in dashboard si vedranno **consegne fallite con 401**: è previsto — il
+sito ha ancora il segreto della sandbox. Si sistemano da sole allo switch.
+
+### Payout
+
+Il franco svizzero **non era tra le valute disponibili** (solo EUR e valute
+UE/SEE). Scelto **EUR** su conto **Revolut con IBAN lituano** — normale, è la
+licenza bancaria di Revolut. Paese del conto dichiarato: Lituania; paese
+dell'attività: Svizzera. Le vendite in CHF subiscono quindi una conversione
+CHF→EUR (0,25% secondo Polar) più quella della banca al cambio in franchi.
+Da chiedere al supporto Polar se il CHF sia attivabile.
+
+## Prima di aprire al pubblico: prerequisiti
+
+- [x] Richiesta di verifica inviata (16.08.2026)
+- [ ] Approvazione ricevuta
 - [ ] Impianto IVA confermato da un fiscalista → vedi memo in fondo
 - [ ] Riga di prova cancellata da `subscriptions` (vedi "Pulizia" sotto)
 
