@@ -4055,47 +4055,6 @@
       </div>
     </div>
 
-    <!-- CTA UPLOAD LEGA -->
-    <div class="build-roster-cta" id="buildRosterCta"
-         ondragover="event.preventDefault();this.classList.add('drag-over')"
-         ondragleave="this.classList.remove('drag-over')"
-         ondrop="handleLeagueDrop(event)">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
-        <div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)">CARICA LA TUA LEGA</div>
-          <div style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">
-            Esporta il file della lega da <strong style="color:var(--text)">Fantacalcio.it</strong> e trascinalo qui, oppure scegli un file.
-          </div>
-        </div>
-        <span id="listinoBadge" class="listino-badge" style="display:none">LEGA · <span>0</span> giocatori</span>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <button onclick="document.getElementById('listinoUploadInput').click()"
-                style="flex:1;min-width:240px;padding:16px 22px;background:var(--gold);color:#000;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"
-                onmouseover="this.style.background='#e8a800'" onmouseout="this.style.background='var(--gold)'">
-          📂 SCEGLI FILE
-        </button>
-        <button onclick="openImportHelpModal()"
-                style="padding:14px 16px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:10px;cursor:pointer"
-                onmouseover="this.style.borderColor='var(--oracle)';this.style.color='var(--oracle)'"
-                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-          Come esporto?
-        </button>
-        <button onclick="document.getElementById('competizioneUploadInput').click()"
-                style="padding:14px 16px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s"
-                onmouseover="this.style.borderColor='var(--oracle)';this.style.color='var(--oracle)'"
-                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"
-                title="Calendario di campionato, coppa o altre competizioni della tua lega">
-          📅 Calendario competizione
-        </button>
-        <input type="file" id="listinoUploadInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleListinoUpload(event)">
-        <input type="file" id="calendarioUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCalendarioUpload(event)">
-        <input type="file" id="competizioneUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCompetizioneUpload(event)">
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:10px;letter-spacing:0.5px;text-align:center">
-        Formati supportati: .xlsx, .xls, .csv
-      </div>
-    </div>
 
     <!-- ALLERTA ROSSA - visibile solo se ci sono news sui tuoi giocatori -->
     <div id="rosterAlertCard" class="card" style="display:none;margin-bottom:20px;border-color:rgba(255,76,76,0.35);background:linear-gradient(135deg, rgba(255,76,76,0.05) 0%, rgba(13,19,24,1) 100%)">
@@ -4135,6 +4094,54 @@
       <div class="news-mini-list" id="dashNewsList">
         <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Caricamento news in corso...</div>
       </div>
+    </div>
+
+
+    <!-- Spostato in fondo: chi torna ogni giornata vuole vedere news e rosa,
+         non un riquadro di caricamento che serve una volta sola. -->
+    <!-- CTA UPLOAD LEGA -->
+    <div class="build-roster-cta" id="buildRosterCta"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="handleLeagueDrop(event)">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)">CARICA LA TUA LEGA</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">
+            Esporta il file della lega da <strong style="color:var(--text)">Fantacalcio.it</strong> e trascinalo qui, oppure scegli un file.
+          </div>
+        </div>
+        <span id="listinoBadge" class="listino-badge" style="display:none">LEGA · <span>0</span> giocatori</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button onclick="document.getElementById('listinoUploadInput').click()"
+                style="flex:1;min-width:240px;padding:16px 22px;background:var(--gold);color:#000;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"
+                onmouseover="this.style.background='#e8a800'" onmouseout="this.style.background='var(--gold)'">
+          📂 SCEGLI FILE
+        </button>
+        <button onclick="openImportHelpModal()"
+                style="padding:14px 16px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:10px;cursor:pointer"
+                onmouseover="this.style.borderColor='var(--oracle)';this.style.color='var(--oracle)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          Come esporto?
+        </button>
+        <button onclick="document.getElementById('competizioneUploadInput').click()"
+                style="padding:14px 16px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s"
+                onmouseover="this.style.borderColor='var(--oracle)';this.style.color='var(--oracle)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"
+                title="Calendari di campionato, coppa e altre competizioni della tua lega">
+          📅 Calendari
+        </button>
+        <input type="file" id="listinoUploadInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleListinoUpload(event)">
+        <input type="file" id="calendarioUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCalendarioUpload(event)">
+        <input type="file" id="competizioneUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCompetizioneUpload(event)">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;letter-spacing:0.5px;text-align:center">
+        Formati supportati: .xlsx, .xls, .csv
+      </div>
+      <!-- Quali calendari sono gia dentro: senza, non c'e modo di sapere se
+           un import e andato a buon fine se non aprendo la scheda Oracle. -->
+      <div id="calendariCaricati" style="margin-top:12px"></div>
     </div>
 
   </div>
@@ -6582,9 +6589,34 @@ function onCompetizioneChange(sel) {
   renderHeadToHead();
 }
 
+// Elenco dei calendari importati, sotto il riquadro di caricamento.
+// Ordinati come arrivano: campionato per primo, poi coppa, poi le altre.
+function renderCalendariCaricati() {
+  const box = document.getElementById('calendariCaricati');
+  if (!box) return;
+  const lista = loadCompetizioni();
+  if (lista.length === 0) {
+    box.innerHTML = '<div style="font-size:11px;color:var(--muted);text-align:center;opacity:.8">'
+      + 'Nessun calendario caricato. Serve a far sapere all\'Oracle contro chi giochi.</div>';
+    return;
+  }
+  box.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">'
+    + lista.map(c => {
+        const giornate = new Set((c.partite || []).map(p => p.giornataLega)).size;
+        const gg = (c.partite || []).map(p => p.giornataSerieA).filter(n => n > 0);
+        const arco = gg.length ? Math.min.apply(null, gg) + 'ª–' + Math.max.apply(null, gg) + 'ª di Serie A' : '';
+        return '<span title="' + escapeAttr(giornate + ' giornate · ' + arco) + '" '
+          + 'style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text);background:rgba(29,185,84,0.10);border:1px solid rgba(29,185,84,0.30);border-radius:999px;padding:5px 11px">'
+          + '<span style="color:var(--green)">✓</span>' + escapeHtml(c.nome)
+          + '<span style="color:var(--muted)">· ' + giornate + ' giornate</span></span>';
+      }).join('')
+    + '</div>';
+}
+
 // Selettore competizione nella barra in alto, accanto alla lega: sono due
 // livelli dello stesso contesto (in quale lega gioco, e in quale torneo).
 function renderCompSwitcher() {
+  try { renderCalendariCaricati(); } catch (e) {}
   const wrap = document.getElementById('compSwitcherWrap');
   const sel = document.getElementById('compSwitcherSelect');
   if (!wrap || !sel) return;
