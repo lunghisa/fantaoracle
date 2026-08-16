@@ -3891,18 +3891,13 @@
       Campo, Dashboard e News restano gratis, sempre.
     </div>
     <div class="mng-plans-row" style="margin-bottom:14px">
-      <div class="mng-plan">
-        <div class="mng-plan-name">MESE</div>
-        <div class="mng-plan-price">1.90 <span>CHF/mese</span></div>
-        <button class="mng-plan-btn" onclick="registerPlanInterest('month')">Ti avviso</button>
-      </div>
       <div class="mng-plan best">
-        <div class="mng-plan-name">STAGIONE</div>
-        <div class="mng-plan-price">9.90 <span>CHF/stagione</span></div>
+        <div class="mng-plan-name">STAGIONE INTERA</div>
+        <div class="mng-plan-price">9.90 <span>CHF o EUR</span></div>
         <button class="mng-plan-btn" onclick="registerPlanInterest('year')">Ti avviso</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Gli abbonamenti aprono a breve a questi prezzi: lasciami l'interesse e ti scrivo io.</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Un prezzo solo, per tutta la stagione. Gli abbonamenti aprono a breve: lasciami l'interesse e ti scrivo io.</div>
     <button class="profile-btn secondary" style="width:100%" onclick="closeTrialGate(); showPage('dashboard', document.getElementById('tab-dashboard'))">Torna alla Dashboard</button>
   </div>
 </div>
@@ -11671,7 +11666,7 @@ function roleLabel(r) {
 }
 
 // ============ PROVA 7 GIORNI + PIANI (roadmap punto 2) ============
-const TRIAL_DAYS = 15;
+const TRIAL_DAYS = 30;
 const TRIAL_LOCAL_KEY = 'fantaoracle_trial_start'; // globale, non per-lega
 
 // Stato prova/piano. Admin e abbonati: mai scaduti.
@@ -11799,18 +11794,13 @@ function renderPlanBanner() {
     : '<button class="mng-plan-btn" onclick="registerPlanInterest(\'' + plan + '\')">Ti avviso</button>';
   box.innerHTML = `
     <div class="mng-plans-row">
-      <div class="mng-plan">
-        <div class="mng-plan-name">MESE</div>
-        <div class="mng-plan-price">1.90 <span>CHF/mese</span></div>
-        ${btn('month')}
-      </div>
       <div class="mng-plan best">
-        <div class="mng-plan-name">STAGIONE</div>
-        <div class="mng-plan-price">9.90 <span>CHF/stagione</span></div>
+        <div class="mng-plan-name">STAGIONE INTERA</div>
+        <div class="mng-plan-price">9.90 <span>CHF o EUR</span></div>
         ${btn('year')}
       </div>
     </div>
-    <div class="mng-plans-note">Gli abbonamenti aprono a breve a questi prezzi. Premi "Ti avviso" e ti scrivo appena si parte${currentUser ? '' : ' (accedi per lasciarmi la tua email)'}.</div>`;
+    <div class="mng-plans-note">Un prezzo solo, per tutta la stagione. Premi "Ti avviso" e ti scrivo appena si parte${currentUser ? '' : ' (accedi per lasciarmi la tua email)'}.</div>`;
 }
 
 // ============ ARENA — hub di giornata (dati reali dal motore esistente) ============
