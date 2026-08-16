@@ -225,12 +225,30 @@ originale — l'unico su cui la firma torna — non è più recuperabile.
 Ricostruirlo con `JSON.stringify` produce qualcosa di *quasi* identico, ed
 è il "quasi" che fa fallire la verifica.
 
+## ⚠️ Trappola trovata il 16/8: rimborsare NON toglie l'accesso
+
+Su Polar **rimborsare un ordine e revocare un abbonamento sono due azioni
+distinte**. Verificato con un rimborso vero: i 9.90 sono tornati indietro e
+l'abbonamento e rimasto `active`. Il cliente avrebbe continuato a usare
+l'Oracle gratis.
+
+Per questo il webhook gestisce anche `order.refunded`, e **quell'evento va
+spuntato nella configurazione dell'endpoint su Polar**: senza, il codice non
+viene mai chiamato.
+
+Un rimborso **parziale** invece NON toglie l'accesso di proposito: restituire
+meta prezzo per un disservizio non deve chiudere fuori chi resta cliente.
+Viene solo scritto un avviso nei log.
+
 ## Eventi webhook attesi
+
+Da spuntare tutti nella configurazione dell'endpoint:
 
 `subscription.active`, `.cycled`, `.uncanceled`, `.resumed` → accesso attivo
 `subscription.canceled` → accesso fino a fine periodo (NON si revoca subito)
 `subscription.revoked` → accesso tolto
 `subscription.past_due` → non si tocca niente, Polar riprova da solo
+`order.refunded` → se totale, accesso tolto; se parziale, solo un avviso
 
 ## Cose ancora aperte
 

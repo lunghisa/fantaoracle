@@ -285,6 +285,33 @@ export default async function handler(req, res) {
         console.warn('[webhook] pagamento in sospeso per', userId);
         break;
 
+      // RIMBORSO. Su Polar rimborsare un ordine NON chiude l'abbonamento:
+      // sono due azioni distinte. Senza questo blocco si restituisce il
+      // denaro e il cliente continua ad avere accesso — verificato il
+      // 16/8/2026 con un rimborso vero, l'abbonamento restava 'active'.
+      case 'order.refunded': {
+        const importoOk = typeof dati?.refunded_amount === 'number' &&
+                          typeof dati?.total_amount === 'number';
+        const pieno = dati?.status === 'refunded' ||
+                      (importoOk && dati.refunded_amount >= dati.total_amount);
+
+        if (!pieno) {
+          // Parziale: non si tocca l'accesso. Restituire meta prezzo per un
+          // disservizio non deve chiudere fuori chi resta cliente.
+          console.warn('[webhook] rimborso PARZIALE su ordine', dati?.id,
+                       '— accesso lasciato attivo, da valutare a mano');
+          break;
+        }
+        const subId = dati?.subscription_id || null;
+        if (!subId) {
+          console.warn('[webhook] rimborso totale senza subscription_id su ordine', dati?.id);
+          break;
+        }
+        await revocaAccesso(userId, { id: subId }, 'expired');
+        console.log('[webhook] rimborso totale: accesso revocato per', userId);
+        break;
+      }
+
       default:
         break; // gli altri eventi non ci riguardano
     }
