@@ -62,12 +62,13 @@ passo 7 che apre i pagamenti a tutti. Fino ad allora vede ancora
 
 ## Stato della verifica
 
-**Richiesta inviata il 16.08.2026.** Polar dichiara fino a **14 giorni**
-lavorativi → risposta attesa **entro il 30.08.2026 circa**.
+**Richiesta inviata e APPROVATA il 16.08.2026**, nel giro di minuti — non i
+14 giorni dichiarati. Account approved, identità verificata, conto di payout
+connesso.
 
-Il campionato parte il **23.08.2026**: nella peggiore delle ipotesi si incassa
-a stagione già iniziata. Non è un dramma — la prova gratuita è di un mese,
-quindi chi si iscrive ad agosto non pagherebbe comunque prima di settembre.
+Probabile motivo della rapidità: l'integrazione era già completa e il sito
+già online. La documentazione di Polar lo dice esplicitamente — completare
+l'integrazione *prima* di chiedere l'approvazione velocizza la revisione.
 
 Cosa era già pronto al momento dell'invio (tutte le voci verdi):
 prodotto, checkout via API, identità, conto di payout, descrizione, sito,
@@ -99,8 +100,7 @@ Da chiedere al supporto Polar se il CHF sia attivabile.
 
 ## Prima di aprire al pubblico: prerequisiti
 
-- [x] Richiesta di verifica inviata (16.08.2026)
-- [ ] Approvazione ricevuta
+- [x] Account Polar di produzione **approvato** (16.08.2026)
 - [ ] Impianto IVA confermato da un fiscalista → vedi memo in fondo
 - [ ] Riga di prova cancellata da `subscriptions` (vedi "Pulizia" sotto)
 
