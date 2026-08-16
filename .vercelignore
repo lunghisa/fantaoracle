@@ -5,3 +5,8 @@ dati/
 # ma descrivono il modello di sicurezza (RLS, trigger, chi puo scrivere cosa):
 # e la mappa di cosa e protetto, e non ha motivo di essere scaricabile.
 *.sql
+
+# Idem per la documentazione interna: NOTES.md era scaricabile da chiunque
+# (architettura, workflow di deploy, cose da fare). Nessun segreto dentro,
+# ma sono appunti di lavoro, non contenuto del sito.
+*.md
