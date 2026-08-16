@@ -49,20 +49,117 @@ Se la decidesse il browser, chiunque potrebbe intestarsi un abbonamento.
 | `POLAR_SERVER` | no | `sandbox` oppure `production` |
 | `POLAR_SUCCESS_URL` | no | dove rientra il cliente dopo il pagamento |
 
-## Passare da prova a produzione
+---
 
-1. `POLAR_SERVER` → `production`
-2. `POLAR_PRODUCT_ID` → l'id di produzione (tabella sopra)
-3. `POLAR_ACCESS_TOKEN` e `POLAR_WEBHOOK_SECRET` → quelli dell'account vero
-   (sono diversi da quelli sandbox)
-4. Ricreare l'endpoint webhook nell'account di produzione, stessa URL e
-   stessi eventi
-5. In `app.html`, `PAGAMENTI_ATTIVI` → `true`
-6. Rilanciare un deploy
+# 🚦 Passare da prova a produzione
 
-Finché `PAGAMENTI_ATTIVI` è `false`, il pubblico vede "Ti avviso" e solo
-l'admin vede il bottone di pagamento: serve a provare sul sito vero senza
-esporre nessun altro.
+Da fare **solo dopo** che l'account Polar di produzione è stato verificato:
+senza verifica, l'incasso non parte anche se tutto il resto è a posto.
+
+L'ordine conta. I passi 1-5 non cambiano niente per il pubblico — è il
+passo 7 che apre i pagamenti a tutti. Fino ad allora vede ancora
+"Ti avviso", quindi si può sbagliare senza conseguenze.
+
+## Prima: prerequisiti
+
+- [ ] Account Polar di **produzione** verificato (documento + coordinate)
+- [ ] Impianto IVA confermato da un fiscalista → vedi memo in fondo
+- [ ] Riga di prova cancellata da `subscriptions` (vedi "Pulizia" sotto)
+
+## Sul sito di Polar (quello vero, non sandbox)
+
+**1. Crea il prodotto**, identico a quello sandbox:
+   abbonamento ricorrente · ogni 1 anno · **CHF 9.90 + EUR 9.90** come
+   prezzi fissi separati · prova gratuita **spenta** · visibilità
+   **Private**. Segnati il Product ID (quello in tabella dovrebbe già
+   essere giusto: `d4a87193-6e0e-4e40-a537-a5118d19db06`).
+
+**2. Crea il token di accesso**: Settings → Preferences → scorri in fondo
+   → sezione **Developers** → `Create token`. Permessi: `checkouts:write`
+   e `products:read`. **Nessuna scadenza.** Si vede una volta sola.
+
+**3. Crea l'endpoint webhook**: Settings → **Webhooks** → Add Endpoint
+   - URL: `https://fantaoracle.ch/api/polar-webhook`
+   - Format: **Raw**
+   - Secret: uno lungo a caso, copialo
+   - Eventi: `subscription.active`, `.cycled`, `.uncanceled`, `.resumed`,
+     `.canceled`, `.revoked`, `.past_due`
+
+## Su Vercel
+
+Settings → **Environments** → clicca la riga **Production** → lì ci sono
+le variabili (non c'è una voce di menù separata "Environment Variables").
+
+**4.** Modifica queste quattro:
+
+| Variabile | Nuovo valore |
+|---|---|
+| `POLAR_SERVER` | `production` |
+| `POLAR_PRODUCT_ID` | id del prodotto di produzione |
+| `POLAR_ACCESS_TOKEN` | token creato al passo 2 |
+| `POLAR_WEBHOOK_SECRET` | segreto scelto al passo 3 |
+
+`SUPABASE_*` e `POLAR_SUCCESS_URL` restano invariate.
+
+## Nel codice
+
+**5.** In `app.html`: `const PAGAMENTI_ATTIVI = false` → **`true`**
+
+**6.** `git push origin main` (le variabili entrano in funzione solo al
+   deploy successivo).
+
+## Collaudo, prima di dirlo a qualcuno
+
+**7.** Da admin premi il bottone di pagamento e **compra davvero** con la
+   tua carta: 9.90 veri. Poi controlla, in quest'ordine:
+
+```bash
+# a) il webhook è arrivato e la firma è passata
+vercel logs $(vercel ls lunghi-fantacalcio | grep Production | head -1 | awk '{print $3}') | grep webhook
+# atteso: "[webhook] firma OK"
+```
+
+```sql
+-- b) la riga c'è, col prezzo congelato
+select u.email, s.price, s.currency, s.status
+  from public.subscriptions s join auth.users u on u.id = s.user_id
+ where s.status = 'active';
+```
+
+**8.** Poi **rimborsa te stesso** dalla dashboard Polar. Attenzione: le
+   commissioni sulla transazione **non tornano indietro** (circa 1 CHF).
+   È il prezzo del collaudo, ed è il più conveniente che ci sia.
+
+⚠️ Il rimborso genera `subscription.revoked`: verifica che il tuo accesso
+   torni a `free`. Essendo admin non te ne accorgi dall'interfaccia —
+   guarda la tabella.
+
+## Pulizia prima dell'apertura
+
+```sql
+-- toglie le righe di prova
+delete from public.subscriptions where provider = 'polar';
+
+-- rimette a posto i profili rimasti segnati come paganti
+update public.profiles p
+   set plan = 'free', plan_tier = 'free', plan_period = null
+ where p.plan <> 'free'
+   and not exists (select 1 from public.subscriptions s
+                    where s.user_id = p.id and s.status = 'active');
+```
+
+## Se qualcosa va storto: tornare indietro
+
+Rimettere `PAGAMENTI_ATTIVI = false` e ripubblicare. In trenta secondi il
+pubblico rivede "Ti avviso" e nessuno può più pagare. Chi ha già pagato
+mantiene l'accesso: la riga in `subscriptions` resta.
+
+## Interruttore, per capirlo a colpo d'occhio
+
+| `PAGAMENTI_ATTIVI` | Pubblico | Admin |
+|---|---|---|
+| `false` | "Ti avviso" | bottone 🧪 di collaudo |
+| `true` | "Abbonati — 9.90" | idem |
 
 ## ⚠️ Trappola trovata il 16/8: come Polar firma i webhook
 
