@@ -4074,8 +4074,16 @@
                 onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
           Come esporto?
         </button>
+        <button onclick="document.getElementById('competizioneUploadInput').click()"
+                style="padding:14px 16px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s"
+                onmouseover="this.style.borderColor='var(--oracle)';this.style.color='var(--oracle)'"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"
+                title="Calendario di campionato, coppa o altre competizioni della tua lega">
+          📅 Calendario competizione
+        </button>
         <input type="file" id="listinoUploadInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleListinoUpload(event)">
         <input type="file" id="calendarioUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCalendarioUpload(event)">
+        <input type="file" id="competizioneUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCompetizioneUpload(event)">
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:10px;letter-spacing:0.5px;text-align:center">
         Formati supportati: .xlsx, .xls, .csv
@@ -6402,6 +6410,104 @@ function getRivalTeams() {
   return listone.leagueTeams.filter(t => t && t !== mine).sort();
 }
 
+// ============================================================
+// COMPETIZIONI DELLA LEGA (campionato, coppa, ecc.)
+// ------------------------------------------------------------
+// Leghe Fantacalcio esporta un calendario per competizione. Ogni file dice
+// anche a quale giornata di SERIE A corrisponde ogni giornata di lega: e
+// quella corrispondenza che permette di sapere contro chi giochi, visto che
+// le competizioni non seguono lo stesso calendario (nella lega di prova il
+// campionato va 1:1, la coppa parte dalla 13ª di serie A).
+// ============================================================
+const COMPETIZIONI_STORAGE_KEY = 'fantaoracle_competizioni_v1';
+
+function loadCompetizioni() {
+  try {
+    const raw = localStorage.getItem(nsKey(COMPETIZIONI_STORAGE_KEY));
+    const v = raw ? JSON.parse(raw) : null;
+    return Array.isArray(v) ? v : [];
+  } catch (e) { return []; }
+}
+function saveCompetizioni(lista) {
+  try { localStorage.setItem(nsKey(COMPETIZIONI_STORAGE_KEY), JSON.stringify(lista || [])); } catch (e) {}
+  if (typeof scheduleCloudSync === 'function') scheduleCloudSync();
+}
+
+// Legge il calendario esportato da Leghe Fantacalcio.
+// Due giornate affiancate per blocco; la coppa ha in piu una colonna girone e
+// righe "Riposa X" per chi sta fermo quel turno. Le colonne NON sono a
+// posizione fissa tra i due formati: si parte dall'intestazione
+// "Nª Giornata lega" e ci si muove relativi a quella.
+function leggiCalendarioLega(rows) {
+  const RE_LEGA   = /^(\d+)ª\s*Giornata\s+lega$/i;
+  const RE_SERIEA = /^(\d+)ª\s*Giornata\s+serie\s*a$/i;
+  const partite = [];
+
+  for (let r = 0; r < rows.length; r++) {
+    const riga = rows[r] || [];
+    for (let c = 0; c < riga.length; c++) {
+      const m = RE_LEGA.exec(String(riga[c] || '').trim());
+      if (!m) continue;
+      const giornataLega = parseInt(m[1], 10);
+
+      // La giornata di serie A sta a destra, prima del blocco successivo.
+      let giornataSerieA = null;
+      for (let k = c + 1; k < riga.length; k++) {
+        const v = String(riga[k] || '').trim();
+        if (RE_LEGA.test(v)) break;
+        const ms = RE_SERIEA.exec(v);
+        if (ms) { giornataSerieA = parseInt(ms[1], 10); break; }
+      }
+
+      for (let rr = r + 1; rr < rows.length; rr++) {
+        const rp = rows[rr] || [];
+        if (rp.some(v => RE_LEGA.test(String(v || '').trim()))) break;
+
+        const primo = String(rp[c] || '').trim();
+        if (!primo) continue;
+
+        // Con la colonna girone la casa slitta di uno: si riconosce da dove
+        // sta il punteggio numerico.
+        let girone = '', iCasa = c;
+        const dopo = String(rp[c + 1] || '').trim();
+        if (dopo && !/^\d+$/.test(dopo)) { girone = primo; iCasa = c + 1; }
+
+        const casa = String(rp[iCasa] || '').trim();
+        if (!casa || /^riposa\b/i.test(casa)) continue; // turno di riposo: non e una partita
+        const ospite = String(rp[iCasa + 3] || '').trim();
+        if (!ospite || /^riposa\b/i.test(ospite)) continue;
+
+        partite.push({ giornataLega: giornataLega, giornataSerieA: giornataSerieA, girone: girone, casa: casa, ospite: ospite });
+      }
+    }
+  }
+  return partite;
+}
+
+// Nome competizione dalla prima cella: "Calendario Coppa molnar" → "Coppa molnar"
+function nomeCompetizioneDaFoglio(rows, fileName) {
+  for (let r = 0; r < Math.min(3, rows.length); r++) {
+    const v = String((rows[r] || [])[0] || '').trim();
+    const m = /^Calendario\s+(.+)$/i.exec(v);
+    if (m) return m[1].trim();
+  }
+  return (fileName || 'Competizione').replace(/\.(xlsx|xls|csv)$/i, '').replace(/^Calendario[_\s-]*/i, '');
+}
+
+// Chi affronto nella giornata di SERIE A indicata, in una competizione.
+function partitaDiGiornata(competizione, giornataSerieA, miaSquadra) {
+  if (!competizione || !miaSquadra || !giornataSerieA) return null;
+  const p = (competizione.partite || []).find(x =>
+    x.giornataSerieA === giornataSerieA && (x.casa === miaSquadra || x.ospite === miaSquadra));
+  if (!p) return null;
+  return {
+    avversario: p.casa === miaSquadra ? p.ospite : p.casa,
+    inCasa: p.casa === miaSquadra,
+    giornataLega: p.giornataLega,
+    girone: p.girone,
+  };
+}
+
 function getSavedOpponent() {
   try { return localStorage.getItem(nsKey(H2H_OPPONENT_KEY)) || ''; } catch(e) { return ''; }
 }
@@ -6411,6 +6517,67 @@ function setSavedOpponent(name) {
 function onH2HOpponentChange(sel) {
   setSavedOpponent(sel.value);
   renderHeadToHead();
+}
+
+// Import di un calendario competizione (file .xlsx di Leghe Fantacalcio)
+function handleCompetizioneUpload(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  if (typeof XLSX === 'undefined') {
+    showToast('❌ Libreria Excel non caricata. Verifica la connessione.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+      const partite = leggiCalendarioLega(rows);
+      if (partite.length === 0) {
+        showToast('❌ Nessuna partita riconosciuta. È il calendario esportato dalla tua lega?');
+        return;
+      }
+      const nome = nomeCompetizioneDaFoglio(rows, file.name);
+      const lista = loadCompetizioni().filter(c => c.nome !== nome); // sostituisce se gia presente
+      lista.push({ nome: nome, partite: partite, importatoIl: new Date().toISOString() });
+      saveCompetizioni(lista);
+      const giornate = new Set(partite.map(p => p.giornataLega)).size;
+      showToast('✅ ' + nome + ': ' + partite.length + ' partite su ' + giornate + ' giornate');
+      if (typeof renderHeadToHead === 'function') renderHeadToHead();
+    } catch (err) {
+      console.error('[FantaOracle] calendario competizione:', err);
+      showToast('❌ Impossibile leggere il file: ' + err.message);
+    }
+  };
+  reader.onerror = () => showToast('❌ Errore nella lettura del file.');
+  reader.readAsArrayBuffer(file);
+}
+
+// Competizione attualmente selezionata nella scheda scontro diretto
+function getCompetizioneAttiva() {
+  const lista = loadCompetizioni();
+  if (lista.length === 0) return null;
+  let salvata = '';
+  try { salvata = localStorage.getItem(nsKey('fantaoracle_comp_attiva')) || ''; } catch (e) {}
+  return lista.find(c => c.nome === salvata) || lista[0];
+}
+function onCompetizioneChange(sel) {
+  try { localStorage.setItem(nsKey('fantaoracle_comp_attiva'), sel.value); } catch (e) {}
+  // Cambiando competizione cambia l'avversario: si rilascia quello salvato
+  // a mano, altrimenti resterebbe appiccicato quello della competizione prima.
+  setSavedOpponent('');
+  renderHeadToHead();
+}
+
+// Giornata di Serie A corrente, dal calendario gia caricato nell'app
+function giornataSerieACorrente() {
+  if (calendario && Array.isArray(calendario.giornate) && calendario.currentIdx >= 0) {
+    const g = calendario.giornate[calendario.currentIdx];
+    if (g && g.num) return parseInt(g.num, 10);
+  }
+  return null;
 }
 
 // Costruisce la rosa di una fantasquadra dal listone in forma predicibile
@@ -6522,13 +6689,49 @@ function renderHeadToHead() {
     return;
   }
 
+  // === Avversario dal calendario, se importato ===
+  // Se c'e una competizione caricata e il calendario Serie A dice a che
+  // giornata siamo, l'avversario si ricava invece di sceglierlo a mano.
+  // La scelta manuale resta e ha la precedenza: serve per simulare.
+  const competizioni = loadCompetizioni();
+  const comp = getCompetizioneAttiva();
+  const gSA = giornataSerieACorrente();
+  const daCalendario = partitaDiGiornata(comp, gSA, myTeam);
+
   const saved = getSavedOpponent();
-  const opponent = rivals.includes(saved) ? saved : '';
+  const opponent = rivals.includes(saved) ? saved
+                 : (daCalendario && rivals.includes(daCalendario.avversario) ? daCalendario.avversario : '');
 
   const options = '<option value="">— scegli l\'avversario di giornata —</option>'
     + rivals.map(t => '<option value="' + escapeHtml(t) + '"' + (t === opponent ? ' selected' : '') + '>' + escapeHtml(t) + '</option>').join('');
 
-  let html = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">'
+  let html = '';
+
+  if (competizioni.length > 0) {
+    const opz = competizioni.map(c =>
+      '<option value="' + escapeHtml(c.nome) + '"' + (comp && c.nome === comp.nome ? ' selected' : '') + '>' + escapeHtml(c.nome) + '</option>').join('');
+    html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
+      + '<span style="font-size:12px;color:var(--muted)">Competizione</span>'
+      + '<select onchange="onCompetizioneChange(this)" style="flex:1;min-width:160px;padding:8px 11px;background:#0a0714;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none">'
+      + opz + '</select></div>';
+
+    if (daCalendario) {
+      html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:12px;border-left:2px solid var(--oracle);padding-left:10px;line-height:1.5">'
+        + 'Giornata <strong style="color:var(--text)">' + daCalendario.giornataLega + '</strong> di ' + escapeHtml(comp.nome)
+        + (daCalendario.girone ? ' · girone ' + escapeHtml(daCalendario.girone) : '')
+        + ' — ' + (daCalendario.inCasa ? 'in casa' : 'in trasferta')
+        + ' contro <strong style="color:var(--oracle)">' + escapeHtml(daCalendario.avversario) + '</strong>'
+        + '</div>';
+    } else if (gSA) {
+      html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:12px;border-left:2px solid var(--border);padding-left:10px;line-height:1.5">'
+        + 'Alla ' + gSA + 'ª di Serie A ' + escapeHtml(comp ? comp.nome : '') + ' non gioca'
+        + (comp && (comp.partite || []).some(p => p.giornataSerieA === gSA) ? ' — la tua squadra riposa.' : '.')
+        + ' Scegli l\'avversario a mano per simulare.'
+        + '</div>';
+    }
+  }
+
+  html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">'
     + '<span style="font-size:12px;color:var(--muted)">' + (myTeam ? escapeHtml(myTeam) : 'La tua squadra') + ' <strong style="color:var(--text)">vs</strong></span>'
     + '<select onchange="onH2HOpponentChange(this)" style="flex:1;min-width:180px;padding:9px 12px;background:#0a0714;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none">'
     + options + '</select></div>';
