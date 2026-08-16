@@ -3,9 +3,14 @@
 > Documento di ripresa. Quando torni al progetto (anche dopo mesi), apri questo file
 > e incollalo in chat: basta a ricostruire tutto il contesto in pochi secondi.
 
-**Ultimo aggiornamento:** giugno 2026
-**Versione corrente:** v0.7 BETA
-**Dominio:** https://www.lunghi.ch · **Repo:** `lunghisa/lunghi-fantacalcio` · **Hosting:** Vercel
+**Ultimo aggiornamento:** 16 agosto 2026
+**Versione corrente:** v0.7 BETA · APK Android v3 (1.0.1)
+**Dominio:** https://fantaoracle.ch — landing su `/`, app su `/app`
+**Repo:** `lunghisa/fantaoracle` · **Cartella:** `~/Documents/claude/fantaoracle/`
+**Hosting:** Vercel (progetto ancora chiamato `lunghi-fantacalcio`)
+
+> I nomi vecchi — `lunghi.ch`, `lunghi-fantacalcio`, cartella su `~/Desktop/` —
+> compaiono ancora qua e là in questo file: sono storia, non istruzioni.
 
 ---
 
@@ -17,8 +22,13 @@ Web app di fantacalcio (Fantacalcio.it) con un motore predittivo che schiera per
 
 ## Architettura (vincoli da rispettare)
 
-- **`index.html`** single-file: HTML/CSS/JS vanilla, nessun framework, offline-capable.
-- **`api/feed.js`**: serverless function Vercel (proxy RSS affidabile). NUOVA dal passo "news".
+- ⚠️ **Aggiornato 16.08.2026 — i file si sono spostati.** `index.html` NON è più
+  l'app: è la **landing di marketing** su `fantaoracle.ch/`. L'app è
+  **`app.html`**, servita su `fantaoracle.ch/app` tramite una rewrite in
+  `vercel.json`. Vedi `PAGAMENTI.md` per il quadro completo.
+- **`app.html`** single-file: HTML/CSS/JS vanilla, nessun framework, offline-capable.
+- **`api/feed.js`**: serverless function Vercel (proxy RSS affidabile).
+- **`api/checkout.js`** e **`api/polar-webhook.js`**: pagamenti via Polar.
 - Dipendenze esterne via CDN: SheetJS (xlsx) per i file Excel, Supabase JS per auth/cloud.
 - Auth + cloud sync via Supabase. Stato namespacizzato per-lega in localStorage.
 - Font: Bebas Neue + DM Sans. Stile dark premium.
@@ -27,10 +37,18 @@ Web app di fantacalcio (Fantacalcio.it) con un motore predittivo che schiera per
 
 ## Workflow di deploy
 
+La cartella è **`~/Documents/claude/fantaoracle/`** (non più `~/Desktop/`).
+Il progetto è collegato a GitHub: **un `git push origin main` fa il deploy di
+produzione**. `vercel --prod` resta un'alternativa.
+
 ```
-# edita i file in ~/Desktop/fantaoracle/
-vercel --prod      # ~10s, dalla cartella del progetto
+cd ~/Documents/claude/fantaoracle
+git add -A && git commit -m "..." && git push origin main
 ```
+
+Dopo il deploy la CDN può servire ancora la versione vecchia per qualche
+secondo: ricontrolla con un parametro tipo `?nc=123` prima di concludere che
+qualcosa non ha funzionato.
 Nota npm/Vercel: EACCES su `/usr/local/lib/node_modules` = permessi →
 `sudo npm i -g vercel@latest` (o sposta il prefix npm in ~/.npm-global).
 
@@ -95,9 +113,13 @@ L'Oracle è passato da mockup a motore reale, in più passi:
 
 ## Stato / cose da ricordare
 
-- File extra consegnati: `oracle_states_setup.sql` (migrazione Supabase),
-  `feed.js` (→ va in `~/Desktop/fantaoracle/api/feed.js`).
-- `fantaoracle.html` nel Project è OBSOLETO: la fonte di verità è `index.html`.
+- Migrazioni SQL nel repo, da eseguire una volta nel SQL Editor di Supabase:
+  `oracle_states_setup.sql`, `billing_setup.sql`, `admin_lockdown.sql`,
+  `subscriptions_setup.sql`. Tutte già eseguite ad agosto 2026.
+- I `.sql` e i `.md` restano in git ma **non** vanno sul web (`.vercelignore`):
+  descrivono il modello di sicurezza, non sono contenuto del sito.
+- La fonte di verità dell'app è **`app.html`** (dal 16.08.2026; prima era
+  `index.html`, che ora è la landing).
 - Leghe reali: *Fagioli per Tutti* (test) e *Premier Ticino League*.
 - Sync del listone globale su cloud: verificato funzionante in produzione
   (530 giocatori sincronizzati) — nessun lavoro ulteriore necessario qui.
@@ -109,3 +131,81 @@ L'Oracle è passato da mockup a motore reale, in più passi:
    partire davvero l'auto-correzione e a vedere dove il modello sbaglia.
 2. **Rating squadra dinamici**: oggi statici dal listone preseason; farli evolvere
    coi risultati reali (più complesso, dopo la validazione sul campo).
+
+---
+
+# ⚠️ DA FARE A INIZIO STAGIONE 2027/28
+
+Cose che si rompono in silenzio quando cambia la stagione. Nessuna dà errore:
+smettono solo di funzionare, e te ne accorgi settimane dopo.
+
+## 1. Le venti squadre di Serie A (news)
+
+In `app.html` c'è `SQUADRE_SERIE_A`, l'elenco delle 20 squadre. Serve a
+riconoscere quali notizie riguardano il tuo campionato: quelle che non nominano
+nessuna squadra di A vengono **scartate**, non retrocesse in fondo.
+
+L'elenco è **copiato a mano** dal calendario, non letto dal CSV a ogni avvio.
+
+**Quindi:** quando carichi `dati/calendario_serie_a_2027-28.csv`, aggiorna anche
+`SQUADRE_SERIE_A` in `app.html`.
+
+Se te ne dimentichi: le **neopromosse** vengono scambiate per squadre estere e
+tutte le loro notizie spariscono, mentre le **retrocesse** continuano a passare.
+Nessun messaggio di errore, solo notizie che mancano.
+
+Per rigenerare l'elenco dal calendario nuovo:
+
+```bash
+cd ~/Documents/claude/fantaoracle
+python3 -c "
+import csv
+t=set()
+for r in list(csv.reader(open('dati/calendario_serie_a_2027-28.csv')))[1:]:
+    t.add(r[2].strip()); t.add(r[3].strip())
+print(sorted(t))
+print(len(t),'squadre')
+"
+```
+
+Controlla anche `RE_SERIE_MINORI` e `RE_ESTERO`: se una tua squadra retrocede,
+il suo nome resta in `SQUADRE_SERIE_A` e va tolto, altrimenti le notizie di
+Serie B che la nominano rientrerebbero (il veto sulle serie minori le blocca
+comunque, ma meglio l'elenco pulito).
+
+## 2. Le fonti news muoiono senza avvisare
+
+Due sono già cadute così: **FantaGazzetta** (dominio morto, ago 2026) e
+**Fantacalcio.it** (feed rimosso, ago 2026 — rispondeva `200 OK` servendo una
+pagina "404 pagina non trovata", quindi zero notizie e nessun errore).
+
+I siti fantacalcistici stanno chiudendo gli RSS per portare traffico al sito.
+Se un giorno vedi meno pastiglie colorate del solito, è questo.
+
+Per verificarle tutte in un colpo:
+
+```bash
+UA='FantaOracle/1.0 (+https://fantaoracle.ch)'
+for u in \
+  https://www.fantamaster.it/feed/ \
+  https://www.sosfanta.com/feed/ \
+  https://www.gazzetta.it/rss/calcio.xml \
+  https://www.calciomercato.it/feed/ \
+  https://www.ansa.it/sito/notizie/sport/calcio/calcio_rss.xml \
+  https://www.spaziocalcio.it/feed ; do
+  n=$(curl -s -L --max-time 10 -A "$UA" "$u" | grep -c "<item")
+  echo "$n notizie — $u"
+done
+```
+
+Una fonte con **0 notizie è morta**, anche se risponde 200. Aggiungerne di
+nuove richiede due modifiche: `NEWS_FEEDS` in `app.html` **e** `ALLOWED_HOSTS`
+in `api/feed.js`. Se salti la seconda, il proxy la blocca.
+
+## 3. La prova gratuita e i prezzi
+
+- `TRIAL_DAYS` in `app.html` (oggi 30 giorni) deve restare coerente con i testi
+  della landing in `index.html`, che dicono "1 mese" in tre punti.
+- Il prezzo 9.90 è scritto sia nelle card dell'app sia su Polar: se lo cambi,
+  cambialo in entrambi. Chi ha già pagato tiene il suo, il prezzo è congelato
+  nella tabella `subscriptions` (vedi `PAGAMENTI.md`).
