@@ -7691,15 +7691,32 @@ const CORS_PROXIES = [
 const SQUADRE_SERIE_A = ['Atalanta','Bologna','Cagliari','Como','Fiorentina','Frosinone','Genoa','Inter','Juventus','Lazio','Lecce','Milan','Monza','Napoli','Parma','Roma','Sassuolo','Torino','Udinese','Venezia'];
 // Nei titoli le squadre si chiamano quasi sempre in modo abbreviato: senza
 // queste, "Juve, Lucumi al J Medical" finiva tra le notizie estere.
-const SOPRANNOMI = ['Juve','nerazzurr\\w*','rossoner\\w*','bianconer\\w*','giallorss\\w*','giallorss','giallorossi','biancocelest\\w*','partenope\\w*','granata','viola','friulani','salentini','felsinei','scaligeri','dea\\b'];
-const RE_SERIE_A = new RegExp(
-  '\\b(' + SQUADRE_SERIE_A.join('|') + '|' + SOPRANNOMI.join('|') +
-  '|serie a|fantacalcio|giornata|probabili formazioni|coppa italia)\\b', 'i');
+const SOPRANNOMI = ['Juve','nerazzurr\\w*','rossoner\\w*','bianconer\\w*','giallorss\\w*','giallorossi','biancocelest\\w*','partenope\\w*','granata','viola','friulani','salentini','felsinei','scaligeri'];
+const RE_SQUADRE_A = new RegExp('\\b(' + SQUADRE_SERIE_A.join('|') + '|' + SOPRANNOMI.join('|') + ')\\b', 'i');
+
+// Campionati e club esteri, piu le serie minori italiane. Serve come veto:
+// una notizia che parla di questi e non nomina nessuna squadra di Serie A
+// non riguarda il fantacalcio, quali che siano le altre parole.
+const RE_ESTERO = new RegExp('\\b(premier league|la liga|bundesliga|ligue 1|eredivisie|championship|serie b|serie c|mls|liga portugal|' +
+  'champions|europa league|conference league|mondiale per club|community shield|' +
+  'ajax|feyenoord|psv|az alkmaar|arsenal|chelsea|liverpool|manchester|tottenham|everton|newcastle|aston villa|west ham|brighton|wolves|fulham|leeds|nottingham|crystal palace|brentford|' +
+  'barcellona|real madrid|atletico|siviglia|valencia|betis|villarreal|athletic bilbao|' +
+  'psg|marsiglia|lione|monaco|bayern|dortmund|lipsia|leverkusen|' +
+  'benfica|porto|sporting|celtic|rangers|galatasaray|fenerbahce|besiktas|shakhtar|zenit)\\b', 'i');
+
+// Parole che indicano Serie A ma solo in assenza di segnali esteri.
+// Attenzione: 'giornata' NON puo stare qui — ce l'hanno tutti i campionati,
+// ed e cosi che "Beffa per Ajax e Feyenoord, il recap della 2a giornata"
+// era finito tra le notizie di Serie A.
+const RE_MARCATORI_IT = /\b(serie a|fantacalcio|coppa italia|probabili formazioni)\b/i;
 
 function riguardaSerieA(item) {
   // Le fonti fantacalcistiche parlano solo di Serie A: non serve indovinare.
   if (item.priority) return true;
-  return RE_SERIE_A.test((item.title || '') + ' ' + (item.description || ''));
+  const testo = (item.title || '') + ' ' + (item.description || '');
+  if (RE_SQUADRE_A.test(testo)) return true;   // nomina una squadra di A → dentro
+  if (RE_ESTERO.test(testo))    return false;  // parla di calcio estero → fuori
+  return RE_MARCATORI_IT.test(testo);          // altrimenti decidono i marcatori
 }
 
 const NEWS_CACHE_KEY = 'fantaoracle_news_cache_v1';
