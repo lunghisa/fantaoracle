@@ -3,7 +3,7 @@
   "short_name": "FantaOracle",
   "description": "Il fantacalcio predittivo: l'Oracle analizza la tua rosa e ti dice come schierare per vincere.",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
