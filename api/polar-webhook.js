@@ -290,10 +290,15 @@ export default async function handler(req, res) {
       // denaro e il cliente continua ad avere accesso — verificato il
       // 16/8/2026 con un rimborso vero, l'abbonamento restava 'active'.
       case 'order.refunded': {
-        const importoOk = typeof dati?.refunded_amount === 'number' &&
-                          typeof dati?.total_amount === 'number';
+        // L'imposta viene rimborsata a parte: su un ordine da 9.90 con 0.74
+        // di IVA, refunded_amount vale 916 e non 990. Confrontare solo quello
+        // con total_amount classificherebbe OGNI rimborso totale come
+        // parziale, e non revocherebbe mai niente. Vanno sommati.
+        const rimborsato = (typeof dati?.refunded_amount === 'number' ? dati.refunded_amount : 0)
+                         + (typeof dati?.refunded_tax_amount === 'number' ? dati.refunded_tax_amount : 0);
         const pieno = dati?.status === 'refunded' ||
-                      (importoOk && dati.refunded_amount >= dati.total_amount);
+                      (typeof dati?.total_amount === 'number' && rimborsato > 0 &&
+                       rimborsato >= dati.total_amount);
 
         if (!pieno) {
           // Parziale: non si tocca l'accesso. Restituire meta prezzo per un
