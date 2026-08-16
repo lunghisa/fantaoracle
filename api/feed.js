@@ -21,7 +21,6 @@ const ALLOWED_HOSTS = [
   'sosfanta.com', 'www.sosfanta.com',
   // Generaliste
   'gazzetta.it', 'www.gazzetta.it',
-  'tuttomercatoweb.com', 'www.tuttomercatoweb.com',
   'calciomercato.it', 'www.calciomercato.it',
   'ansa.it', 'www.ansa.it',
   'spaziocalcio.it', 'www.spaziocalcio.it',

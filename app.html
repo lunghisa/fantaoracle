@@ -7665,8 +7665,9 @@ const NEWS_FEEDS = [
   // troppo calciomercato. Insieme non superano 18 posti sui 50 finali, quindi
   // almeno due terzi della lista resta fantacalcistico.
   { name: 'Gazzetta',      url: 'https://www.gazzetta.it/rss/calcio.xml',                        color: '#e6007e', quota: 4  },
-  { name: 'TMW',           url: 'https://www.tuttomercatoweb.com/rss/',                          color: '#f5a623', quota: 4  },
   { name: 'CalcioMercato', url: 'https://www.calciomercato.it/feed/',                            color: '#a86ef5', quota: 4  },
+  // TMW rimossa (16 ago 2026): troppa roba generica — mercato estero, Serie B,
+  // amichevoli — e poca Serie A utile a schierare.
   { name: 'ANSA',          url: 'https://www.ansa.it/sito/notizie/sport/calcio/calcio_rss.xml',  color: '#1db954', quota: 3  },
   { name: 'Spaziocalcio',  url: 'https://www.spaziocalcio.it/feed',                              color: '#00b8d4', quota: 3  },
   // Rimosse dopo verifica: FantaGazzetta (7 ago 2026, dominio morto) e
@@ -7710,13 +7711,20 @@ const RE_ESTERO = new RegExp('\\b(premier league|la liga|bundesliga|ligue 1|ered
 // era finito tra le notizie di Serie A.
 const RE_MARCATORI_IT = /\b(serie a|fantacalcio|coppa italia|probabili formazioni)\b/i;
 
+// Serie minori e settore giovanile: veto assoluto, prima di ogni altro
+// controllo. Deve venire per primo perche una squadra puo essere nominata in
+// un contesto di Serie B (un prestito, un ex giocatore) e il controllo sulle
+// squadre, da solo, la farebbe passare.
+const RE_SERIE_MINORI = /\b(serie b|serie c|serie d|lega pro|primavera|under 2[0-3])\b/i;
+
 function riguardaSerieA(item) {
   // Le fonti fantacalcistiche parlano solo di Serie A: non serve indovinare.
   if (item.priority) return true;
   const testo = (item.title || '') + ' ' + (item.description || '');
-  if (RE_SQUADRE_A.test(testo)) return true;   // nomina una squadra di A → dentro
-  if (RE_ESTERO.test(testo))    return false;  // parla di calcio estero → fuori
-  return RE_MARCATORI_IT.test(testo);          // altrimenti decidono i marcatori
+  if (RE_SERIE_MINORI.test(testo)) return false; // Serie B/C/Primavera → fuori sempre
+  if (RE_SQUADRE_A.test(testo))    return true;  // nomina una squadra di A → dentro
+  if (RE_ESTERO.test(testo))       return false; // parla di calcio estero → fuori
+  return RE_MARCATORI_IT.test(testo);            // altrimenti decidono i marcatori
 }
 
 const NEWS_CACHE_KEY = 'fantaoracle_news_cache_v1';
@@ -7901,14 +7909,17 @@ async function fetchAllFeeds(silent) {
   // Ordinare solo per data non basta: le generaliste pubblicano in continuo
   // e scalzerebbero comunque le fantacalcistiche, che escono a raffiche.
   // Qui i posti si assegnano prima per importanza, poi si riordina per data.
-  const fanta      = allItems.filter(i => i.priority);
+  const fanta       = allItems.filter(i => i.priority);
   const serieAaltre = allItems.filter(i => !i.priority && riguardaSerieA(i));
-  const nonSerieA   = allItems.filter(i => !i.priority && !riguardaSerieA(i));
 
+  // Il calcio che non e Serie A — estero, coppe europee, Serie B e C — non
+  // compare piu affatto. Prima ne tolleravo cinque in coda come rete di
+  // sicurezza contro gli errori di riconoscimento; tolti su richiesta, e il
+  // rischio resta basso: le fonti fantacalcistiche saltano il controllo del
+  // tutto, quindi le notizie che contano non possono essere scartate.
   allItems = [
     ...fanta.slice(0, 30),        // FantaMaster e SOS Fanta: sempre, e in maggioranza
-    ...serieAaltre.slice(0, 15),  // generaliste, ma solo se parlano di Serie A
-    ...nonSerieA.slice(0, 5),     // calcio estero: tollerato in coda, mai piu di 5
+    ...serieAaltre.slice(0, 20),  // generaliste, ma solo se parlano di Serie A
   ].slice(0, 50);
 
   // Riordino finale per data: la composizione e decisa, la lettura resta
