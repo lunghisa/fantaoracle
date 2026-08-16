@@ -202,7 +202,30 @@ Una fonte con **0 notizie è morta**, anche se risponde 200. Aggiungerne di
 nuove richiede due modifiche: `NEWS_FEEDS` in `app.html` **e** `ALLOWED_HOSTS`
 in `api/feed.js`. Se salti la seconda, il proxy la blocca.
 
-## 3. La casella di posta
+## 3. I formati di import delle rose
+
+Esistono **due formati diversi** e l'app li gestisce diversamente:
+
+| Origine | Formato | Stato |
+|---|---|---|
+| Fantacalcio.it | tutti i giocatori + colonna FantaSquadra | supportato da sempre |
+| Leghe Fantacalcio `.xlsx` | squadre affiancate a coppie (nome, costo) | supportato dal 16.08.2026 |
+| Leghe Fantacalcio `.csv` | solo ID numerici, niente nomi | **non** supportato di proposito |
+
+Il secondo non ha intestazioni, ruoli ne squadre di Serie A: l'app li ricava dal
+listone incrociando per nome. **Quindi il listone va caricato prima**, altrimenti
+l'import si ferma con un messaggio dedicato.
+
+Il CSV usa gli ID di Fantacalcio.it (`7529` invece di `Koulierakis`) e il listone
+non li conserva. Per supportarlo servirebbe salvare la colonna `Id` in fase di
+caricamento del listone. Non fatto perche l'Excel dello stesso export contiene
+gia i nomi.
+
+Se a inizio stagione l'import smette di funzionare, la prima cosa da guardare e
+se l'export ha cambiato struttura: le funzioni sono `sembraExportRose` e
+`traduciExportRose` in `app.html`.
+
+## 4. La casella di posta
 
 `support@fantaoracle.ch` — creata il 16.08.2026 su **Infomaniak**, pacchetto
 **Starter** (1 indirizzo), **gratuito, durata 1 anno**.
@@ -214,7 +237,7 @@ restano indipendenti.
 L'indirizzo è quello dichiarato a Polar come contatto di supporto: se lo cambi
 qui, cambialo anche là, altrimenti i clienti scrivono a una casella morta.
 
-## 4. La prova gratuita e i prezzi
+## 5. La prova gratuita e i prezzi
 
 - `TRIAL_DAYS` in `app.html` (oggi 30 giorni) deve restare coerente con i testi
   della landing in `index.html`, che dicono "1 mese" in tre punti.
