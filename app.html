@@ -11442,7 +11442,19 @@ async function applyGlobalListinoAndCalendar() {
     // ============ LISTONE GLOBALE ============
     if (listinoData && Array.isArray(listinoData.players) && listinoData.players.length > 0) {
       // Solo se l'utente non ha un listone *uploaded* personale (uploaded ha priorità sull'admin-global)
-      const hasPersonalUpload = listone.source === 'uploaded';
+      //
+      // ⚠️ Va controllato ANCHE quello salvato, non solo la variabile in memoria.
+      // Al ricaricamento della pagina questa funzione parte con l'autenticazione,
+      // PRIMA che loadListinoFromStorage() abbia letto il disco: listone.source
+      // e ancora 'builtin', il controllo non scattava, e il listone globale
+      // veniva scritto SOPRA il file di lega dell'utente — cancellandolo, non
+      // nascondendolo. Sintomo: l'import funziona, e sparisce al primo reload.
+      let sourceSalvata = '';
+      try {
+        const grezzo = localStorage.getItem(nsKey(LISTINO_STORAGE_KEY));
+        if (grezzo) sourceSalvata = (JSON.parse(grezzo) || {}).source || '';
+      } catch (e) {}
+      const hasPersonalUpload = listone.source === 'uploaded' || sourceSalvata === 'uploaded';
       if (!hasPersonalUpload) {
         const players = listinoData.players.map((p, i) => ({
           id: 'g' + i,
