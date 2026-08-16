@@ -3912,6 +3912,13 @@
         </button>
         <div id="leagueSwitcherMenu" class="league-switcher-menu" style="display:none"></div>
       </div>
+      <!-- Competizione: stesso livello della lega, non sepolta dentro l'Oracle.
+           Compare solo se sono stati importati dei calendari. -->
+      <div id="compSwitcherWrap" style="display:none">
+        <select id="compSwitcherSelect" onchange="onCompetizioneChange(this)"
+                title="Competizione della lega"
+                style="background:rgba(168,110,245,0.12);border:1px solid rgba(201,162,255,0.35);border-radius:999px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:7px 10px;cursor:pointer;outline:none;max-width:170px"></select>
+      </div>
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" id="tab-dashboard" onclick="showPage('dashboard', this)"><svg class="ico"><use href="#ico-home"/></svg>Dashboard</button>
@@ -5020,6 +5027,7 @@ function switchToLeague(leagueId) {
   // Reset stato in-memory
   listone = { source:'builtin', uploadedName:null, uploadedDate:null, players:[], leagueDetected:false, leagueTeams:[], fuoriListaCount:0 };
   players.starters = []; players.bench = [];
+  try { renderCompSwitcher(); } catch (e) {}
   // Ricarica dalla nuova lega
   loadListinoFromStorage();
   loadRosterFromStorage();
@@ -5116,6 +5124,7 @@ function deleteLeague(leagueId) {
 
 // ===== UI: League Switcher (dropdown in nav) =====
 function renderLeagueSwitcher() {
+  try { renderCompSwitcher(); } catch (e) {}
   const trigger = document.getElementById('leagueSwitcherTrigger');
   const menu = document.getElementById('leagueSwitcherMenu');
   if (!trigger || !menu) return;
@@ -6545,6 +6554,7 @@ function handleCompetizioneUpload(ev) {
       saveCompetizioni(lista);
       const giornate = new Set(partite.map(p => p.giornataLega)).size;
       showToast('✅ ' + nome + ': ' + partite.length + ' partite su ' + giornate + ' giornate');
+      if (typeof renderCompSwitcher === 'function') renderCompSwitcher();
       if (typeof renderHeadToHead === 'function') renderHeadToHead();
     } catch (err) {
       console.error('[FantaOracle] calendario competizione:', err);
@@ -6568,7 +6578,28 @@ function onCompetizioneChange(sel) {
   // Cambiando competizione cambia l'avversario: si rilascia quello salvato
   // a mano, altrimenti resterebbe appiccicato quello della competizione prima.
   setSavedOpponent('');
+  renderCompSwitcher();
   renderHeadToHead();
+}
+
+// Selettore competizione nella barra in alto, accanto alla lega: sono due
+// livelli dello stesso contesto (in quale lega gioco, e in quale torneo).
+function renderCompSwitcher() {
+  const wrap = document.getElementById('compSwitcherWrap');
+  const sel = document.getElementById('compSwitcherSelect');
+  if (!wrap || !sel) return;
+
+  // Admin senza lega: la barra lega e nascosta, questa segue.
+  if (currentUser && currentUser.is_admin) { wrap.style.display = 'none'; return; }
+
+  const lista = loadCompetizioni();
+  if (lista.length === 0) { wrap.style.display = 'none'; sel.innerHTML = ''; return; }
+
+  const attiva = getCompetizioneAttiva();
+  sel.innerHTML = lista.map(c =>
+    '<option value="' + escapeAttr(c.nome) + '"' + (attiva && c.nome === attiva.nome ? ' selected' : '') + '>🏅 ' + escapeHtml(c.nome) + '</option>'
+  ).join('');
+  wrap.style.display = '';
 }
 
 // Giornata di Serie A corrente, dal calendario gia caricato nell'app
@@ -6707,14 +6738,10 @@ function renderHeadToHead() {
 
   let html = '';
 
+  // Il selettore della competizione sta nella barra in alto, accanto alla
+  // lega: qui resta solo il risultato, altrimenti sarebbero due comandi che
+  // fanno la stessa cosa in due posti diversi.
   if (competizioni.length > 0) {
-    const opz = competizioni.map(c =>
-      '<option value="' + escapeHtml(c.nome) + '"' + (comp && c.nome === comp.nome ? ' selected' : '') + '>' + escapeHtml(c.nome) + '</option>').join('');
-    html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
-      + '<span style="font-size:12px;color:var(--muted)">Competizione</span>'
-      + '<select onchange="onCompetizioneChange(this)" style="flex:1;min-width:160px;padding:8px 11px;background:#0a0714;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none">'
-      + opz + '</select></div>';
-
     if (daCalendario) {
       html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:12px;border-left:2px solid var(--oracle);padding-left:10px;line-height:1.5">'
         + 'Giornata <strong style="color:var(--text)">' + daCalendario.giornataLega + '</strong> di ' + escapeHtml(comp.nome)
@@ -12278,12 +12305,18 @@ function renderDashLeagues() {
     box.innerHTML = '<div class="mng-empty">Nessuna lega ancora. Creane una caricando il file della tua lega Fantacalcio.it.</div>';
     return;
   }
+  // Il rinomina c'era solo come iconcina nel menù in alto e cliccando il nome
+  // nella hero: nessuno lo trovava. Qui e esplicito.
   box.innerHTML = leagues.map(l => `
-    <button class="mng-league-row${l.id === activeLeagueId ? ' active' : ''}" onclick="switchToLeague('${escapeAttr(l.id)}')">
-      <span class="dot"></span>
-      <span class="nm">${escapeHtml(l.name || 'Lega senza nome')}</span>
-      ${l.id === activeLeagueId ? '<span class="tag">ATTIVA</span>' : ''}
-    </button>`).join('');
+    <div style="display:flex;align-items:center;gap:6px">
+      <button class="mng-league-row${l.id === activeLeagueId ? ' active' : ''}" style="flex:1" onclick="switchToLeague('${escapeAttr(l.id)}')">
+        <span class="dot"></span>
+        <span class="nm">${escapeHtml(l.name || 'Lega senza nome')}</span>
+        ${l.id === activeLeagueId ? '<span class="tag">ATTIVA</span>' : ''}
+      </button>
+      <button onclick="renameLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Rinomina la lega"
+              style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;padding:7px 9px;font-size:12px">✏️</button>
+    </div>`).join('');
 }
 function renderTrialCard() {
   const box = document.getElementById('trialCardBody');
