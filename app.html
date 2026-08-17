@@ -5540,12 +5540,23 @@ function routeUploadDecision(file) {
   const normalizedCurrent = currentLeagueName.toLowerCase().replace(/[^a-z0-9]/g, '');
   
   // Se sono uguali o uno contiene l'altro → stessa lega, chiedi conferma sovrascrittura
-  const isSameLeague = normalizedFile && normalizedCurrent && (
-    normalizedFile === normalizedCurrent ||
-    normalizedFile.includes(normalizedCurrent) ||
-    normalizedCurrent.includes(normalizedFile)
-  );
-  
+  const combacia = (a, b) => a && b && (a === b || a.includes(b) || b.includes(a));
+  let isSameLeague = combacia(normalizedFile, normalizedCurrent);
+
+  // Il confronto con la sola lega ATTIVA non basta: se il suo nome e vuoto o
+  // e stato azzerato, ogni file sembra una lega nuova e se ne creano copie
+  // con la stessa rosa. Qui si guardano tutte, e se una corrisponde ci si
+  // sposta invece di duplicare.
+  if (!isSameLeague && normalizedFile && Array.isArray(leagues)) {
+    const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const gemella = leagues.find(l => l.id !== activeLeagueId && combacia(normalizedFile, norm(nomeLegaVisibile(l))));
+    if (gemella) {
+      switchToLeague(gemella.id);
+      showToast('Lega riconosciuta: ' + nomeLegaVisibile(gemella));
+      isSameLeague = true;
+    }
+  }
+
   if (isSameLeague) {
     // Stessa lega → chiedi conferma aggiornamento
     confirmOverwriteLeague(file);
