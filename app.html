@@ -2462,7 +2462,23 @@
     display: block;
   }
 
-  @media (max-width: 899px) { .dash-manage-grid { grid-template-columns: 1fr; } }
+  /* ============ DASHBOARD GESTIONE: leghe · prova · piani ============ */
+  /* Due finestre affiancate — LE MIE LEGHE e LA TUA PROVA — e ABBONAMENTO
+     sotto, a tutta larghezza: e la scheda con i prezzi, e di larghezza ci
+     guadagna. Prima erano tre colonne strette (1.2fr 1fr 1.2fr).
+     Nota: questa regola era finita cancellata insieme al CSS dell'Arena,
+     perche stava attaccata all'ultima regola .arena-. Senza, restava solo
+     l'eccezione per mobile qui sotto e le schede si impilavano ovunque. */
+  .dash-manage-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 24px;
+    align-items: stretch;
+  }
+  .dash-manage-grid > .mng-card:nth-child(3) { grid-column: 1 / -1; }
+  @media (max-width: 899px) {
+    .dash-manage-grid { grid-template-columns: 1fr; }
+    .dash-manage-grid > .mng-card:nth-child(3) { grid-column: auto; }
+  }
   .mng-card { display: flex; flex-direction: column; }
   .mng-empty { font-size: 13px; color: var(--muted); line-height: 1.6; padding: 6px 0; }
   .mng-league-row {
