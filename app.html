@@ -5199,7 +5199,54 @@ function renameLeague(leagueId) {
   showToast('✅ Lega rinominata');
 }
 
-function deleteLeague(leagueId) {
+// Elimina la lega dal cloud. Restituisce { ok, errore }.
+//
+// Serve perche eliminarla solo in locale non basta: al caricamento successivo
+// pullFromCloud tratta il cloud come fonte di verita e riscrive il registro
+// locale con tutte le righe che trova la. Era esattamente il giro per cui le
+// leghe eliminate ricomparivano a ogni refresh, per sempre.
+async function eliminaLegaDalCloud(lg) {
+  let cloudId = lg._cloudId || null;
+  if (!cloudId) {
+    // Registro vecchio, senza id cloud: lo risolvo per nome, ma solo se non e
+    // ambiguo. Con due righe omonime "quella giusta" sarebbe un tiro di dado,
+    // e qui il dado perde una rosa.
+    try {
+      const { data, error } = await supabaseClient
+        .from('leagues').select('id')
+        .eq('user_id', currentUser.id).eq('league_name', lg.name);
+      if (error) return { ok: false, errore: error.message };
+      if (!data || data.length === 0) return { ok: true };  // nel cloud non c'e: niente da eliminare
+      if (data.length > 1) return { ok: false, errore: `nel cloud ci sono ${data.length} leghe con questo nome e non so quale sia` };
+      cloudId = data[0].id;
+    } catch (e) {
+      return { ok: false, errore: e.message || 'errore di rete' };
+    }
+  }
+  try {
+    // Prima i figli, poi la lega. Se il vincolo ha ON DELETE CASCADE questi
+    // due passaggi non fanno danno; se non l'ha, sono necessari, perche
+    // altrimenti il database rifiuta di eliminare la lega.
+    await supabaseClient.from('oracle_states').delete().eq('league_id', cloudId);
+    await supabaseClient.from('roster_players').delete().eq('league_id', cloudId);
+    const { error } = await supabaseClient
+      .from('leagues').delete().eq('id', cloudId).eq('user_id', currentUser.id);
+    if (error) return { ok: false, errore: error.message };
+    // Verifica che sia sparita davvero. Serve: se manca la policy di delete,
+    // la RLS non da errore — semplicemente non elimina niente e risponde ok.
+    // Senza questo controllo l'app direbbe "eliminata" e la lega tornerebbe
+    // al refresh, che e la cosa da cui stiamo cercando di uscire.
+    const { data: resta } = await supabaseClient.from('leagues').select('id').eq('id', cloudId);
+    if (resta && resta.length > 0) {
+      return { ok: false, errore: 'il database non lo consente (manca la policy di delete su leagues)' };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, errore: e.message || 'errore di rete' };
+  }
+}
+
+async function deleteLeague(leagueId) {
   if (leagues.length <= 1) {
     showToast('⚠️ Non puoi eliminare l\'unica lega');
     return;
@@ -5207,6 +5254,17 @@ function deleteLeague(leagueId) {
   const lg = leagues.find(l => l.id === leagueId);
   if (!lg) return;
   if (!confirm(`Eliminare la lega "${lg.name}"? Verrà persa la rosa associata. (Il calendario resta.)`)) return;
+  // Il cloud per primo. Se non riesco la lascio anche in locale: farla
+  // sparire e vederla tornare al refresh e peggio che dire subito perche non
+  // si puo.
+  if (currentUser && supabaseClient) {
+    showToast('Elimino…');
+    const esito = await eliminaLegaDalCloud(lg);
+    if (!esito.ok) {
+      showToast(`Non eliminata: ${esito.errore}. La lascio dov'e, altrimenti tornerebbe al prossimo caricamento.`, 'warning');
+      return;
+    }
+  }
   // Rimuovi dalle leghe
   leagues = leagues.filter(l => l.id !== leagueId);
   saveLeaguesRegistry();
@@ -9832,6 +9890,7 @@ function readLocalLeaguesSnapshot() {
     activeLeagueId = prevActive; // ripristino
     snapshot.push({
       id: lg.id,
+      cloudId: lg._cloudId || null,
       name: lg.name,
       teamName, modulo, mode,
       addedDate: lg.addedDate,
@@ -9854,20 +9913,37 @@ async function pushAllToCloud() {
       updateCloudIndicator();
       return true;
     }
-    // 1. Upsert delle leghe (uso league_name come natural key per detection)
-    // Per evitare conflitti, controllo prima quali leghe esistono già nel cloud
+    // 1. Upsert delle leghe.
+    //
+    // Il NOME non e piu la chiave. Lo era, e due leghe che si chiamano allo
+    // stesso modo — capita, e capita di piu da quando i nomi vengono
+    // riconciliati — finivano sulla stessa riga cloud: la seconda
+    // sovrascriveva la prima, rosa compresa. La chiave e l'id cloud, che
+    // teniamo nel registro locale come _cloudId.
     const { data: existing } = await supabaseClient
       .from('leagues')
       .select('id, league_name')
       .eq('user_id', currentUser.id);
-    const existingByName = {};
-    (existing || []).forEach(l => { existingByName[l.league_name] = l.id; });
+    const idsCloud = new Set((existing || []).map(l => l.id));
+    const perNome = {};
+    (existing || []).forEach(l => { (perNome[l.league_name] = perNome[l.league_name] || []).push(l.id); });
 
     // Mappa localId -> cloudId (alcune locali saranno mappate a cloud esistenti, altre nuove)
     const idMap = {};
+    const adottati = new Set();
+    let registroDaRiscrivere = false;
 
     for (const ll of localSnap) {
-      let cloudId = existingByName[ll.name];
+      let cloudId = (ll.cloudId && idsCloud.has(ll.cloudId)) ? ll.cloudId : null;
+      // Lega che non ha ancora un id cloud (registro vecchio, o creata qui e
+      // mai spinta). Se nel cloud c'e UNA sola riga con questo nome la
+      // adotto; se ce ne sono piu di una non si puo indovinare, e adottarne
+      // una a caso mescolerebbe due leghe diverse: meglio una riga in piu
+      // che una rosa sbagliata.
+      if (!cloudId) {
+        const candidate = (perNome[ll.name] || []).filter(id => !adottati.has(id));
+        if (candidate.length === 1) cloudId = candidate[0];
+      }
       const leagueData = {
         user_id: currentUser.id,
         league_name: ll.name,
@@ -9888,7 +9964,16 @@ async function pushAllToCloud() {
         if (error) throw error;
         cloudId = ins.id;
       }
+      adottati.add(cloudId);
       idMap[ll.id] = cloudId;
+      // L'id cloud torna nel registro, cosi la prossima volta non c'e niente
+      // da indovinare. Scrivo diretto: saveLeaguesRegistry() chiama
+      // scheduleCloudSync(), che richiamerebbe questa stessa funzione.
+      const reg = leagues.find(l => l.id === ll.id);
+      if (reg && reg._cloudId !== cloudId) { reg._cloudId = cloudId; registroDaRiscrivere = true; }
+    }
+    if (registroDaRiscrivere) {
+      try { localStorage.setItem(LEAGUES_REGISTRY_KEY, JSON.stringify(leagues)); } catch(e) {}
     }
 
     // 2. Upsert roster: strategia semplice = delete + reinsert per ogni lega
@@ -9956,17 +10041,35 @@ function clampNum(v, min, max) {
 // Pull dal cloud → sovrascrive localStorage e stato in-memory
 async function pullFromCloud(cloudLeagues) {
   if (!cloudLeagues || cloudLeagues.length === 0) return false;
-  // Aggiorno registry leghe in-memory + storage
-  leagues = cloudLeagues.map(cl => ({
-    id: slugifyLeague(cl.league_name) || cl.id,
+  // Aggiorno registry leghe in-memory + storage.
+  //
+  // L'id locale veniva ricavato dal nome. Due righe cloud con lo stesso nome
+  // producevano quindi lo stesso id locale, e il registro finiva con due voci
+  // indistinguibili che puntavano allo stesso spazio dati: eliminarne una
+  // cancellava la rosa di entrambe. Ora una lega gia conosciuta mantiene il
+  // suo id (cosi i dati namespacizzati restano al loro posto) e le omonime
+  // ne ricevono uno distinto.
+  const perCloudId = {};
+  leagues.forEach(l => { if (l._cloudId) perCloudId[l._cloudId] = l; });
+  const idUsati = new Set();
+  const abbinate = cloudLeagues.map(cl => {
+    const gia = perCloudId[cl.id];
+    let localId = gia ? gia.id : (slugifyLeague(cl.league_name) || cl.id);
+    if (idUsati.has(localId)) {
+      localId = (slugifyLeague(cl.league_name) || 'lega') + '-' + String(cl.id).slice(0, 8);
+    }
+    idUsati.add(localId);
+    return { cl, localId };
+  });
+  leagues = abbinate.map(({ cl, localId }) => ({
+    id: localId,
     name: cl.league_name,
     addedDate: cl.created_at,
     _cloudId: cl.id, // tengo il riferimento al UUID cloud
   }));
   saveLeaguesRegistry();
   // Per ogni lega, ricostruisco lo storage locale
-  for (const cl of cloudLeagues) {
-    const localId = slugifyLeague(cl.league_name) || cl.id;
+  for (const { cl, localId } of abbinate) {
     const prevActive = activeLeagueId;
     activeLeagueId = localId;
     // Salvo my_team (è solo il nome squadra come stringa)
