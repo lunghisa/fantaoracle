@@ -52,6 +52,15 @@
     /* Colori dei ruoli: erano ripetuti a mano in 10 punti del codice, e in
      uno divergevano (#3d9bff/#e63946 invece di #4dabf7/#ee4444), quindi lo
      stesso giocatore cambiava sfumatura a seconda di dove arrivavano i dati. */
+  /* Scala degli angoli: prima erano 18 valori diversi (3,4,6,7,8,9,10,12,
+     14,18,20…), quindi due riquadri accostati non avevano mai lo stesso
+     raggio. Ora quattro, piu le pillole e i cerchi. */
+  --r-xs: 4px;    /* pastiglie, tag, controlli minuti */
+  --r-sm: 8px;    /* bottoni, campi, righe */
+  --r-md: 12px;   /* riquadri */
+  --r-lg: 18px;   /* schede grandi e finestre */
+  --r-pill: 999px;
+
   --ruolo-p: #ff8c1a;
   --ruolo-d: #7bc043;
   --ruolo-c: #4dabf7;
@@ -325,7 +334,7 @@
     font-size: 16px;
     letter-spacing: 4px;
     border: 1px solid rgba(245,197,66,0.55);
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     backdrop-filter: blur(6px);
     transition: all 0.3s ease;
@@ -550,7 +559,7 @@
     justify-content: center;
     gap: 7px;
     padding: 10px 16px;
-    border-radius: 10px;
+    border-radius: 8px;
     border: 1px solid transparent;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
@@ -676,7 +685,7 @@
     max-width: 420px;
     background: linear-gradient(135deg, #1d1140 0%, #120b24 100%);
     border: 1px solid rgba(245,197,66,0.28);
-    border-radius: 20px;
+    border-radius: 18px;
     padding: 36px 28px 28px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 80px rgba(168,110,245,0.08);
     animation: authSlideUp 0.4s cubic-bezier(0.2,0.8,0.2,1);
@@ -709,7 +718,7 @@
   .auth-tabs {
     display: flex;
     background: var(--surface2);
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 4px;
     margin-bottom: 22px;
     gap: 0;
@@ -723,7 +732,7 @@
     font-size: 14px;
     letter-spacing: 2px;
     cursor: pointer;
-    border-radius: 7px;
+    border-radius: 8px;
     transition: all 0.2s;
     min-height: 40px;
   }
@@ -748,7 +757,7 @@
     padding: 12px 14px;
     background: #0a0714;
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
@@ -776,7 +785,7 @@
     background: linear-gradient(135deg, var(--gold) 0%, #e8a800 100%);
     color: #000;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     font-family: 'Bebas Neue', sans-serif;
     font-size: 18px;
     letter-spacing: 3px;
@@ -839,7 +848,7 @@
     background: #ffffff;
     color: #1f1f1f;
     border: 1px solid #dadce0;
-    border-radius: 10px;
+    border-radius: 8px;
     font-family: 'DM Sans', 'Roboto', sans-serif;
     font-size: 14px;
     font-weight: 500;
@@ -880,7 +889,7 @@
     background: transparent;
     color: var(--muted);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
     letter-spacing: 1px;
@@ -907,7 +916,7 @@
     padding: 5px 10px 5px 5px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: 18px;
     cursor: pointer;
     transition: all 0.2s;
     max-width: 200px;
@@ -983,7 +992,7 @@
     font-size: 13px;
     text-align: left;
     cursor: pointer;
-    border-radius: 7px;
+    border-radius: 8px;
     display: flex; align-items: center; gap: 10px;
     transition: background 0.15s;
     min-height: 40px;
@@ -999,7 +1008,7 @@
     margin: auto;
     background: linear-gradient(135deg, #120b24 0%, #1a1136 100%);
     border: 1px solid rgba(245,197,66,0.35);
-    border-radius: 20px;
+    border-radius: 18px;
     padding: 0;
     box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 100px rgba(245,197,66,0.05);
     display: flex; flex-direction: column;
@@ -1270,7 +1279,7 @@
     color: var(--muted);
     font-size: 10px;
     letter-spacing: 1px;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
     font-family: 'DM Mono', monospace;
     transition: all 0.15s;
@@ -1369,7 +1378,7 @@
   .admin-chart-bar {
     flex: 1;
     background: linear-gradient(180deg, var(--oracle), rgba(168,110,245,0.3));
-    border-radius: 2px 2px 0 0;
+    border-radius: 4px 4px 0 0;
     min-height: 2px;
     position: relative;
     transition: opacity 0.15s;
@@ -1412,7 +1421,7 @@
     padding: 12px 14px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
     margin-bottom: 6px;
     transition: border-color 0.15s;
   }
@@ -1493,7 +1502,7 @@
     color: var(--muted);
     font-size: 10px;
     letter-spacing: 1px;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-family: 'DM Mono', monospace;
     transition: all 0.15s;
@@ -1510,7 +1519,7 @@
     padding: 14px 16px;
     background: rgba(168,110,245,0.03);
     border: 1px solid rgba(168,110,245,0.15);
-    border-radius: 0 0 10px 10px;
+    border-radius: 0 0 8px 8px;
     border-top: none;
     font-size: 12px;
   }
@@ -1641,7 +1650,7 @@
     padding: 6px 16px;
     font-size: 13px; font-weight: 500;
     color: var(--muted); cursor: pointer;
-    border-radius: 6px;
+    border-radius: 8px;
     transition: all 0.2s;
     border: none; background: none;
     letter-spacing: 0.5px; position: relative;
@@ -1676,7 +1685,7 @@
     font-size: 12px; font-weight: 600;
     border: none; background: none;
     color: var(--muted); cursor: pointer;
-    border-radius: 6px;
+    border-radius: 8px;
     transition: all 0.2s;
     letter-spacing: 0.5px;
   }
@@ -1687,7 +1696,7 @@
     display: flex;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 4px;
     margin-bottom: 12px;
     gap: 0;
@@ -1701,7 +1710,7 @@
     font-size: 14px;
     letter-spacing: 2px;
     cursor: pointer;
-    border-radius: 7px;
+    border-radius: 8px;
     transition: all 0.2s;
     min-height: 40px;
     display: flex; align-items: center; justify-content: center;
@@ -1744,7 +1753,7 @@
     background: none; border: none;
     color: var(--muted);
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 8px;
     min-height: 48px;
     position: relative;
     transition: color 0.15s;
@@ -1787,7 +1796,7 @@
     transform: translateX(-50%);
     width: 24px; height: 2px;
     background: var(--gold);
-    border-radius: 0 0 2px 2px;
+    border-radius: 0 0 4px 4px;
   }
   .bottom-nav-tab:active { background: rgba(245,197,66,0.08); }
   .bottom-nav-tab .bn-dot {
@@ -1813,7 +1822,7 @@
   .welcome-banner {
     background: linear-gradient(135deg, #1d1140 0%, #140d29 100%);
     border: 1px solid rgba(245,197,66,0.2);
-    border-radius: 16px; padding: 28px 32px;
+    border-radius: 18px; padding: 28px 32px;
     margin-bottom: 28px;
     position: relative; overflow: hidden;
   }
@@ -1830,7 +1839,7 @@
   .hero-banner {
     background: linear-gradient(135deg, #1d1140 0%, #140d29 55%, #241533 100%);
     border: 1px solid rgba(245,197,66,0.2);
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 22px 28px 24px;
     margin-bottom: 24px;
     position: relative; overflow: hidden;
@@ -1868,7 +1877,7 @@
     display: inline-flex; align-items: center; gap: 8px;
     background: rgba(168,110,245,0.06);
     border: 1px solid rgba(168,110,245,0.25);
-    border-radius: 20px;
+    border-radius: 18px;
     padding: 6px 14px;
     font-size: 12px;
     cursor: pointer;
@@ -1894,7 +1903,7 @@
   .hero-team-wrap {
     background: rgba(0,0,0,0.25);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 16px 18px;
   }
   .hero-team-label {
@@ -1944,7 +1953,7 @@
     display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
   }
   @media (max-width: 600px) {
-    .hero-banner { padding: 16px 16px 18px; border-radius: 14px; margin-bottom: 16px; }
+    .hero-banner { padding: 16px 16px 18px; border-radius: 12px; margin-bottom: 16px; }
     .hero-top { gap: 10px; margin-bottom: 10px; }
     .hero-greeting-label { font-size: 10px; letter-spacing: 2px; }
     .hero-greeting-name { font-size: 22px; letter-spacing: 1.5px; }
@@ -1993,7 +2002,7 @@
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px; padding: 20px;
+    border-radius: 12px; padding: 20px;
   }
   .card-title {
     font-family: 'Bebas Neue', sans-serif;
@@ -2016,7 +2025,7 @@
     display: inline-flex; align-items: center; gap: 8px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 20px; padding: 6px 14px;
+    border-radius: 18px; padding: 6px 14px;
     font-size: 13px; cursor: pointer;
     transition: all 0.2s; margin: 4px;
   }
@@ -2034,7 +2043,7 @@
     max-width: 480px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 18px;
   }
   /* Desktop largo: campo grande + colonna laterale sticky (banco di lavoro) */
@@ -2395,7 +2404,7 @@
   .fc-embed-bar button, .fc-embed-bar a {
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--muted);
     font-size: 11px;
     padding: 5px 9px;
@@ -2409,7 +2418,7 @@
     width: 100%;
     height: 64vh;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
     background: #fff;
     display: block;
   }
@@ -2436,7 +2445,7 @@
     display: flex; align-items: center; gap: 8px;
     background: rgba(245,197,66,0.12);
     border: 1px solid rgba(245,197,66,0.35);
-    border-radius: 24px; padding: 8px 16px;
+    border-radius: 18px; padding: 8px 16px;
   }
   .arena-streak b { font-size: 16px; color: var(--gold); }
   .arena-streak span {
@@ -2466,18 +2475,18 @@
   .arena-g { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
   /* Pick della giornata: cornice con gradiente lavanda→viola→oro */
   .arena-pick-frame {
-    border-radius: 22px; padding: 2px;
+    border-radius: 18px; padding: 2px;
     background: linear-gradient(140deg, #c9a2ff, #7c3fd4 40%, var(--gold));
   }
   .arena-pick {
     background: #140d29;
-    border-radius: 20px; padding: 26px;
+    border-radius: 18px; padding: 26px;
     display: flex; gap: 26px; align-items: center;
   }
   @media (max-width: 599px) { .arena-pick { flex-direction: column; text-align: center; } }
   .arena-pick-photo {
     width: 130px; height: 165px; flex: none;
-    border-radius: 14px;
+    border-radius: 12px;
     background: repeating-linear-gradient(135deg, #2a1c4d 0 8px, #241844 8px 16px);
     border: 1px solid rgba(201,162,255,0.35);
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
@@ -2504,7 +2513,7 @@
   .arena-chip {
     font-size: 11px; font-weight: 600; color: var(--text);
     background: rgba(255,255,255,0.07);
-    border-radius: 20px; padding: 6px 12px;
+    border-radius: 18px; padding: 6px 12px;
   }
   .arena-chip.rig { background: var(--green); color: #0d0820; }
   /* Card rischio titolari */
@@ -2548,7 +2557,7 @@
   /* Classifica */
   .arena-standing-row {
     display: flex; align-items: center; gap: 12px;
-    padding: 9px 10px; border-radius: 10px; margin: 0 -10px;
+    padding: 9px 10px; border-radius: 8px; margin: 0 -10px;
     font-size: 13px;
   }
   .arena-standing-row.mine { background: rgba(245,197,66,0.08); }
@@ -2564,7 +2573,7 @@
     min-height: 90px;
     margin-bottom: 22px;
     border: 1px dashed rgba(201,162,255,0.35);
-    border-radius: 14px;
+    border-radius: 12px;
     background: repeating-linear-gradient(135deg, #140d29 0 10px, #181031 10px 20px);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 4px;
@@ -2593,7 +2602,7 @@
     width: 100%; text-align: left;
     background: var(--surface2);
     border: 1px solid transparent;
-    border-radius: 9px; padding: 9px 12px;
+    border-radius: 8px; padding: 9px 12px;
     color: var(--text); font-size: 13px; font-weight: 600;
     cursor: pointer; transition: all 0.2s;
     margin-bottom: 6px;
@@ -2607,7 +2616,7 @@
   .mng-add-league {
     margin-top: auto;
     background: none; border: 1px dashed var(--border);
-    border-radius: 9px; padding: 9px 12px;
+    border-radius: 8px; padding: 9px 12px;
     color: var(--muted); font-size: 12px; font-weight: 600;
     cursor: pointer; transition: all 0.2s;
   }
@@ -2652,7 +2661,7 @@
     padding: 10px 12px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
     margin-bottom: 12px;
     flex-wrap: wrap;
   }
@@ -2668,7 +2677,7 @@
     padding: 6px 12px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 12px; font-family: 'DM Mono', monospace;
     color: var(--muted); cursor: pointer; transition: all 0.2s;
   }
@@ -2678,7 +2687,7 @@
     display: flex; align-items: center; gap: 8px;
     padding: 7px 9px;
     background: var(--surface2);
-    border-radius: 7px;
+    border-radius: 8px;
     border: 1px solid transparent;
     transition: all 0.2s; cursor: pointer; margin-bottom: 5px;
   }
@@ -2687,7 +2696,7 @@
   .player-list-item.bench { border-left: 3px solid var(--muted); opacity: 0.78; }
   .pli-role {
     font-size: 9px; font-weight: 700;
-    width: 22px; height: 16px; border-radius: 3px;
+    width: 22px; height: 16px; border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     letter-spacing: 0.3px;
     flex-shrink: 0;
@@ -2710,7 +2719,7 @@
   .flow-step {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px; padding: 24px;
+    border-radius: 12px; padding: 24px;
     position: relative; overflow: hidden;
     transition: transform 0.2s, border-color 0.2s;
   }
@@ -2732,7 +2741,7 @@
   .confidence-bar-wrap {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px; padding: 24px;
+    border-radius: 12px; padding: 24px;
     margin-bottom: 20px;
   }
   .conf-title {
@@ -2742,9 +2751,9 @@
   }
   .conf-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .conf-label { font-size: 12px; color: var(--muted); width: 100px; }
-  .conf-bar-bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .conf-bar-bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
   .conf-bar-fill {
-    height: 100%; border-radius: 3px;
+    height: 100%; border-radius: 4px;
     transition: width 1.5s cubic-bezier(0.4,0,0.2,1);
     animation: barLoad 1.5s ease forwards;
   }
@@ -2766,7 +2775,7 @@
     display: flex; align-items: center; gap: 10px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 20px; padding: 6px 14px;
+    border-radius: 18px; padding: 6px 14px;
     font-size: 12px; font-family: 'DM Mono', monospace;
   }
   .news-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
@@ -2802,7 +2811,7 @@
     padding: 6px 14px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: 18px;
     font-size: 12px; font-weight: 600;
     color: var(--muted); cursor: pointer;
     transition: all 0.2s; letter-spacing: 0.5px;
@@ -2822,7 +2831,7 @@
     margin-bottom: 16px; padding: 10px 14px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px; font-size: 11px;
+    border-radius: 8px; font-size: 11px;
   }
   .news-source-tag {
     display: inline-flex; align-items: center; gap: 5px;
@@ -2835,7 +2844,7 @@
   .news-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px; overflow: hidden;
+    border-radius: 12px; overflow: hidden;
     cursor: pointer; transition: all 0.25s;
     display: flex; flex-direction: column;
     position: relative;
@@ -2893,7 +2902,7 @@
     text-align: center;
     background: var(--surface);
     border: 1px dashed var(--border);
-    border-radius: 14px;
+    border-radius: 12px;
   }
   .news-empty .icon { font-size: 48px; opacity: 0.3; margin-bottom: 12px; }
   .news-empty p { color: var(--muted); font-size: 13px; }
@@ -2901,7 +2910,7 @@
   .news-skeleton {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px; overflow: hidden; height: 280px;
+    border-radius: 12px; overflow: hidden; height: 280px;
   }
   .news-skeleton .sk-img {
     height: 140px;
@@ -2949,7 +2958,7 @@
   }
   .news-mini-cat-tag {
     font-size: 9px; padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: 4px;
     font-weight: 700; letter-spacing: 0.5px;
   }
 
@@ -2958,7 +2967,7 @@
     position: fixed; bottom: 24px; right: 24px;
     background: var(--surface2);
     border: 1px solid rgba(168,110,245,0.4);
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 12px 18px;
     font-size: 13px; color: var(--oracle);
     transform: translateX(120%);
@@ -2986,7 +2995,7 @@
   }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
   .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
   .tag-std { background: rgba(29,185,84,0.15); color: var(--green); }
   .tag-oracle { background: rgba(168,110,245,0.12); color: var(--oracle); }
@@ -2999,7 +3008,7 @@
     display: inline-flex; align-items: center; gap: 6px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 4px 10px;
     font-size: 10px; font-family: 'DM Mono', monospace;
     color: var(--muted); letter-spacing: 0.5px;
@@ -3025,7 +3034,7 @@
   .build-roster-cta {
     background: linear-gradient(135deg, rgba(245,197,66,0.08) 0%, rgba(168,110,245,0.05) 100%);
     border: 1px solid rgba(245,197,66,0.3);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
   }
@@ -3088,7 +3097,7 @@
     border: 1px solid var(--border);
     color: var(--muted);
     width: 24px; height: 24px;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 11px;
     flex-shrink: 0;
@@ -3252,7 +3261,7 @@
     width: 260px;
     background: #160f2c;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
     z-index: 200;
     box-shadow: 0 10px 30px rgba(0,0,0,0.55);
     overflow: hidden;
@@ -3279,7 +3288,7 @@
       radial-gradient(ellipse at bottom left, rgba(245,197,66,0.08), transparent 60%),
       linear-gradient(135deg, #1a1136 0%, #120b24 100%);
     border: 1px solid rgba(168,110,245,0.25);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 24px 28px;
     margin-bottom: 20px;
     position: relative;
@@ -3339,7 +3348,7 @@
     color: var(--oracle);
     background: rgba(168,110,245,0.1);
     border: 1px solid rgba(168,110,245,0.3);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 4px 12px;
     margin-bottom: 16px;
     position: relative;
@@ -3420,7 +3429,7 @@
   .oracle-pick-card {
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 12px 14px;
     transition: all 0.2s;
     position: relative;
@@ -3443,7 +3452,7 @@
     font-size: 9px;
     font-weight: 700;
     padding: 2px 7px;
-    border-radius: 3px;
+    border-radius: 4px;
     letter-spacing: 0.5px;
     margin-bottom: 6px;
   }
@@ -3533,7 +3542,7 @@
   }
   .oracle-flow-step {
     background: var(--surface2);
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 14px;
     position: relative;
     overflow: hidden;
@@ -3571,7 +3580,7 @@
     font-size: 16px;
     letter-spacing: 2px;
     border: none;
-    border-radius: 9px;
+    border-radius: 8px;
     cursor: pointer;
     background: var(--oracle);
     color: #000;
@@ -3650,7 +3659,7 @@
     padding: 7px 8px;
     background: #0a0714;
     border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 7px;
+    border-radius: 8px;
     color: var(--text);
     font-family: 'DM Mono', monospace;
     font-size: 13px;
@@ -3917,7 +3926,7 @@
     </div>
     <div class="profile-subtitle">Questa azione è definitiva e non reversibile.</div>
 
-    <div style="background:rgba(255,76,76,0.05);border:1px solid rgba(255,76,76,0.25);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.6">
+    <div style="background:rgba(255,76,76,0.05);border:1px solid rgba(255,76,76,0.25);border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.6">
       Verranno cancellati permanentemente:
       <ul style="margin-top:8px;padding-left:20px;color:var(--muted);font-size:12px">
         <li>Il tuo account e profilo</li>
@@ -4124,9 +4133,9 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div class="card-title" style="margin-bottom:0">📅 CALENDARIO SERIE A · <span id="calendarioGiornataLabel" style="color:var(--oracle)">—</span></div>
         <div style="display:flex;align-items:center;gap:6px">
-          <button id="calendarioPrevBtn" onclick="navCalendario(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px" title="Giornata precedente">‹</button>
-          <button id="calendarioTodayBtn" onclick="resetCalendarioToday()" style="background:var(--surface2);border:1px solid var(--border);color:var(--oracle);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:10px;letter-spacing:1px;font-family:'DM Mono',monospace" title="Vai a oggi">OGGI</button>
-          <button id="calendarioNextBtn" onclick="navCalendario(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px" title="Giornata successiva">›</button>
+          <button id="calendarioPrevBtn" onclick="navCalendario(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px" title="Giornata precedente">‹</button>
+          <button id="calendarioTodayBtn" onclick="resetCalendarioToday()" style="background:var(--surface2);border:1px solid var(--border);color:var(--oracle);padding:4px 10px;border-radius:8px;cursor:pointer;font-size:10px;letter-spacing:1px;font-family:'DM Mono',monospace" title="Vai a oggi">OGGI</button>
+          <button id="calendarioNextBtn" onclick="navCalendario(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px" title="Giornata successiva">›</button>
         </div>
       </div>
       <div id="calendarioContent">
@@ -4414,7 +4423,7 @@
     </div>
 
     <!-- Stato vuoto: rosa mancante -->
-    <div id="oracleEmptyState" style="display:none;text-align:center;padding:48px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:14px;color:var(--muted)">
+    <div id="oracleEmptyState" style="display:none;text-align:center;padding:48px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:12px;color:var(--muted)">
       <div style="font-size:40px;margin-bottom:10px">🔮</div>
       <div style="font-size:14px;line-height:1.7">L'Oracolo ha bisogno della tua rosa per vedere il futuro.<br>
       <span style="font-size:12px">Vai in <strong style="color:var(--gold)">Dashboard</strong> e carica il file della tua lega.</span></div>
@@ -4672,7 +4681,7 @@
         </div>
 
         <!-- Stato -->
-        <div id="astaStatusBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between"></div>
+        <div id="astaStatusBar" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between"></div>
 
         <!-- Form aggiungi acquisto -->
         <div class="admin-field">
@@ -4758,7 +4767,7 @@
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
       <div>
         <div style="font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Giornata</div>
-        <input id="votiGiornataNum" type="number" min="1" max="50" style="width:80px;padding:8px 10px;background:#0a0714;border:1px solid rgba(255,255,255,0.12);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;text-align:center;outline:none">
+        <input id="votiGiornataNum" type="number" min="1" max="50" style="width:80px;padding:8px 10px;background:#0a0714;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;text-align:center;outline:none">
       </div>
       <div style="flex:1"></div>
       <button class="oracle-cta ghost" style="font-size:13px;padding:9px 14px" onclick="document.getElementById('votiFileInput').click()">📂 IMPORTA DA FILE VOTI</button>
@@ -5252,7 +5261,7 @@ function renderLeagueSwitcher() {
   
   menu.innerHTML = `
     <div style="padding:6px 0;max-height:280px;overflow-y:auto">${itemsHtml}</div>
-    <button onclick="addNewLeague()" style="width:100%;padding:11px;background:rgba(245,197,66,0.1);color:var(--gold);border:none;border-top:1px solid var(--border);border-radius:0 0 10px 10px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px" onmouseover="this.style.background='rgba(245,197,66,0.2)'" onmouseout="this.style.background='rgba(245,197,66,0.1)'">+ AGGIUNGI LEGA</button>
+    <button onclick="addNewLeague()" style="width:100%;padding:11px;background:rgba(245,197,66,0.1);color:var(--gold);border:none;border-top:1px solid var(--border);border-radius:0 0 8px 8px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px" onmouseover="this.style.background='rgba(245,197,66,0.2)'" onmouseout="this.style.background='rgba(245,197,66,0.1)'">+ AGGIUNGI LEGA</button>
   `;
 }
 
@@ -5473,7 +5482,7 @@ function confirmOverwriteLeague(file) {
       <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5">
         La lega <strong style="color:var(--text)">${escapeHtml(currentName)}</strong> ha già <strong style="color:var(--text)">${currentPlayers} giocatori</strong> caricati.
       </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:18px;font-size:12px;line-height:1.6">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:18px;font-size:12px;line-height:1.6">
         <div style="color:var(--text);margin-bottom:6px"><strong>Nuovo file:</strong> ${escapeHtml(fileName)}</div>
         <div style="color:var(--muted)">Caricandolo, <strong style="color:#f5a142">le rose attuali verranno sostituite</strong> con quelle del nuovo file. La tua scelta di fantasquadra resterà valida se presente nel nuovo file.</div>
       </div>
@@ -5534,7 +5543,7 @@ function showImportWrongFileTypeDialog(playersCount) {
       <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">
         Hai caricato un file con <strong style="color:var(--text)">${playersCount} giocatori</strong>, ma <strong style="color:var(--orange)">nessuna fantasquadra</strong>.
       </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;font-size:12px;line-height:1.6;color:var(--muted)">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;font-size:12px;line-height:1.6;color:var(--muted)">
         Sembra il <strong style="color:var(--text)">listone ufficiale di Fantacalcio.it</strong> (lista di tutti i giocatori Serie A senza assegnazioni).
         <br><br>
         FantaOracle aspetta invece il <strong style="color:var(--text)">file della tua lega</strong>, che contiene anche la colonna <strong>FantaSquadra</strong> con i nomi dei fantallenatori.
@@ -5576,7 +5585,7 @@ function openImportHelpModal() {
         <li style="margin-bottom:10px">Salva il file sul tuo dispositivo.</li>
         <li>Torna qui e trascinalo nella zona "Carica la tua lega".</li>
       </ol>
-      <div style="margin-top:18px;padding:12px;background:rgba(168,110,245,0.05);border-left:3px solid var(--oracle);border-radius:6px;font-size:12px;color:var(--muted);line-height:1.5">
+      <div style="margin-top:18px;padding:12px;background:rgba(168,110,245,0.05);border-left:3px solid var(--oracle);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.5">
         💡 Il file contiene tutte le squadre della lega: dopo l'upload, FantaOracle ti chiederà quale fantasquadra sei tu.
       </div>
       <button class="fo-btn fo-btn--oro" onclick="document.getElementById('importHelpModal').remove();document.getElementById('listinoUploadInput').click()" style="width:100%;margin-top:18px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px">
@@ -6956,18 +6965,18 @@ function renderHeadToHead() {
   const roleHex = COLORI_RUOLO;
 
   html += '<div style="display:flex;align-items:stretch;gap:12px;margin-bottom:16px;flex-wrap:wrap">'
-    + '<div style="flex:1;min-width:120px;text-align:center;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid ' + (gap >= 0 ? 'rgba(29,185,84,0.3)' : 'var(--border)') + '">'
+    + '<div style="flex:1;min-width:120px;text-align:center;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid ' + (gap >= 0 ? 'rgba(29,185,84,0.3)' : 'var(--border)') + '">'
     + '<div style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Tu</div>'
     + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:34px;line-height:1;color:' + (gap >= 0 ? 'var(--green)' : 'var(--text)') + '">' + myTotal.toFixed(1) + '</div>'
     + '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + myProj.modulo + ' proiettato</div></div>'
     + '<div style="display:flex;align-items:center;font-family:\'Bebas Neue\',sans-serif;font-size:20px;color:var(--muted)">VS</div>'
-    + '<div style="flex:1;min-width:120px;text-align:center;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid ' + (gap < 0 ? 'rgba(255,76,76,0.3)' : 'var(--border)') + '">'
+    + '<div style="flex:1;min-width:120px;text-align:center;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid ' + (gap < 0 ? 'rgba(255,76,76,0.3)' : 'var(--border)') + '">'
     + '<div style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">' + escapeHtml(opponent) + '</div>'
     + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:34px;line-height:1;color:' + (gap < 0 ? 'var(--red)' : 'var(--text)') + '">' + oppTotal.toFixed(1) + '</div>'
     + '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + oppProj.modulo + ' proiettato</div></div>'
     + '</div>';
 
-  html += '<div style="padding:14px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);margin-bottom:14px">'
+  html += '<div style="padding:14px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);margin-bottom:14px">'
     + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
     + '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:18px;letter-spacing:1px;color:' + strat.color + '">' + strat.verdict + '</span>'
     + '<span style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--muted)">divario ' + (gap >= 0 ? '+' : '') + gap.toFixed(1) + '</span></div>'
@@ -6978,7 +6987,7 @@ function renderHeadToHead() {
       + '<div style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Jolly dalla panchina da valutare</div>'
       + strat.suggestions.map(s => {
           const rc = roleHex[s.role] || '#888';
-          return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:4px 10px;margin:0 6px 6px 0;font-size:12px">'
+          return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:4px 10px;margin:0 6px 6px 0;font-size:12px">'
             + '<span style="color:' + rc + ';font-weight:700;font-size:10px">' + s.role + '</span>' + escapeHtml(s.name)
             + '<span style="font-family:\'DM Mono\',monospace;color:var(--gold)">' + s.exp.toFixed(1) + '</span></span>';
         }).join('')
@@ -8009,7 +8018,7 @@ function openLeagueTeamPicker() {
           const b = byTeam[t] || {P:0,D:0,C:0,A:0};
           const isCurrent = t === myCurrent;
           return `
-            <div onclick="selectMyTeam(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="cursor:pointer;padding:14px 16px;background:${isCurrent?'rgba(245,197,66,0.1)':'var(--surface2)'};border:1px solid ${isCurrent?'var(--gold)':'var(--border)'};border-radius:10px;display:flex;align-items:center;gap:14px;transition:all 0.15s" onmouseover="this.style.borderColor='var(--gold)';this.style.transform='translateX(3px)'" onmouseout="this.style.borderColor='${isCurrent?'var(--gold)':'var(--border)'}';this.style.transform='translateX(0)'">
+            <div onclick="selectMyTeam(${JSON.stringify(t).replace(/"/g,'&quot;')})" style="cursor:pointer;padding:14px 16px;background:${isCurrent?'rgba(245,197,66,0.1)':'var(--surface2)'};border:1px solid ${isCurrent?'var(--gold)':'var(--border)'};border-radius:8px;display:flex;align-items:center;gap:14px;transition:all 0.15s" onmouseover="this.style.borderColor='var(--gold)';this.style.transform='translateX(3px)'" onmouseout="this.style.borderColor='${isCurrent?'var(--gold)':'var(--border)'}';this.style.transform='translateX(0)'">
               <div style="width:42px;height:42px;border-radius:50%;background:${isCurrent?'var(--gold)':'var(--surface)'};color:${isCurrent?'#000':'var(--gold)'};display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:18px;flex-shrink:0">
                 ${t.charAt(0).toUpperCase()}
               </div>
@@ -8027,7 +8036,7 @@ function openLeagueTeamPicker() {
       
       <button class="fo-btn fo-btn--fantasma" onclick="closeLeagueTeamPicker()" style="width:100%;letter-spacing:1px">SALTA · SCELGO DOPO</button>
       
-      <div style="margin-top:14px;padding:10px;background:rgba(168,110,245,0.05);border-left:3px solid var(--oracle);border-radius:6px;font-size:11px;color:var(--muted);line-height:1.5">
+      <div style="margin-top:14px;padding:10px;background:rgba(168,110,245,0.05);border-left:3px solid var(--oracle);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.5">
         💡 <strong style="color:var(--oracle)">Bonus:</strong> sapendo le rose di tutte le squadre, FantaOracle può mostrarti chi possiede ogni giocatore e (in futuro) predire gli scontri di giornata contro i tuoi avversari.
       </div>
     </div>
@@ -8156,12 +8165,12 @@ function openListinoDialog() {
         Carica il listone ufficiale aggiornato di Fantacalcio.it per avere quotazioni, ruoli e nomi reali della stagione corrente.
       </div>
       
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
         <div style="font-size:11px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">📥 Come scaricarlo</div>
         <ol style="font-size:12px;color:var(--text);line-height:1.7;padding-left:18px;margin:0">
           <li>Vai su <a href="https://www.fantacalcio.it/quotazioni-fantacalcio" target="_blank" style="color:var(--oracle)">fantacalcio.it/quotazioni-fantacalcio</a></li>
           <li>Clicca <strong>"Scarica le quotazioni"</strong> (Excel)</li>
-          <li>Salva il file <code style="background:#000;padding:2px 6px;border-radius:3px;color:var(--gold);font-size:11px">Quotazioni_Fantacalcio_*.xlsx</code></li>
+          <li>Salva il file <code style="background:#000;padding:2px 6px;border-radius:4px;color:var(--gold);font-size:11px">Quotazioni_Fantacalcio_*.xlsx</code></li>
           <li>Trascinalo qui sotto o clicca per selezionarlo</li>
         </ol>
       </div>
@@ -8187,7 +8196,7 @@ function openListinoDialog() {
         </div>
       ` : ''}
       
-      <div style="margin-top:14px;padding:10px;background:rgba(245,197,66,0.06);border-left:3px solid var(--gold);border-radius:6px;font-size:11px;color:var(--muted);line-height:1.5">
+      <div style="margin-top:14px;padding:10px;background:rgba(245,197,66,0.06);border-left:3px solid var(--gold);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.5">
         💡 <strong style="color:var(--gold)">Tip:</strong> il listone include quotazioni Classic e Mantra. L'app usa quelle Classic. Aggiorna ogni 1-2 settimane per restare sincronizzato con i prezzi reali.
       </div>
     </div>
@@ -11006,7 +11015,7 @@ function renderPianoAsta() {
     const el = document.getElementById(elId);
     if (!el) return;
     el.innerHTML = astaState[kind].map((e, i) =>
-      `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:3px 10px;font-size:12px">${escapeHtmlSafe(e.name)} <span style="color:var(--muted);font-size:10px">${escapeHtmlSafe(e.team)}</span> <button class="fo-btn fo-btn--rosso" onclick="removeAstaPref('${kind}',${i})" >×</button></span>`
+      `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:3px 10px;font-size:12px">${escapeHtmlSafe(e.name)} <span style="color:var(--muted);font-size:10px">${escapeHtmlSafe(e.team)}</span> <button class="fo-btn fo-btn--rosso" onclick="removeAstaPref('${kind}',${i})" >×</button></span>`
     ).join('') || `<span style="font-size:11px;color:var(--muted)">Nessuno</span>`;
   };
   renderPrefChips('pupilli', 'astaPupilliChips');
@@ -11042,14 +11051,14 @@ function renderPianoAsta() {
         recEl.innerHTML = cands.map((p, i) => {
           const inBudget = p._q <= nextTarget;
           return `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:6px;background:${i===0?'rgba(245,197,66,0.08)':'var(--surface2)'};border:1px solid ${i===0?'rgba(245,197,66,0.3)':'var(--border)'};margin-bottom:3px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:8px;background:${i===0?'rgba(245,197,66,0.08)':'var(--surface2)'};border:1px solid ${i===0?'rgba(245,197,66,0.3)':'var(--border)'};margin-bottom:3px">
             <div style="display:flex;align-items:center;gap:8px;min-width:0">
               <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:11px;width:14px;flex-shrink:0">${i+1}</span>
               ${p._pupillo ? `<span title="Pupillo: lo vuoi comunque" style="font-size:11px;flex-shrink:0">📌</span>` : ''}
               <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtmlSafe(p.name)}</span>
               <span style="font-size:11px;color:var(--muted);flex-shrink:0">${escapeHtmlSafe(p.team)}</span>
               ${p._tit ? `<span title="${titLabel(p._tit.status)} — ${escapeHtmlSafe(p._tit.newsTitle || '')}" style="font-size:10px;flex-shrink:0">${titEmoji(p._tit.status)}</span>` : ''}
-              ${p.rigorista ? `<span title="Rigorista designato" style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;flex-shrink:0">RIG</span>` : ''}
+              ${p.rigorista ? `<span title="Rigorista designato" style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:4px;flex-shrink:0">RIG</span>` : ''}
               ${p._formaAdj ? `<span style="font-size:10px;flex-shrink:0;color:${p._formaAdj>0?'var(--green)':'var(--red)'}">📋${p._formaAdj>0?'+':''}${(p._formaAdj*100).toFixed(0)}%</span>` : ''}
               ${p._fmWeight ? `<span title="Fantamedia reale pesata sulle presenze" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--oracle);flex-shrink:0">FM ${(p.fanta_media || p.fmReal).toFixed(1)}${p._pgv ? `·${p._pgv}g` : ''}</span>` : ''}
               ${p._gkCal ? `<span title="Griglia calendario stagionale, 100 = media lega (più alto = più partite facili contro reparti deboli, meglio se in casa)" style="font-size:10px;font-family:'DM Mono',monospace;flex-shrink:0;color:${p._gkCal >= 105 ? 'var(--green)' : (p._gkCal <= 95 ? 'var(--red)' : 'var(--muted)')}">📅${p._gkCal}</span>` : ''}
@@ -11074,7 +11083,7 @@ function renderPianoAsta() {
         const isPhase = r === phase;
         const rows = g.slots.map((s, i) => {
           if (s.acquired) {
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(29,185,84,0.07);margin-bottom:4px">
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:8px;background:rgba(29,185,84,0.07);margin-bottom:4px">
               <div style="font-size:13px">✅ <strong>${escapeHtmlSafe(s.name)}</strong> <span style="color:var(--muted);font-size:11px">${escapeHtmlSafe(s.team)}</span></div>
               <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green)">${s.prezzo} cr</div>
             </div>`;
@@ -11082,8 +11091,8 @@ function renderPianoAsta() {
           const t = s.target;
           const nome = t ? escapeHtmlSafe(t.name) : '—';
           const squadra = t ? escapeHtmlSafe(t.team) : 'nessun candidato';
-          const rig = (t && t.rigorista) ? ` <span style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:3px;vertical-align:middle">RIG</span>` : '';
-          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;background:var(--surface);border:1px dashed ${s.overBudget ? 'rgba(255,140,66,0.4)' : 'rgba(255,255,255,0.12)'};margin-bottom:4px">
+          const rig = (t && t.rigorista) ? ` <span style="font-size:8px;font-family:'DM Mono',monospace;font-weight:700;color:#000;background:var(--gold);padding:1px 4px;border-radius:4px;vertical-align:middle">RIG</span>` : '';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:8px;background:var(--surface);border:1px dashed ${s.overBudget ? 'rgba(255,140,66,0.4)' : 'rgba(255,255,255,0.12)'};margin-bottom:4px">
             <div style="font-size:13px;color:var(--text)">${s.pinned ? '📌' : (s.overBudget ? '⚠️' : '🎯')} ${nome}${rig} <span style="color:var(--muted);font-size:11px">${squadra}</span></div>
             <div style="font-family:'DM Mono',monospace;font-size:12px;color:${s.overBudget ? 'var(--orange)' : 'var(--muted)'}">${s.overBudget ? `costa ${t._q}, budget ~${s.targetPrice}` : `~${s.targetPrice} cr${t ? ` <span style="opacity:0.7">(q ${t._q})</span>` : ''}`}</div>
           </div>`;
@@ -12099,7 +12108,7 @@ function renderRosterAlertCard(matches) {
   const renderItem = m => {
     const item = m.news;
     const playerTags = m.players.map(p => 
-      `<span style="font-size:9px;background:${p.color}22;color:${p.color};padding:1px 6px;border-radius:3px;font-weight:700;letter-spacing:0.5px">${escapeHtml(p.name)}</span>`
+      `<span style="font-size:9px;background:${p.color}22;color:${p.color};padding:1px 6px;border-radius:4px;font-weight:700;letter-spacing:0.5px">${escapeHtml(p.name)}</span>`
     ).join(' ');
     return `
       <a href="${escapeAttr(outboundNewsUrl(item.link))}" target="_blank" rel="noopener" class="news-mini-item cat-${item.category}" style="text-decoration:none;color:inherit">
@@ -12963,7 +12972,7 @@ function updateMissingSlotsAlert(missingByRole) {
   alertEl.style.display = 'flex';
   const parts = [];
   ['P','D','C','A'].forEach(r => {
-    if (missingByRole[r] > 0) parts.push(`<span style="background:rgba(255,140,66,0.15);border:1px solid rgba(255,140,66,0.4);color:var(--orange);padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600">+${missingByRole[r]} ${roleLabel(r)}</span>`);
+    if (missingByRole[r] > 0) parts.push(`<span style="background:rgba(255,140,66,0.15);border:1px solid rgba(255,140,66,0.4);color:var(--orange);padding:3px 9px;border-radius:4px;font-size:11px;font-weight:600">+${missingByRole[r]} ${roleLabel(r)}</span>`);
   });
   alertEl.innerHTML = `
     <span style="font-size:14px">⚠️</span>
