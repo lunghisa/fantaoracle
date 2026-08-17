@@ -10262,6 +10262,11 @@ async function syncOnLogin() {
       try { renderCompSwitcher(); } catch(e) {}
       try { renderCalendariCaricati(); } catch(e) {}
       try { renderDashLeagues(); } catch(e) {}
+      // Lo scontro diretto dipende dalle fantasquadre, che stanno nel file di
+      // lega: appena arriva dal cloud la scheda va ridisegnata, altrimenti
+      // resta ferma sul messaggio "serve un file di lega" fino al
+      // ricaricamento dopo — e sembra che il recupero non abbia funzionato.
+      try { renderHeadToHead(); } catch(e) {}
     }
     showToast(`☁️ ${cloudCount} ${cloudCount === 1 ? 'lega caricata' : 'leghe caricate'} dal cloud`);
     cloudSyncState.status = 'synced';
@@ -10289,6 +10294,11 @@ async function syncOnLogin() {
       try { renderCompSwitcher(); } catch(e) {}
       try { renderCalendariCaricati(); } catch(e) {}
       try { renderDashLeagues(); } catch(e) {}
+      // Lo scontro diretto dipende dalle fantasquadre, che stanno nel file di
+      // lega: appena arriva dal cloud la scheda va ridisegnata, altrimenti
+      // resta ferma sul messaggio "serve un file di lega" fino al
+      // ricaricamento dopo — e sembra che il recupero non abbia funzionato.
+      try { renderHeadToHead(); } catch(e) {}
     }
     cloudSyncState.status = 'synced';
     updateCloudIndicator();
