@@ -49,7 +49,15 @@
     --purple: #c77dff;
     --text: #efe9ff;
     --muted: #8b7bb5;
-    --grass: #1a5c2a;
+    /* Colori dei ruoli: erano ripetuti a mano in 10 punti del codice, e in
+     uno divergevano (#3d9bff/#e63946 invece di #4dabf7/#ee4444), quindi lo
+     stesso giocatore cambiava sfumatura a seconda di dove arrivavano i dati. */
+  --ruolo-p: #ff8c1a;
+  --ruolo-d: #7bc043;
+  --ruolo-c: #4dabf7;
+  --ruolo-a: #ee4444;
+  --ruolo-t: #c77dff;
+  --grass: #1a5c2a;
     --grass2: #1f6b31;
   }
   * {
@@ -4730,6 +4738,15 @@
 
 <script>
 // ============================================================
+// Colori dei ruoli — UNICA FONTE.
+// Erano ripetuti a mano in dieci punti e tre copie divergevano: il
+// centrocampista era #4dabf7 o #3d9bff, l'attaccante #ee4444 o #e63946, il
+// trequartista #c77dff o #f4a261 — a seconda di quale pezzo di codice
+// disegnava il giocatore. Sta in cima perche viene usato molto piu sotto.
+// ============================================================
+const COLORI_RUOLO = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444', T:'#c77dff' };
+
+// ============================================================
 // LISTONE BUILT-IN — Serie A 2024/25
 // formato: [nome, ruolo, squadra, quotazione, fantamediaIndicativa]
 // ============================================================
@@ -6707,7 +6724,7 @@ function giornataSerieACorrente() {
 // Costruisce la rosa di una fantasquadra dal listone in forma predicibile
 function buildTeamRoster(teamName) {
   if (!listone || !listone.players) return [];
-  const roleColors = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+  const roleColors = COLORI_RUOLO;
   return listone.players
     .filter(p => p.fantasquadra === teamName)
     .map(p => ({
@@ -6894,7 +6911,7 @@ function renderHeadToHead() {
   // Top 3 minacce avversarie
   const threats = (oppProj.enriched || []).slice()
     .sort((a,b) => b._exp - a._exp).slice(0, 3);
-  const roleHex = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+  const roleHex = COLORI_RUOLO;
 
   html += '<div style="display:flex;align-items:stretch;gap:12px;margin-bottom:16px;flex-wrap:wrap">'
     + '<div style="flex:1;min-width:120px;text-align:center;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid ' + (gap >= 0 ? 'rgba(29,185,84,0.3)' : 'var(--border)') + '">'
@@ -6996,7 +7013,7 @@ function renderVotiList() {
   if (!listEl) return;
   const all = [...players.starters, ...players.bench]
     .filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
-  const roleHex = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+  const roleHex = COLORI_RUOLO;
   const order = { P:0, D:1, C:2, A:3 };
   const sorted = all.slice().sort((a,b) =>
     (order[a.role] || 9) - (order[b.role] || 9) || (b.score || 0) - (a.score || 0));
@@ -7333,7 +7350,7 @@ function renderOracleHeroStats() {
 function renderOraclePicks() {
   const grid = document.getElementById('oraclePicksGrid');
   if (!grid) return;
-  const roleHex = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+  const roleHex = COLORI_RUOLO;
   const allRoster = [...players.starters, ...players.bench]
     .filter(p => p && p.name && p.name !== '---' && !p.isEmpty && p._oracleInfo);
 
@@ -7370,7 +7387,7 @@ function renderOraclePicks() {
 function renderOracleRisky() {
   const list = document.getElementById('oracleRiskyList');
   if (!list) return;
-  const roleHex = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+  const roleHex = COLORI_RUOLO;
   const starters = players.starters.filter(p => p && p.name && p.name !== '---' && !p.isEmpty && p._oracleInfo);
 
   if (starters.length === 0) {
@@ -8000,7 +8017,7 @@ function selectMyTeam(teamName) {
     return;
   }
   
-  const roleColors = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+  const roleColors = COLORI_RUOLO;
   const order = { P:0, D:1, C:2, A:3 };
   
   const all = myPlayers.map(p => ({
@@ -11645,7 +11662,7 @@ async function applyGlobalListinoAndCalendar() {
           pgv: typeof p.pgv === 'number' ? p.pgv : 0,
           rigorista: !!p.rigorista,
           formaPreseason: typeof p.formaPreseason === 'number' ? p.formaPreseason : 0,
-          color: ({P:'#ff8c1a', D:'#7bc043', C:'#3d9bff', A:'#e63946', T:'#c77dff'})[p.role] || '#999'
+          color: COLORI_RUOLO[p.role] || '#999'
         }));
         listone = {
           source: 'cloud_admin',
@@ -12558,7 +12575,7 @@ function renderPlanBanner() {
 function renderArenaPage() {
   const roster = [...players.starters, ...players.bench].filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
   const hasRoster = roster.length > 0;
-  const roleHex = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+  const roleHex = COLORI_RUOLO;
 
   // Slot pubblicitario: visibile solo a free/trial. Admin e abbonati non vedono ads.
   const adSlot = document.getElementById('arenaAdSlot');
@@ -12918,7 +12935,7 @@ function updateMissingSlotsAlert(missingByRole) {
 function renderLists() {
   const alerted = getAlertedPlayerNames();
   const titSig = titolaritaSignals();
-  const roleHex = { P:'#ff8c1a', D:'#7bc043', C:'#4dabf7', A:'#ee4444' };
+  const roleHex = COLORI_RUOLO;
   ['starter', 'bench'].forEach(type => {
     const list = type === 'starter' ? players.starters : players.bench;
     const el = document.getElementById(type === 'starter' ? 'starterList' : 'benchList');
@@ -13128,7 +13145,7 @@ function performSwap(typeA, idxA, typeB, idxB) {
 // ============================================================
 // AUTO-BENCH INFORTUNATI
 // ============================================================
-const roleColors = { P: '#ff8c1a', D: '#7bc043', C: '#4dabf7', A: '#ee4444', T: '#f4a261' };
+const roleColors = COLORI_RUOLO;  // era una copia con il T diverso (#f4a261)
 
 function autoBenchInjured() {
   const alerted = getAlertedPlayerNames();
