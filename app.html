@@ -2495,6 +2495,20 @@
      nth-child bastava spostare una scheda per far finire la regola sulla
      scheda sbagliata, in silenzio. */
   .mng-card--piena { grid-column: 1 / -1; }
+
+  /* Strumenti di servizio in fondo all'Admin Panel */
+  .admin-tools {
+    margin-top: 18px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .admin-tools-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 2px; color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .admin-tools-note {
+    font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 8px;
+  }
   @media (max-width: 899px) {
     .dash-manage-grid { grid-template-columns: 1fr; }
     .mng-card--piena { grid-column: auto; }
@@ -4642,6 +4656,15 @@
         <button class="admin-btn admin-btn-secondary" id="astaResetBtn" onclick="resetPianoAsta()" style="margin-top:20px">🔄 RICOMINCIA ASTA</button>
       </div>
 
+    </div>
+
+    <!-- Strumenti di servizio: fuori dalle schede perche non riguardano una
+         sola di esse. Vivevano nella dashboard, ma li vedeva solo l'admin e
+         quella scheda all'admin non si mostra piu. -->
+    <div class="admin-tools">
+      <div class="admin-tools-title">STRUMENTI</div>
+      <button class="fo-btn fo-btn--fantasma" onclick="diagnosiLeghe()">confronta leghe locale e cloud</button>
+      <div class="admin-tools-note">Mette in fila le leghe registrate in questo browser e quelle salvate nel cloud, con gli id veri. Serve se ricompaiono leghe che erano state eliminate.</div>
     </div>
   </div>
 </div>
@@ -12634,13 +12657,6 @@ function renderDashLeagues() {
       ${rami}
     </div>`;
   }).join('');
-  // Strumento di servizio, non funzione di prodotto: lo vede solo l'admin.
-  // Resta perche il giorno in cui le leghe si moltiplicassero di nuovo, e la
-  // differenza tra guardare i dati e tirare a indovinare.
-  if (currentUser && currentUser.is_admin) {
-    box.innerHTML += `<button class="fo-btn fo-btn--fantasma" style="margin-top:8px;width:100%;
-      font-size:11px;opacity:.65" onclick="diagnosiLeghe()">confronta locale e cloud</button>`;
-  }
 }
 
 // Mette in fila quello che c'e in locale e quello che c'e nel cloud, con gli
