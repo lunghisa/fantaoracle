@@ -9892,11 +9892,21 @@ function readLocalLeaguesSnapshot() {
       const os = localStorage.getItem(nsKey(ORACLE_STATE_KEY));
       if (os) oracleStateBlob = JSON.parse(os);
     } catch(e) {}
+    // Calendari delle competizioni e quale e in uso. Vivevano solo qui, e
+    // chi apriva l'app da un altro computer non se li portava dietro.
+    let competizioni = null, compAttiva = '';
+    try {
+      const raw = localStorage.getItem(nsKey(COMPETIZIONI_STORAGE_KEY));
+      const v = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(v)) competizioni = v;
+    } catch (e) {}
+    try { compAttiva = localStorage.getItem(nsKey('fantaoracle_comp_attiva')) || ''; } catch (e) {}
     activeLeagueId = prevActive; // ripristino
     snapshot.push({
       id: lg.id,
       cloudId: lg._cloudId || null,
       name: lg.name,
+      competizioni, compAttiva,
       teamName, modulo, mode,
       addedDate: lg.addedDate,
       roster,
@@ -10004,6 +10014,25 @@ async function pushAllToCloud() {
       }
     }
 
+    // 2b. Calendari delle competizioni.
+    // In un blocco a parte con il suo try/catch: finche le colonne non
+    // esistono su Supabase questo fallisce, e non deve trascinarsi dietro
+    // leghe e rose che sopra sono gia state salvate. Stessa lezione di
+    // oracle_states.
+    try {
+      for (const ll of localSnap) {
+        const cloudId = idMap[ll.id];
+        if (!cloudId || !Array.isArray(ll.competizioni)) continue;
+        const { error: cErr } = await supabaseClient
+          .from('leagues')
+          .update({ competizioni: ll.competizioni, comp_attiva: ll.compAttiva || null })
+          .eq('id', cloudId);
+        if (cErr) { console.warn('[Cloud] competizioni non sincronizzate (colonne mancanti? esegui competizioni_cloud.sql):', cErr.message); break; }
+      }
+    } catch (e) {
+      console.warn('[Cloud] sync competizioni saltato:', e.message);
+    }
+
     // 3. Sync stato Oracle (storico voti reali + calibrazione) su tabella separata.
     // Avvolto in try/catch proprio: se la tabella non esiste ancora, NON deve
     // compromettere la sincronizzazione di leghe e rose (già completata sopra).
@@ -10103,6 +10132,15 @@ async function pullFromCloud(cloudLeagues) {
         }));
       } catch(e) {}
     }
+    // Calendari delle competizioni. Solo se il cloud ne ha davvero: se la
+    // colonna non esiste ancora, o non e mai stata scritta, arriva null e
+    // quello che c'e in locale non va toccato.
+    if (Array.isArray(cl.competizioni)) {
+      try { localStorage.setItem(nsKey(COMPETIZIONI_STORAGE_KEY), JSON.stringify(cl.competizioni)); } catch (e) {}
+    }
+    if (cl.comp_attiva) {
+      try { localStorage.setItem(nsKey('fantaoracle_comp_attiva'), cl.comp_attiva); } catch (e) {}
+    }
     // Ripristino stato Oracle (storico + calibrazione) per questa lega
     if (cl.oracle_state) {
       try { localStorage.setItem(nsKey(ORACLE_STATE_KEY), JSON.stringify(cl.oracle_state)); } catch(e) {}
@@ -10161,6 +10199,11 @@ async function syncOnLogin() {
       loadRosterFromStorage();
       oracleLoadState();
       try { renderField(); renderLists(); updateListinoBadge(); updateLeagueBanner(); } catch(e) {}
+      // I calendari appena scesi dal cloud vanno anche mostrati: senza questo
+      // arriverebbero ma resterebbero invisibili fino al ricaricamento dopo.
+      try { renderCompSwitcher(); } catch(e) {}
+      try { renderCalendariCaricati(); } catch(e) {}
+      try { renderDashLeagues(); } catch(e) {}
     }
     showToast(`☁️ ${cloudCount} ${cloudCount === 1 ? 'lega caricata' : 'leghe caricate'} dal cloud`);
     cloudSyncState.status = 'synced';
@@ -10173,6 +10216,11 @@ async function syncOnLogin() {
       loadRosterFromStorage();
       oracleLoadState();
       try { renderField(); renderLists(); updateListinoBadge(); updateLeagueBanner(); } catch(e) {}
+      // I calendari appena scesi dal cloud vanno anche mostrati: senza questo
+      // arriverebbero ma resterebbero invisibili fino al ricaricamento dopo.
+      try { renderCompSwitcher(); } catch(e) {}
+      try { renderCalendariCaricati(); } catch(e) {}
+      try { renderDashLeagues(); } catch(e) {}
     }
     cloudSyncState.status = 'synced';
     updateCloudIndicator();
