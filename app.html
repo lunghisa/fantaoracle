@@ -2199,10 +2199,21 @@
     /* Puo sporgere oltre la sua fetta: l'arco tiene i vicini su altezze
        diverse. Su schermi stretti resta piu contenuto, altrimenti i nomi
        ai lati finirebbero sotto il bordo del campo. */
-    max-width: 135%;
+    max-width: var(--nome-largo, 135%);
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
+  }
+  /* Quanto puo essere grande un nome non dipende solo dallo schermo ma da
+     quanti sono nella riga: tre punte su un telefono stanno larghe, cinque
+     centrocampisti no. L'arco separa i vicini ma i due centrali di ogni
+     riga restano per forza alla stessa altezza, e li si accavallavano. */
+  .player-row[data-affollata] .token-name { font-size: 13px; letter-spacing: 0.2px; }
+  @media (max-width: 560px) {
+    .token-name { font-size: 13px; letter-spacing: 0.2px; }
+    .player-row[data-affollata] .token-name {
+      font-size: 11px; letter-spacing: 0; --nome-largo: 118%;
+    }
   }
   .token-name.empty {
     color: rgba(255,255,255,0.6);
@@ -12442,6 +12453,9 @@ function renderField() {
   rows.forEach((rowRoles, ri) => {
     const row = document.createElement('div');
     row.className = 'player-row';
+    // Da quattro in su i nomi vanno stretti: lo dice il CSS, qui si segnala
+    // solo il fatto. Tre o meno hanno spazio anche su un telefono piccolo.
+    if (rowRoles.length >= 4) row.dataset.affollata = '1';
     // Fascia 9-87% invece di 10-90%: l'arco spinge la punta centrale piu
     // in basso del centro della sua riga, e il campo ha overflow hidden —
     // con la vecchia fascia il suo nome veniva tagliato dal bordo.
