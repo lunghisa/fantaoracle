@@ -5093,7 +5093,10 @@ function deleteLeague(leagueId) {
   leagues = leagues.filter(l => l.id !== leagueId);
   saveLeaguesRegistry();
   // Pulisci storage namespaced
-  ['_listino_v1', '_roster_v1', '_my_team_v1', '_league_name_v1', '_oracle_v1'].forEach(suffix => {
+  // '_competizioni_v1' e '_comp_attiva' aggiunti dopo: senza, i calendari di
+  // una lega eliminata restavano nello spazio dati per sempre.
+  ['_listino_v1', '_roster_v1', '_my_team_v1', '_league_name_v1', '_oracle_v1',
+   '_competizioni_v1', '_comp_attiva'].forEach(suffix => {
     try { localStorage.removeItem('fantaoracle' + suffix + '__' + leagueId); } catch(e) {}
   });
   // Se era attiva, passa alla prima rimasta
@@ -5110,6 +5113,8 @@ function deleteLeague(leagueId) {
     renderField(); renderLists();
   }
   renderLeagueSwitcher();
+  try { renderDashLeagues(); } catch(e) {}
+  try { renderCalendariCaricati(); } catch(e) {}
   showToast('Lega eliminata');
 }
 
@@ -12446,6 +12451,8 @@ function renderDashLeagues() {
         </button>
         <button onclick="renameLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Rinomina la lega"
                 style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;padding:7px 9px;font-size:12px">✏️</button>
+        ${leagues.length > 1 ? `<button onclick="deleteLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Elimina la lega"
+                style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;padding:7px 9px;font-size:12px">🗑</button>` : ''}
       </div>
       ${rami}
     </div>`;
