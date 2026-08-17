@@ -12548,9 +12548,13 @@ function renderDashLeagues() {
       ${rami}
     </div>`;
   }).join('');
-  box.innerHTML += `<button class="fo-btn fo-btn--neutro" style="margin-top:10px;width:100%;
-    border-color:rgba(245,197,66,0.45);color:var(--gold)"
-    onclick="diagnosiLeghe()">🔍 CONFRONTA LOCALE E CLOUD</button>`;
+  // Strumento di servizio, non funzione di prodotto: lo vede solo l'admin.
+  // Resta perche il giorno in cui le leghe si moltiplicassero di nuovo, e la
+  // differenza tra guardare i dati e tirare a indovinare.
+  if (currentUser && currentUser.is_admin) {
+    box.innerHTML += `<button class="fo-btn fo-btn--fantasma" style="margin-top:8px;width:100%;
+      font-size:11px;opacity:.65" onclick="diagnosiLeghe()">confronta locale e cloud</button>`;
+  }
 }
 
 // Mette in fila quello che c'e in locale e quello che c'e nel cloud, con gli
