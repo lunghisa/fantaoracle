@@ -2483,6 +2483,10 @@
     .dash-manage-grid > .mng-card:nth-child(1) { grid-column: auto; }
   }
   .mng-card { display: flex; flex-direction: column; }
+  /* Prova e Abbonamento non hanno abbastanza dentro da giustificare
+     l'imbottitura piena: erano due riquadri quasi vuoti e altissimi. */
+  .mng-card--compatta { padding: 14px 20px 16px; justify-content: center; }
+  .mng-card--compatta .card-title { margin-bottom: 10px; }
   .mng-empty { font-size: 13px; color: var(--muted); line-height: 1.6; padding: 6px 0; }
   .mng-league-row {
     display: flex; align-items: center; gap: 10px;
@@ -2508,24 +2512,26 @@
     cursor: pointer; transition: all 0.2s;
   }
   .mng-add-league:hover { color: var(--gold); border-color: rgba(245,197,66,0.4); }
+  /* Era 52px con margini larghi: la scheda diventava alta il doppio del suo
+     contenuto. Il numero resta il protagonista anche a 36. */
   .mng-trial-big {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 52px; line-height: 1; text-align: center;
-    margin: 8px 0 10px;
+    font-size: 36px; line-height: 1; text-align: center;
+    margin: 2px 0 6px;
   }
-  .mng-trial-sub { font-size: 13px; color: var(--muted); line-height: 1.6; text-align: center; }
+  .mng-trial-sub { font-size: 13px; color: var(--muted); line-height: 1.5; text-align: center; }
   .mng-trial-sub strong { color: var(--text); }
   .mng-plans-row { display: flex; gap: 10px; }
   .mng-plan {
     flex: 1; text-align: center;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px 10px;
+    border-radius: 12px; padding: 10px 10px;
   }
   .mng-plan.best { border-color: rgba(245,197,66,0.45); background: rgba(245,197,66,0.06); }
   .mng-plan-name { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--muted); }
   .mng-plan.best .mng-plan-name { color: var(--gold); }
-  .mng-plan-price { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--text); margin: 6px 0 10px; }
+  .mng-plan-price { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--text); margin: 3px 0 8px; }
   .mng-plan-price span { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--muted); }
   .mng-plan-btn {
     width: 100%;
@@ -3913,11 +3919,11 @@
         <div id="dashLeaguesList"></div>
         <button class="mng-add-league" onclick="addNewLeague()">+ Nuova lega</button>
       </div>
-      <div class="card mng-card">
+      <div class="card mng-card mng-card--compatta">
         <div class="card-title" style="color:var(--oracle)">LA TUA PROVA</div>
         <div id="trialCardBody"></div>
       </div>
-      <div class="card mng-card">
+      <div class="card mng-card mng-card--compatta">
         <div class="card-title">ABBONAMENTO</div>
         <div id="planBannerBody"></div>
       </div>
