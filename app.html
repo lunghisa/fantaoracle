@@ -9730,6 +9730,10 @@ function translateAuthError(msg) {
 // Sincronizza leghe e roster verso Supabase per gli utenti loggati.
 // Strategia: localStorage = cache offline + cloud = fonte di verità.
 
+// Firma dell'ultimo listone spedito, per lega cloud: evita di rimandare su
+// mezzo megabyte a ogni sostituzione in panchina.
+let listinoSpedito = {};
+
 let cloudSyncState = {
   status: 'idle',           // 'idle' | 'syncing' | 'synced' | 'offline' | 'error'
   lastSyncAt: null,
@@ -9901,12 +9905,24 @@ function readLocalLeaguesSnapshot() {
       if (Array.isArray(v)) competizioni = v;
     } catch (e) {}
     try { compAttiva = localStorage.getItem(nsKey('fantaoracle_comp_attiva')) || ''; } catch (e) {}
+    // Il file di lega caricato dall'utente: fantasquadre, costi, quotazioni.
+    // Solo quello personale. Il listone globale che pubblica l'admin sta gia
+    // nel cloud in una tabella sua: copiarlo dentro ogni lega di ogni utente
+    // sarebbe la stessa tabella moltiplicata per il numero di iscritti.
+    let listinoPersonale = null;
+    try {
+      const raw = localStorage.getItem(nsKey(LISTINO_STORAGE_KEY));
+      const v = raw ? JSON.parse(raw) : null;
+      if (v && v.source === 'uploaded' && Array.isArray(v.players) && v.players.length > 0) {
+        listinoPersonale = v;
+      }
+    } catch (e) {}
     activeLeagueId = prevActive; // ripristino
     snapshot.push({
       id: lg.id,
       cloudId: lg._cloudId || null,
       name: lg.name,
-      competizioni, compAttiva,
+      competizioni, compAttiva, listinoPersonale,
       teamName, modulo, mode,
       addedDate: lg.addedDate,
       roster,
@@ -10033,6 +10049,33 @@ async function pushAllToCloud() {
       console.warn('[Cloud] sync competizioni saltato:', e.message);
     }
 
+    // 2c. Il file di lega. Blocco a parte dai calendari: e una colonna
+    // diversa, aggiunta con un SQL diverso, e se manca solo lei i calendari
+    // devono continuare a sincronizzarsi.
+    //
+    // Va spedito solo quando cambia davvero. E l'oggetto piu pesante che
+    // abbiamo — 500+ giocatori — e la sincronizzazione riparte a ogni
+    // modifica: senza questo controllo, spostare un giocatore in panchina
+    // rispedirebbe l'intero listone, da telefono compreso.
+    try {
+      for (const ll of localSnap) {
+        const cloudId = idMap[ll.id];
+        if (!cloudId || !ll.listinoPersonale) continue;
+        const firma = (ll.listinoPersonale.uploadedName || '') + '|'
+                    + (ll.listinoPersonale.uploadedDate || '') + '|'
+                    + ll.listinoPersonale.players.length;
+        if (listinoSpedito[cloudId] === firma) continue;
+        const { error: lErr } = await supabaseClient
+          .from('leagues')
+          .update({ listino: ll.listinoPersonale })
+          .eq('id', cloudId);
+        if (lErr) { console.warn('[Cloud] listone di lega non sincronizzato (colonna mancante? esegui listino_cloud.sql):', lErr.message); break; }
+        listinoSpedito[cloudId] = firma;
+      }
+    } catch (e) {
+      console.warn('[Cloud] sync listone saltato:', e.message);
+    }
+
     // 3. Sync stato Oracle (storico voti reali + calibrazione) su tabella separata.
     // Avvolto in try/catch proprio: se la tabella non esiste ancora, NON deve
     // compromettere la sincronizzazione di leghe e rose (già completata sopra).
@@ -10141,6 +10184,11 @@ async function pullFromCloud(cloudLeagues) {
     if (cl.comp_attiva) {
       try { localStorage.setItem(nsKey('fantaoracle_comp_attiva'), cl.comp_attiva); } catch (e) {}
     }
+    // Il file di lega. Come sopra: si scrive solo se dal cloud arriva davvero
+    // qualcosa, per non cancellare quello che uno ha gia sul suo computer.
+    if (cl.listino && Array.isArray(cl.listino.players) && cl.listino.players.length > 0) {
+      try { localStorage.setItem(nsKey(LISTINO_STORAGE_KEY), JSON.stringify(cl.listino)); } catch (e) {}
+    }
     // Ripristino stato Oracle (storico + calibrazione) per questa lega
     if (cl.oracle_state) {
       try { localStorage.setItem(nsKey(ORACLE_STATE_KEY), JSON.stringify(cl.oracle_state)); } catch(e) {}
@@ -10201,6 +10249,16 @@ async function syncOnLogin() {
       try { renderField(); renderLists(); updateListinoBadge(); updateLeagueBanner(); } catch(e) {}
       // I calendari appena scesi dal cloud vanno anche mostrati: senza questo
       // arriverebbero ma resterebbero invisibili fino al ricaricamento dopo.
+      // Il listone personale puo essere appena arrivato dal cloud: rifaccio
+      // il travaso di rigoristi e forma, che nel frattempo poteva essere
+      // girato a vuoto sul listone globale.
+      try {
+        if (listinoGlobaleInMemoria && arricchisciConDatiAdmin(listinoGlobaleInMemoria) > 0) {
+          saveListinoToStorage();
+          if (typeof runOracleEngine === 'function') runOracleEngine(false);
+          renderField(); renderLists();
+        }
+      } catch(e) {}
       try { renderCompSwitcher(); } catch(e) {}
       try { renderCalendariCaricati(); } catch(e) {}
       try { renderDashLeagues(); } catch(e) {}
@@ -10218,6 +10276,16 @@ async function syncOnLogin() {
       try { renderField(); renderLists(); updateListinoBadge(); updateLeagueBanner(); } catch(e) {}
       // I calendari appena scesi dal cloud vanno anche mostrati: senza questo
       // arriverebbero ma resterebbero invisibili fino al ricaricamento dopo.
+      // Il listone personale puo essere appena arrivato dal cloud: rifaccio
+      // il travaso di rigoristi e forma, che nel frattempo poteva essere
+      // girato a vuoto sul listone globale.
+      try {
+        if (listinoGlobaleInMemoria && arricchisciConDatiAdmin(listinoGlobaleInMemoria) > 0) {
+          saveListinoToStorage();
+          if (typeof runOracleEngine === 'function') runOracleEngine(false);
+          renderField(); renderLists();
+        }
+      } catch(e) {}
       try { renderCompSwitcher(); } catch(e) {}
       try { renderCalendariCaricati(); } catch(e) {}
       try { renderDashLeagues(); } catch(e) {}
@@ -11904,6 +11972,13 @@ function timeAgoIt(iso) {
 
 // Applica listone e calendario globali pubblicati dall'admin.
 // Chiamata dopo il login e dopo enterApp().
+// Ultimo listone admin scaricato. Serve dopo il recupero dal cloud: al primo
+// accesso da un computer nuovo questa funzione puo girare PRIMA che il
+// recupero abbia scritto il listone personale, e in quel giro i rigoristi non
+// verrebbero travasati. Tenendo da parte i giocatori si rifa il travaso senza
+// una seconda chiamata di rete.
+let listinoGlobaleInMemoria = null;
+
 async function applyGlobalListinoAndCalendar() {
   if (!currentUser) return; // ospite: skip
   try {
@@ -11913,6 +11988,7 @@ async function applyGlobalListinoAndCalendar() {
     ]);
 
     // ============ LISTONE GLOBALE ============
+    if (listinoData && Array.isArray(listinoData.players)) listinoGlobaleInMemoria = listinoData.players;
     if (listinoData && Array.isArray(listinoData.players) && listinoData.players.length > 0) {
       // Solo se l'utente non ha un listone *uploaded* personale (uploaded ha priorità sull'admin-global)
       //
