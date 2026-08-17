@@ -5227,7 +5227,14 @@ async function eliminaLegaDalCloud(lg) {
         .from('leagues').select('id')
         .eq('user_id', currentUser.id).eq('league_name', lg.name);
       if (error) return { ok: false, errore: error.message };
-      if (!data || data.length === 0) return { ok: true };  // nel cloud non c'e: niente da eliminare
+      // Attenzione: "non trovata per nome" NON vuol dire "non c'e".
+      // Il nome locale viene riscritto dalla riconciliazione e puo non
+      // combaciare piu con quello salvato nel cloud. Trattarlo come
+      // "gia eliminata" e' esattamente cio che faceva tornare la lega:
+      // spariva in locale, restava nel cloud, tornava al refresh.
+      if (!data || data.length === 0) {
+        return { ok: false, errore: 'non riesco a identificarla nel cloud (il nome salvato la non combacia)' };
+      }
       if (data.length > 1) return { ok: false, errore: `nel cloud ci sono ${data.length} leghe con questo nome e non so quale sia` };
       cloudId = data[0].id;
     } catch (e) {
@@ -12729,6 +12736,57 @@ function renderDashLeagues() {
       ${rami}
     </div>`;
   }).join('');
+  box.innerHTML += `<button class="fo-btn fo-btn--fantasma" style="margin-top:6px;font-size:11px;opacity:.7"
+    onclick="diagnosiLeghe()">confronta con il cloud</button>`;
+}
+
+// Mette in fila quello che c'e in locale e quello che c'e nel cloud, con gli
+// id veri. Serve a capire da quale dei due lati arrivano le leghe di troppo:
+// finche si guarda solo la schermata, locale e cloud sono indistinguibili.
+async function diagnosiLeghe() {
+  const righe = [];
+  righe.push('LOCALE (' + leagues.length + ')');
+  leagues.forEach(l => {
+    righe.push('  · ' + (l.name || '?') + '\n      id: ' + l.id
+             + '\n      cloud: ' + (l._cloudId || '— MANCA —'));
+  });
+  righe.push('');
+  if (!currentUser || !supabaseClient) {
+    righe.push('CLOUD: non collegato (nessun account)');
+  } else {
+    try {
+      const { data, error } = await supabaseClient
+        .from('leagues').select('id, league_name, created_at')
+        .eq('user_id', currentUser.id).order('created_at', { ascending: true });
+      if (error) throw error;
+      righe.push('CLOUD (' + (data || []).length + ')');
+      (data || []).forEach(r => {
+        const noto = leagues.some(l => l._cloudId === r.id);
+        righe.push('  · ' + r.league_name + (noto ? '' : '   ← il locale non la conosce')
+                 + '\n      id: ' + r.id
+                 + '\n      creata: ' + String(r.created_at).slice(0, 19).replace('T', ' '));
+      });
+    } catch (e) {
+      righe.push('CLOUD: errore — ' + (e.message || e));
+    }
+  }
+  const testo = righe.join('\n');
+  console.log('[FantaOracle] diagnosi leghe\n' + testo);
+  const vecchio = document.getElementById('diagnosiLegheBox');
+  if (vecchio) vecchio.remove();
+  const box = document.createElement('div');
+  box.id = 'diagnosiLegheBox';
+  box.style.cssText = 'position:fixed;inset:12px;z-index:9999;background:var(--surface);'
+    + 'border:1px solid var(--border);border-radius:12px;padding:14px;overflow:auto;'
+    + 'font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text);white-space:pre-wrap;line-height:1.5';
+  box.textContent = testo;
+  const chiudi = document.createElement('button');
+  chiudi.className = 'fo-btn fo-btn--neutro';
+  chiudi.textContent = 'chiudi';
+  chiudi.style.cssText = 'position:sticky;bottom:0;margin-top:12px;width:100%';
+  chiudi.onclick = () => box.remove();
+  box.appendChild(chiudi);
+  document.body.appendChild(box);
 }
 function renderTrialCard() {
   const box = document.getElementById('trialCardBody');
