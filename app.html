@@ -2474,10 +2474,13 @@
     gap: 16px; margin-bottom: 24px;
     align-items: stretch;
   }
-  .dash-manage-grid > .mng-card:nth-child(3) { grid-column: 1 / -1; }
+  /* LE MIE LEGHE prende tutta la riga: ha dentro l'albero delle competizioni
+     e di larghezza ci guadagna. Sotto, affiancate, LA TUA PROVA e
+     ABBONAMENTO: due schede corte che stanno bene in coppia. */
+  .dash-manage-grid > .mng-card:nth-child(1) { grid-column: 1 / -1; }
   @media (max-width: 899px) {
     .dash-manage-grid { grid-template-columns: 1fr; }
-    .dash-manage-grid > .mng-card:nth-child(3) { grid-column: auto; }
+    .dash-manage-grid > .mng-card:nth-child(1) { grid-column: auto; }
   }
   .mng-card { display: flex; flex-direction: column; }
   .mng-empty { font-size: 13px; color: var(--muted); line-height: 1.6; padding: 6px 0; }
