@@ -1,0 +1,8 @@
+# FantaOracle — https://fantaoracle.ch
+User-agent: *
+Allow: /
+
+# Niente da indicizzare qui: sono chiamate al server, non pagine.
+Disallow: /api/
+
+Sitemap: https://fantaoracle.ch/sitemap.xml
