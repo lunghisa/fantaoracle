@@ -6594,6 +6594,9 @@ function selezionaCompetizione(leagueId, nome) {
   renderCompSwitcher();
   try { renderDashLeagues(); } catch (e) {}
   try { renderHeadToHead(); } catch (e) {}
+  // L'Arena ha la sua scheda scontro diretto: va ridisegnata anche lei,
+  // altrimenti resta sull'avversario della competizione precedente.
+  try { renderArenaPage(); } catch (e) {}
   showToast('🏅 ' + nome);
 }
 
@@ -12649,26 +12652,57 @@ function renderArenaPage() {
     if (!hasRoster || rivals.length === 0) {
       h2hBox.innerHTML = '<div class="arena-empty">Serve il file di lega con le fantasquadre per la proiezione dello scontro diretto.</div>';
     } else {
+      // Stessa logica della scheda Oracle: se c'e un calendario importato,
+      // l'avversario si ricava dalla competizione in uso invece di sceglierlo
+      // ogni giornata a mano. La scelta manuale resta e ha la precedenza.
+      const compArena = (typeof getCompetizioneAttiva === 'function') ? getCompetizioneAttiva() : null;
+      const gsaArena = (typeof giornataSerieACorrente === 'function') ? giornataSerieACorrente() : null;
+      const myTeamArena = (typeof getMyTeamName === 'function') ? getMyTeamName() : '';
+      const daCalArena = (typeof partitaDiGiornata === 'function')
+        ? partitaDiGiornata(compArena, gsaArena, myTeamArena) : null;
+
       const saved = getSavedOpponent();
-      const opponent = rivals.includes(saved) ? saved : '';
+      const opponent = rivals.includes(saved) ? saved
+                     : (daCalArena && rivals.includes(daCalArena.avversario) ? daCalArena.avversario : '');
+
+      let notaArena = '';
+      if (compArena) {
+        if (daCalArena) {
+          notaArena = '<div style="font-size:11px;color:var(--muted);margin:8px 0 2px;line-height:1.5">'
+            + escapeHtml(compArena.nome) + ' · giornata ' + daCalArena.giornataLega
+            + (daCalArena.girone ? ' · girone ' + escapeHtml(daCalArena.girone) : '')
+            + ' — ' + (daCalArena.inCasa ? 'in casa' : 'in trasferta') + '</div>';
+        } else if (gsaArena) {
+          const ggA = (compArena.partite || []).map(p => p.giornataSerieA).filter(n => n > 0);
+          const primaA = ggA.length ? Math.min.apply(null, ggA) : null;
+          const ultimaA = ggA.length ? Math.max.apply(null, ggA) : null;
+          let testo;
+          if (primaA && gsaArena < primaA) testo = escapeHtml(compArena.nome) + ' comincia dalla ' + primaA + 'ª di Serie A.';
+          else if (ultimaA && gsaArena > ultimaA) testo = escapeHtml(compArena.nome) + ' si è conclusa alla ' + ultimaA + 'ª di Serie A.';
+          else if ((compArena.partite || []).some(p => p.giornataSerieA === gsaArena)) testo = 'In ' + escapeHtml(compArena.nome) + ' la tua squadra riposa.';
+          else testo = escapeHtml(compArena.nome) + ' non si gioca in questa giornata.';
+          notaArena = '<div style="font-size:11px;color:var(--muted);margin:8px 0 2px;line-height:1.5">' + testo + '</div>';
+        }
+      }
+
       const sel = '<select onchange="onArenaOpponentChange(this)" style="width:100%;padding:9px 12px;background:#0a0714;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none;margin-bottom:14px">'
         + '<option value="">— scegli l\'avversario —</option>'
         + rivals.map(t => '<option value="' + escapeAttr(t) + '"' + (t === opponent ? ' selected' : '') + '>' + escapeHtml(t) + '</option>').join('')
         + '</select>';
       if (!opponent) {
-        h2hBox.innerHTML = sel + '<div class="arena-empty">Scegli chi affronti questa giornata.</div>';
+        h2hBox.innerHTML = sel + notaArena + '<div class="arena-empty">Scegli chi affronti questa giornata.</div>';
       } else {
         const oppRoster = buildTeamRoster(opponent);
         const ratings = computeTeamRatings();
         const myProj = projectMyBestXI(ratings);
         const oppProj = oppRoster.length ? projectBestXI(oppRoster, ratings) : null;
         if (!myProj || !oppProj) {
-          h2hBox.innerHTML = sel + '<div class="arena-empty">Proiezione non disponibile.</div>';
+          h2hBox.innerHTML = sel + notaArena + '<div class="arena-empty">Proiezione non disponibile.</div>';
         } else {
           const gap = myProj.total - oppProj.total;
           const strat = h2hStrategy(gap, myProj);
           const vColBg = gap >= 1.5 ? 'rgba(29,185,84,0.12)' : gap > -1.5 ? 'rgba(245,197,66,0.12)' : 'rgba(255,76,76,0.12)';
-          h2hBox.innerHTML = sel + `
+          h2hBox.innerHTML = sel + notaArena + `
             <div class="arena-h2h-nums">
               <div class="arena-h2h-side"><div class="n" style="color:var(--gold)">${myProj.total.toFixed(1)}</div><div class="t" style="color:var(--text)">${escapeHtml(getMyTeamName() || 'La tua squadra')}</div></div>
               <div class="arena-h2h-vs">VS</div>
