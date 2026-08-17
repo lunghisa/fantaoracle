@@ -2474,13 +2474,13 @@
     gap: 16px; margin-bottom: 24px;
     align-items: stretch;
   }
-  /* LE MIE LEGHE prende tutta la riga: ha dentro l'albero delle competizioni
-     e di larghezza ci guadagna. Sotto, affiancate, LA TUA PROVA e
-     ABBONAMENTO: due schede corte che stanno bene in coppia. */
-  .dash-manage-grid > .mng-card:nth-child(1) { grid-column: 1 / -1; }
+  /* Chi prende la riga intera lo dice una classe, non la posizione: con
+     nth-child bastava spostare una scheda per far finire la regola sulla
+     scheda sbagliata, in silenzio. */
+  .mng-card--piena { grid-column: 1 / -1; }
   @media (max-width: 899px) {
     .dash-manage-grid { grid-template-columns: 1fr; }
-    .dash-manage-grid > .mng-card:nth-child(1) { grid-column: auto; }
+    .mng-card--piena { grid-column: auto; }
   }
   .mng-card { display: flex; flex-direction: column; }
   /* Prova e Abbonamento non hanno abbastanza dentro da giustificare
@@ -3914,11 +3914,6 @@
   <div class="page active" id="page-dashboard">
     <!-- GESTIONE: leghe · prova · piani (roadmap punto 2) -->
     <div class="dash-manage-grid">
-      <div class="card mng-card">
-        <div class="card-title">LE MIE LEGHE</div>
-        <div id="dashLeaguesList"></div>
-        <button class="mng-add-league" onclick="addNewLeague()">+ Nuova lega</button>
-      </div>
       <div class="card mng-card mng-card--compatta">
         <div class="card-title" style="color:var(--oracle)">LA TUA PROVA</div>
         <div id="trialCardBody"></div>
@@ -3926,6 +3921,11 @@
       <div class="card mng-card mng-card--compatta">
         <div class="card-title">ABBONAMENTO</div>
         <div id="planBannerBody"></div>
+      </div>
+      <div class="card mng-card mng-card--piena">
+        <div class="card-title">LE MIE LEGHE</div>
+        <div id="dashLeaguesList"></div>
+        <button class="mng-add-league" onclick="addNewLeague()">+ Nuova lega</button>
       </div>
     </div>
     <!-- HERO BANNER personalizzato -->
