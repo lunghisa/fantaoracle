@@ -12736,8 +12736,9 @@ function renderDashLeagues() {
       ${rami}
     </div>`;
   }).join('');
-  box.innerHTML += `<button class="fo-btn fo-btn--fantasma" style="margin-top:6px;font-size:11px;opacity:.7"
-    onclick="diagnosiLeghe()">confronta con il cloud</button>`;
+  box.innerHTML += `<button class="fo-btn fo-btn--neutro" style="margin-top:10px;width:100%;
+    border-color:rgba(245,197,66,0.45);color:var(--gold)"
+    onclick="diagnosiLeghe()">🔍 CONFRONTA LOCALE E CLOUD</button>`;
 }
 
 // Mette in fila quello che c'e in locale e quello che c'e nel cloud, con gli
@@ -12780,12 +12781,38 @@ async function diagnosiLeghe() {
     + 'border:1px solid var(--border);border-radius:12px;padding:14px;overflow:auto;'
     + 'font-family:\'DM Mono\',monospace;font-size:11px;color:var(--text);white-space:pre-wrap;line-height:1.5';
   box.textContent = testo;
+  // Due tasti: copiare il testo e incollarlo e piu affidabile di una foto,
+  // soprattutto se l'elenco e lungo e va scrollato.
+  const barra = document.createElement('div');
+  barra.style.cssText = 'position:sticky;bottom:0;margin-top:12px;display:flex;gap:8px;'
+    + 'padding-top:10px;background:var(--surface)';
+  const copia = document.createElement('button');
+  copia.className = 'fo-btn fo-btn--oro';
+  copia.textContent = '📋 COPIA';
+  copia.style.flex = '1';
+  copia.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(testo);
+      copia.textContent = '✓ COPIATO';
+    } catch (e) {
+      // Su qualche browser la clipboard e negata: seleziono il testo cosi
+      // resta il copia-incolla a mano.
+      try {
+        const r = document.createRange();
+        r.selectNodeContents(box);
+        const sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(r);
+        copia.textContent = 'selezionato — copia a mano';
+      } catch (e2) { copia.textContent = 'non riesco a copiare'; }
+    }
+  };
   const chiudi = document.createElement('button');
   chiudi.className = 'fo-btn fo-btn--neutro';
   chiudi.textContent = 'chiudi';
-  chiudi.style.cssText = 'position:sticky;bottom:0;margin-top:12px;width:100%';
+  chiudi.style.flex = '1';
   chiudi.onclick = () => box.remove();
-  box.appendChild(chiudi);
+  barra.appendChild(copia); barra.appendChild(chiudi);
+  box.appendChild(barra);
   document.body.appendChild(box);
 }
 function renderTrialCard() {
