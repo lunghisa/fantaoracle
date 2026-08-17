@@ -2462,177 +2462,6 @@
     display: block;
   }
 
-  /* ============ ARENA — hub di giornata (dal mockup web) ============ */
-  .arena-head {
-    display: flex; align-items: flex-end; justify-content: space-between;
-    gap: 24px; flex-wrap: wrap;
-    margin-bottom: 22px;
-  }
-  .arena-eyebrow {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px; font-weight: 500;
-    letter-spacing: 3px; color: var(--muted);
-    text-transform: uppercase;
-  }
-  .arena-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(34px, 5vw, 52px);
-    letter-spacing: 2px; color: var(--text);
-    line-height: 1; margin-top: 8px;
-  }
-  .arena-streak {
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(245,197,66,0.12);
-    border: 1px solid rgba(245,197,66,0.35);
-    border-radius: 18px; padding: 8px 16px;
-  }
-  .arena-streak b { font-size: 17px; color: var(--gold); }
-  .arena-streak span {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px; letter-spacing: 1.5px; color: var(--gold);
-  }
-  .arena-grid {
-    display: grid; grid-template-columns: 1.55fr 1fr;
-    gap: 22px; align-items: start;
-  }
-  @media (max-width: 899px) { .arena-grid { grid-template-columns: 1fr; } }
-  .arena-col { display: flex; flex-direction: column; gap: 22px; }
-  .arena-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px; padding: 20px 22px;
-  }
-  .arena-card-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px; font-weight: 500;
-    letter-spacing: 2.5px; color: #c9a2ff;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-  }
-  .arena-card-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .arena-card-label-row .arena-card-label { margin-bottom: 0; }
-  .arena-g { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
-  /* Pick della giornata: cornice con gradiente lavanda→viola→oro */
-  .arena-pick-frame {
-    border-radius: 18px; padding: 2px;
-    background: linear-gradient(140deg, #c9a2ff, #7c3fd4 40%, var(--gold));
-  }
-  .arena-pick {
-    background: #140d29;
-    border-radius: 18px; padding: 26px;
-    display: flex; gap: 26px; align-items: center;
-  }
-  @media (max-width: 599px) { .arena-pick { flex-direction: column; text-align: center; } }
-  .arena-pick-photo {
-    width: 130px; height: 165px; flex: none;
-    border-radius: 12px;
-    background: repeating-linear-gradient(135deg, #2a1c4d 0 8px, #241844 8px 16px);
-    border: 1px solid rgba(201,162,255,0.35);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-  }
-  .arena-pick-photo .role-big {
-    width: 52px; height: 52px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #0a0714;
-    border: 2px solid rgba(255,255,255,0.85);
-  }
-  .arena-pick-photo .role-lab { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
-  .arena-pick-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(36px, 4.5vw, 54px);
-    letter-spacing: 1px; color: var(--text); line-height: 1; margin-top: 8px;
-  }
-  .arena-pick-meta { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); margin-top: 4px; }
-  .arena-pick-score-row { display: flex; align-items: baseline; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
-  @media (max-width: 599px) { .arena-pick-score-row { justify-content: center; } }
-  .arena-pick-score { font-family: 'Bebas Neue', sans-serif; font-size: 52px; color: var(--gold); line-height: 1; }
-  .arena-pick-diff { font-size: 13px; font-weight: 600; }
-  .arena-chips { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-  @media (max-width: 599px) { .arena-chips { justify-content: center; } }
-  .arena-chip {
-    font-size: 11px; font-weight: 600; color: var(--text);
-    background: rgba(255,255,255,0.07);
-    border-radius: 18px; padding: 6px 12px;
-  }
-  .arena-chip.rig { background: var(--green); color: #0d0820; }
-  /* Card rischio titolari */
-  .arena-risk {
-    background: var(--surface);
-    border: 1px solid rgba(255,76,76,0.35);
-    border-radius: 18px; padding: 20px 22px;
-    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-  }
-  .arena-risk.ok { border-color: rgba(29,185,84,0.35); }
-  .arena-risk .ar-body { flex: 1; min-width: 220px; }
-  .arena-risk .ar-title { font-size: 17px; font-weight: 700; color: var(--text); }
-  .arena-risk .ar-text { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 4px; }
-  .arena-risk .ar-btn {
-    background: var(--red); color: #fff;
-    border: none; border-radius: 12px; padding: 13px 20px;
-    font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 2px;
-    cursor: pointer; white-space: nowrap;
-    transition: filter 0.2s;
-  }
-  .arena-risk .ar-btn:hover { filter: brightness(1.1); }
-  .arena-risk.ok .ar-btn { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-  /* News sulla tua rosa */
-  .arena-news-item { display: flex; gap: 12px; align-items: flex-start; padding: 6px 0; }
-  .arena-news-item .an-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; margin-top: 6px; }
-  .arena-news-item .an-title { font-size: 13px; color: var(--text); line-height: 1.4; }
-  .arena-news-item .an-title a { color: inherit; text-decoration: none; }
-  .arena-news-item .an-title a:hover { color: #c9a2ff; }
-  .arena-news-item .an-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 3px; text-transform: uppercase; }
-  /* Scontro diretto */
-  .arena-h2h-nums { display: flex; align-items: center; gap: 14px; }
-  .arena-h2h-side { flex: 1; text-align: center; }
-  .arena-h2h-side .n { font-family: 'Bebas Neue', sans-serif; font-size: 42px; line-height: 1; }
-  .arena-h2h-side .t { font-size: 13px; font-weight: 600; margin-top: 4px; }
-  .arena-h2h-vs { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
-  .arena-h2h-verdict {
-    margin-top: 16px; border-radius: 12px; padding: 12px;
-    text-align: center; font-size: 13px; font-weight: 600;
-  }
-  .arena-h2h-advice { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.55; }
-  /* Classifica */
-  .arena-standing-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 9px 10px; border-radius: 8px; margin: 0 -10px;
-    font-size: 13px;
-  }
-  .arena-standing-row.mine { background: rgba(245,197,66,0.08); }
-  .arena-standing-row .pos { width: 18px; font-weight: 700; color: var(--muted); font-size: 13px; }
-  .arena-standing-row.mine .pos, .arena-standing-row.mine .nm { color: var(--gold); }
-  .arena-standing-row .nm { flex: 1; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .arena-standing-row .pts { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--muted); }
-  .arena-empty { text-align: center; padding: 14px 8px; color: var(--muted); font-size: 13px; line-height: 1.6; }
-  /* La finestra affiancata ha senso solo su desktop */
-  @media (max-width: 899px) { .arena-fc-card { display: none; } }
-  /* Slot pubblicitario Arena: placeholder finché non c'è un circuito ad */
-  .arena-ad {
-    min-height: 90px;
-    margin-bottom: 22px;
-    border: 1px dashed rgba(201,162,255,0.35);
-    border-radius: 12px;
-    background: repeating-linear-gradient(135deg, #140d29 0 10px, #181031 10px 20px);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 4px;
-    text-align: center; padding: 12px;
-  }
-  .arena-ad-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px; font-weight: 500;
-    letter-spacing: 2.5px; color: var(--muted);
-    text-transform: uppercase;
-  }
-  .arena-ad-sub { font-size: 11px; color: #6b5f8a; }
-  @media (max-width: 699px) { .arena-ad { min-height: 70px; } }
-
-  /* ============ DASHBOARD GESTIONE: leghe · prova · piani ============ */
-  .dash-manage-grid {
-    display: grid; grid-template-columns: 1.2fr 1fr 1.2fr;
-    gap: 16px; margin-bottom: 24px;
-    align-items: stretch;
-  }
   @media (max-width: 899px) { .dash-manage-grid { grid-template-columns: 1fr; } }
   .mng-card { display: flex; flex-direction: column; }
   .mng-empty { font-size: 13px; color: var(--muted); line-height: 1.6; padding: 6px 0; }
@@ -3988,13 +3817,13 @@
   </div>
 </div>
 
-<!-- ============ GATE FINE PROVA (Oracle/Arena) ============ -->
+<!-- ============ GATE FINE PROVA (Oracle) ============ -->
 <div class="profile-modal" id="trialGateModal">
   <div class="profile-card" style="max-width:440px;text-align:center">
     <div style="font-size:42px;margin-bottom:10px">🔮</div>
     <div class="profile-title" style="margin-bottom:6px">LA PROVA È FINITA</div>
     <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px">
-      Il tuo periodo di prova completa è terminato: <strong style="color:var(--text)">Oracle e Arena</strong> sono in pausa.<br>
+      Il tuo periodo di prova completa è terminato: <strong style="color:var(--text)">Oracle</strong> è in pausa.<br>
       Campo, Dashboard e News restano gratis, sempre.
     </div>
     <div class="mng-plans-row" style="margin-bottom:14px">
@@ -4024,7 +3853,6 @@
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" id="tab-dashboard" onclick="showPage('dashboard', this)"><svg class="ico"><use href="#ico-home"/></svg>Dashboard</button>
-      <button class="nav-tab" id="tab-arena" onclick="showPage('arena', this)"><svg class="ico"><use href="#ico-trophy"/></svg>Arena</button>
       <button class="nav-tab" id="tab-campo" onclick="showPage('campo', this)"><svg class="ico"><use href="#ico-field"/></svg>Campo</button>
       <button class="nav-tab tab-oracle" id="tab-ai" onclick="showPage('ai', this)"><svg class="ico"><use href="#ico-orb"/></svg>Oracle</button>
       <button class="nav-tab" id="tab-news" onclick="showPage('news', this)"><svg class="ico"><use href="#ico-news"/></svg>News <span class="news-dot" id="newsDot" style="display:none"></span></button>
@@ -4233,54 +4061,6 @@
       <div id="legheImportate" style="margin-top:16px"></div>
     </div>
 
-  </div>
-
-  <!-- ============ ARENA — hub di giornata ============ -->
-  <div class="page" id="page-arena">
-    <!-- Slot pubblicitario (nascosto per admin e abbonati) -->
-    <div class="arena-ad" id="arenaAdSlot" style="display:none">
-      <span class="arena-ad-label">Spazio pubblicitario · Leaderboard</span>
-      <span class="arena-ad-sub">nascosto per gli utenti Pro</span>
-    </div>
-    <div class="arena-head">
-      <div>
-        <div class="arena-eyebrow" id="arenaEyebrow">ARENA</div>
-        <h2 class="arena-title" id="arenaTitle">CIAO, FANTALLENATORE</h2>
-      </div>
-      <div class="arena-streak" id="arenaStreak" style="display:none"></div>
-    </div>
-    <div class="arena-grid">
-      <div class="arena-col">
-        <div class="arena-pick-frame">
-          <div class="arena-pick" id="arenaPick">
-            <div class="arena-empty">Carica la tua rosa per vedere il pick della giornata.</div>
-          </div>
-        </div>
-        <div class="arena-risk" id="arenaRisk" style="display:none"></div>
-        <div class="arena-card">
-          <div class="arena-card-label">News sulla tua rosa</div>
-          <div id="arenaNews"><div class="arena-empty">Nessuna menzione al momento.</div></div>
-        </div>
-      </div>
-      <div class="arena-col">
-        <div class="arena-card arena-fc-card">
-          <div class="arena-card-label">Fantacalcio.it</div>
-          <div class="fc-embed-intro">Apri la tua lega ufficiale in una finestra affiancata a destra: schieri lì leggendo i consigli dell'Arena a sinistra.</div>
-          <button class="fc-embed-open-btn" onclick="openFcWindow()"><svg class="ico"><use href="#ico-field"/></svg> FINESTRA AFFIANCATA</button>
-        </div>
-        <div class="arena-card">
-          <div class="arena-card-label">Scontro diretto</div>
-          <div id="arenaH2H"></div>
-        </div>
-        <div class="arena-card">
-          <div class="arena-card-label-row">
-            <span class="arena-card-label">La tua lega</span>
-            <span class="arena-g" id="arenaLeagueG"></span>
-          </div>
-          <div id="arenaStandings"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="page" id="page-campo">
@@ -6811,9 +6591,6 @@ function selezionaCompetizione(leagueId, nome) {
   renderCompSwitcher();
   try { renderDashLeagues(); } catch (e) {}
   try { renderHeadToHead(); } catch (e) {}
-  // L'Arena ha la sua scheda scontro diretto: va ridisegnata anche lei,
-  // altrimenti resta sull'avversario della competizione precedente.
-  try { renderArenaPage(); } catch (e) {}
   showToast('🏅 ' + nome);
 }
 
@@ -8817,13 +8594,14 @@ function enterApp(ev) {
     ensureTrialStarted();         // <- il periodo di prova parte dal primo ingresso
     renderDashboardManage();      // <- leghe / prova / piani in Dashboard
     updateUserPill();              // <- mostra il tab Admin per gli account admin, prima del routing sotto
-    // Landing: admin → Admin Panel (gestione asta/listone); tutti gli altri →
-    // ARENA (roadmap punto 3). Prova scaduta → Dashboard (dove ci sono i
-    // piani), così non si viene accolti dal gate appena entrati.
+    // Atterraggio: admin → Admin Panel (gestione asta/listone); tutti gli
+    // altri → Dashboard. Prima si atterrava sull'Arena, ma guardando
+    // navigare un utente vero si e visto che non era il punto da cui si
+    // capisce cosa fare: la Dashboard ha le leghe, la rosa e lo stato.
     if (currentUser && currentUser.is_admin) {
       showPage('admin', document.getElementById('tab-admin'));
-    } else if (!trialGateBlocks('arena')) {
-      showPage('arena', document.getElementById('tab-arena'));
+    } else {
+      showPage('dashboard', document.getElementById('tab-dashboard'));
     }
     loadNews(false);
     setInterval(() => loadNews(true), AUTO_REFRESH_MIN * 60 * 1000);
@@ -11976,7 +11754,7 @@ function showPage(id, btn) {
     showToast('⛔ Solo per admin');
     return;
   }
-  // Fine prova: Oracle e Arena in pausa finché non c'è un piano attivo
+  // Fine prova: Oracle in pausa finché non c'è un piano attivo
   if (trialGateBlocks(id)) { openTrialGate(); return; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
@@ -11987,11 +11765,10 @@ function showPage(id, btn) {
   // Aggiorna titolo pagina (punto 10 UX)
   const pageTitleEl = document.getElementById('pageTitle');
   if (pageTitleEl) {
-    const titles = { dashboard: 'Dashboard', arena: 'Arena', campo: 'Il tuo campo', news: 'News Fantacalcio', ai: 'Oracle', admin: 'Admin Panel' };
+    const titles = { dashboard: 'Dashboard', campo: 'Il tuo campo', news: 'News Fantacalcio', ai: 'Oracle', admin: 'Admin Panel' };
     pageTitleEl.textContent = titles[id] || '';
   }
   updateContextBar();
-  if (id === 'arena') renderArenaPage();
   if (id === 'campo') renderField();
   // Oracle Engine v1: render della dashboard predittiva
   if (id === 'ai') renderOraclePage();
@@ -12628,9 +12405,10 @@ function ensureTrialStarted() {
   }
 }
 
-// Gate su Oracle/Arena a prova scaduta
+// Gate su Oracle a prova scaduta. Era su Oracle e Arena; tolta l'Arena,
+// dietro l'abbonamento resta la sola sezione che valga la pena pagare.
 function trialGateBlocks(pageId) {
-  if (pageId !== 'ai' && pageId !== 'arena') return false;
+  if (pageId !== 'ai') return false;
   return getTrialState().expired;
 }
 function openTrialGate() {
@@ -12863,16 +12641,16 @@ function renderTrialCard() {
   }
   if (!st.started) {
     box.innerHTML = '<div class="mng-trial-big" style="color:var(--oracle)">' + TRIAL_DAYS + '</div>'
-      + '<div class="mng-trial-sub"><strong>giorni di prova completa</strong> partono dal tuo primo ingresso: Oracle, Arena e tutto il resto, gratis.</div>';
+      + '<div class="mng-trial-sub"><strong>giorni di prova completa</strong> partono dal tuo primo ingresso: Oracle e tutto il resto, gratis.</div>';
     return;
   }
   if (st.expired) {
     box.innerHTML = '<div class="mng-trial-big" style="color:var(--red)">0</div>'
-      + '<div class="mng-trial-sub"><strong style="color:var(--red)">Prova terminata.</strong> Oracle e Arena sono in pausa: Campo, Dashboard e News restano tuoi. Scegli un piano qui accanto per riattivare le previsioni.</div>';
+      + '<div class="mng-trial-sub"><strong style="color:var(--red)">Prova terminata.</strong> Oracle è in pausa: Campo, Dashboard e News restano tuoi. Scegli un piano qui accanto per riattivare le previsioni.</div>';
     return;
   }
   box.innerHTML = '<div class="mng-trial-big" style="color:var(--oracle)">' + st.daysLeft + '</div>'
-    + '<div class="mng-trial-sub"><strong>' + (st.daysLeft === 1 ? 'ultimo giorno' : 'giorni rimasti') + ' di prova completa.</strong> Oracle e Arena inclusi: sfrutta il mese per testare le previsioni sulla tua lega.</div>';
+    + '<div class="mng-trial-sub"><strong>' + (st.daysLeft === 1 ? 'ultimo giorno' : 'giorni rimasti') + ' di prova completa.</strong> Oracle incluso: sfrutta il mese per testare le previsioni sulla tua lega.</div>';
 }
 function renderPlanBanner() {
   const box = document.getElementById('planBannerBody');
@@ -12908,231 +12686,6 @@ function renderPlanBanner() {
         : 'Un prezzo solo, per tutta la stagione. Premi "Ti avviso" e ti scrivo appena si parte' + (currentUser ? '' : ' (accedi per lasciarmi la tua email)') + '.'}</div>`;
 }
 
-// ============ ARENA — hub di giornata (dati reali dal motore esistente) ============
-function renderArenaPage() {
-  const roster = [...players.starters, ...players.bench].filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
-  const hasRoster = roster.length > 0;
-  const roleHex = COLORI_RUOLO;
-
-  // Slot pubblicitario: visibile solo a free/trial. Admin e abbonati non vedono ads.
-  const adSlot = document.getElementById('arenaAdSlot');
-  if (adSlot) {
-    const plan = getTrialState().plan;
-    adSlot.style.display = (plan === 'admin' || plan === 'month' || plan === 'year') ? 'none' : 'flex';
-  }
-
-  // --- Testata: giornata · lega + saluto ---
-  const legaEl = document.getElementById('leagueNameDisplay');
-  const legaName = legaEl && legaEl.textContent && legaEl.textContent !== '—' ? legaEl.textContent : '';
-  let gLabel = '';
-  if (calendario.giornate.length && calendario.currentIdx >= 0) {
-    const g = calendario.giornate[calendario.currentIdx];
-    if (g) gLabel = 'GIORNATA ' + g.num;
-  }
-  const eyebrow = document.getElementById('arenaEyebrow');
-  if (eyebrow) eyebrow.textContent = [gLabel, legaName].filter(Boolean).join(' · ') || 'ARENA';
-  const userEl = document.getElementById('user-name');
-  const userName = userEl ? userEl.textContent : 'FANTALLENATORE';
-  const myTeam = (typeof getMyTeamName === 'function' && getMyTeamName()) || '';
-  const title = document.getElementById('arenaTitle');
-  // Si saluta il fantallenatore, non la squadra: sono due cose diverse
-  // (l'allenatore e 'giongiahunter', la squadra 'GiongiaBomber'). La squadra
-  // ha gia il suo posto nella card dedicata.
-  if (title) title.textContent = 'CIAO ' + userName;
-
-  // --- Oracle engine (silenzioso) per pick e scontro diretto ---
-  let engineOk = false;
-  if (hasRoster) { try { engineOk = runOracleEngine(true); } catch (e) {} }
-
-  // --- Pick della giornata ---
-  const pickBox = document.getElementById('arenaPick');
-  if (pickBox) {
-    if (!hasRoster || !engineOk) {
-      pickBox.innerHTML = '<div class="arena-empty">Carica la tua rosa dalla Dashboard per vedere il pick della giornata.</div>';
-    } else {
-      const alerted = getAlertedPlayerNames();
-      const titSig = titolaritaSignals();
-      const candidates = roster
-        .filter(p => typeof p.oracle === 'number' && !alerted.has(p.name))
-        .filter(p => { const t = titSig[p.name]; return !t || t.status !== 'out'; })
-        .sort((a, b) => b.oracle - a.oracle);
-      const pick = candidates[0];
-      if (!pick) {
-        pickBox.innerHTML = '<div class="arena-empty">Nessun candidato disponibile (tutti a rischio?). Controlla il Campo.</div>';
-      } else {
-        const info = pick._oracleInfo || {};
-        const ctx = info.ctx;
-        const meta = [pick.team ? pick.team.toUpperCase() : '', ctx ? 'VS ' + ctx.opponent.toUpperCase() + ' (' + (ctx.home ? 'CASA' : 'TRASFERTA') + ')' : ''].filter(Boolean).join(' · ');
-        const diff = pick.score ? pick.oracle - pick.score : 0;
-        const diffHtml = pick.score
-          ? (diff >= 0
-              ? '<span class="arena-pick-diff" style="color:var(--green)">+' + diff.toFixed(1) + ' rispetto alla sua media</span>'
-              : '<span class="arena-pick-diff" style="color:var(--orange)">' + diff.toFixed(1) + ' rispetto alla sua media</span>')
-          : '';
-        const chips = (info.factors || []).slice(0, 2)
-          .map(f => '<span class="arena-chip">' + escapeHtml(f.replace(/^[^\wÀ-ÿ]+\s*/, '')) + '</span>');
-        if (typeof info.confidence === 'number') chips.push('<span class="arena-chip">Fiducia ' + info.confidence + '%</span>');
-        if (pick.rigorista) chips.push('<span class="arena-chip rig">Rigorista</span>');
-        pickBox.innerHTML = `
-          <div class="arena-pick-photo">
-            <div class="role-big" style="background:${roleHex[pick.role] || '#888'}">${pick.role}</div>
-            <div class="role-lab">${roleLabel(pick.role)}</div>
-          </div>
-          <div style="flex:1;min-width:0">
-            <div class="arena-card-label" style="margin-bottom:0">Pick della giornata</div>
-            <div class="arena-pick-name">${escapeHtml(pick.name)}</div>
-            ${meta ? '<div class="arena-pick-meta">' + escapeHtml(meta) + '</div>' : ''}
-            <div class="arena-pick-score-row">
-              <span class="arena-pick-score">${pick.oracle.toFixed(1)}</span>
-              ${diffHtml}
-            </div>
-            <div class="arena-chips">${chips.join('')}</div>
-          </div>`;
-      }
-    }
-  }
-
-  // --- Titolari a rischio ---
-  const riskBox = document.getElementById('arenaRisk');
-  if (riskBox) {
-    if (!hasRoster) { riskBox.style.display = 'none'; }
-    else {
-      const alerted = getAlertedPlayerNames();
-      const titSig = titolaritaSignals();
-      const risky = players.starters
-        .filter(p => p && p.name && p.name !== '---' && !p.isEmpty)
-        .map(p => {
-          if (alerted.has(p.name)) return { p, reason: 'menzionato in news infortunio' };
-          const t = titSig[p.name];
-          if (t && t.status === 'out') return { p, reason: 'dato verso la panchina dalle news' };
-          if (t && t.status === 'doubt') return { p, reason: 'in ballottaggio' };
-          return null;
-        }).filter(Boolean);
-      riskBox.style.display = 'flex';
-      if (risky.length === 0) {
-        riskBox.className = 'arena-risk ok';
-        riskBox.innerHTML = '<div class="ar-body"><div class="ar-title">Nessun titolare a rischio</div><div class="ar-text">Le news non segnalano problemi sul tuo XI. Ricontrolla prima della deadline.</div></div>'
-          + '<button class="ar-btn" onclick="showPage(\'campo\', document.getElementById(\'tab-campo\'))">VAI AL CAMPO</button>';
-      } else {
-        riskBox.className = 'arena-risk';
-        const first = risky.slice(0, 2).map(r => escapeHtml(r.p.name) + ': ' + r.reason).join(' · ');
-        riskBox.innerHTML = '<div class="ar-body"><div class="ar-title">' + risky.length + (risky.length === 1 ? ' titolare a rischio' : ' titolari a rischio') + '</div>'
-          + '<div class="ar-text">' + first + (risky.length > 2 ? ' · e altri' : '') + '</div></div>'
-          + '<button class="ar-btn" onclick="showPage(\'campo\', document.getElementById(\'tab-campo\'))">VAI AL CAMPO</button>';
-      }
-    }
-  }
-
-  // --- News sulla tua rosa ---
-  const newsBox = document.getElementById('arenaNews');
-  if (newsBox) {
-    const matches = hasRoster ? findRosterMentions().slice(0, 4) : [];
-    if (matches.length === 0) {
-      newsBox.innerHTML = '<div class="arena-empty">Nessuna menzione dei tuoi giocatori nelle ultime news.</div>';
-    } else {
-      newsBox.innerHTML = matches.map(m => {
-        const dot = m.news.category === 'infortuni' ? 'var(--red)' : m.news.category === 'formazioni' ? 'var(--gold)' : 'var(--green)';
-        return `<div class="arena-news-item">
-          <span class="an-dot" style="background:${dot}"></span>
-          <div style="flex:1;min-width:0">
-            <div class="an-title"><a href="${escapeAttr(outboundNewsUrl(m.news.link))}" target="_blank" rel="noopener">${escapeHtml(m.news.title)}</a></div>
-            <div class="an-meta">${formatRelativeTime(m.news.date)} · ${escapeHtml(m.news.source)}</div>
-          </div>
-        </div>`;
-      }).join('');
-    }
-  }
-
-  // --- Scontro diretto ---
-  const h2hBox = document.getElementById('arenaH2H');
-  if (h2hBox) {
-    const rivals = (typeof getRivalTeams === 'function') ? getRivalTeams() : [];
-    if (!hasRoster || rivals.length === 0) {
-      h2hBox.innerHTML = '<div class="arena-empty">Serve il file di lega con le fantasquadre per la proiezione dello scontro diretto.</div>';
-    } else {
-      // Stessa logica della scheda Oracle: se c'e un calendario importato,
-      // l'avversario si ricava dalla competizione in uso invece di sceglierlo
-      // ogni giornata a mano. La scelta manuale resta e ha la precedenza.
-      const compArena = (typeof getCompetizioneAttiva === 'function') ? getCompetizioneAttiva() : null;
-      const gsaArena = (typeof giornataSerieACorrente === 'function') ? giornataSerieACorrente() : null;
-      const myTeamArena = (typeof getMyTeamName === 'function') ? getMyTeamName() : '';
-      const daCalArena = (typeof partitaDiGiornata === 'function')
-        ? partitaDiGiornata(compArena, gsaArena, myTeamArena) : null;
-
-      const saved = getSavedOpponent();
-      const opponent = rivals.includes(saved) ? saved
-                     : (daCalArena && rivals.includes(daCalArena.avversario) ? daCalArena.avversario : '');
-
-      let notaArena = '';
-      if (compArena) {
-        if (daCalArena) {
-          notaArena = '<div style="font-size:11px;color:var(--muted);margin:8px 0 2px;line-height:1.5">'
-            + escapeHtml(compArena.nome) + ' · giornata ' + daCalArena.giornataLega
-            + (daCalArena.girone ? ' · girone ' + escapeHtml(daCalArena.girone) : '')
-            + ' — ' + (daCalArena.inCasa ? 'in casa' : 'in trasferta') + '</div>';
-        } else if (gsaArena) {
-          const ggA = (compArena.partite || []).map(p => p.giornataSerieA).filter(n => n > 0);
-          const primaA = ggA.length ? Math.min.apply(null, ggA) : null;
-          const ultimaA = ggA.length ? Math.max.apply(null, ggA) : null;
-          let testo;
-          if (primaA && gsaArena < primaA) testo = escapeHtml(compArena.nome) + ' comincia dalla ' + primaA + 'ª di Serie A.';
-          else if (ultimaA && gsaArena > ultimaA) testo = escapeHtml(compArena.nome) + ' si è conclusa alla ' + ultimaA + 'ª di Serie A.';
-          else if ((compArena.partite || []).some(p => p.giornataSerieA === gsaArena)) testo = 'In ' + escapeHtml(compArena.nome) + ' la tua squadra riposa.';
-          else testo = escapeHtml(compArena.nome) + ' non si gioca in questa giornata.';
-          notaArena = '<div style="font-size:11px;color:var(--muted);margin:8px 0 2px;line-height:1.5">' + testo + '</div>';
-        }
-      }
-
-      const sel = '<select onchange="onArenaOpponentChange(this)" style="width:100%;padding:9px 12px;background:#0a0714;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none;margin-bottom:14px">'
-        + '<option value="">— scegli l\'avversario —</option>'
-        + rivals.map(t => '<option value="' + escapeAttr(t) + '"' + (t === opponent ? ' selected' : '') + '>' + escapeHtml(t) + '</option>').join('')
-        + '</select>';
-      if (!opponent) {
-        h2hBox.innerHTML = sel + notaArena + '<div class="arena-empty">Scegli chi affronti questa giornata.</div>';
-      } else {
-        const oppRoster = buildTeamRoster(opponent);
-        const ratings = computeTeamRatings();
-        const myProj = projectMyBestXI(ratings);
-        const oppProj = oppRoster.length ? projectBestXI(oppRoster, ratings) : null;
-        if (!myProj || !oppProj) {
-          h2hBox.innerHTML = sel + notaArena + '<div class="arena-empty">Proiezione non disponibile.</div>';
-        } else {
-          const gap = myProj.total - oppProj.total;
-          const strat = h2hStrategy(gap, myProj);
-          const vColBg = gap >= 1.5 ? 'rgba(29,185,84,0.12)' : gap > -1.5 ? 'rgba(245,197,66,0.12)' : 'rgba(255,76,76,0.12)';
-          h2hBox.innerHTML = sel + notaArena + `
-            <div class="arena-h2h-nums">
-              <div class="arena-h2h-side"><div class="n" style="color:var(--gold)">${myProj.total.toFixed(1)}</div><div class="t" style="color:var(--text)">${escapeHtml(getMyTeamName() || 'La tua squadra')}</div></div>
-              <div class="arena-h2h-vs">VS</div>
-              <div class="arena-h2h-side"><div class="n" style="color:var(--muted)">${oppProj.total.toFixed(1)}</div><div class="t" style="color:var(--muted)">${escapeHtml(opponent)}</div></div>
-            </div>
-            <div class="arena-h2h-verdict" style="background:${vColBg};border:1px solid ${strat.color};color:${strat.color}">${strat.verdict.toUpperCase()}</div>
-            <div class="arena-h2h-advice">${escapeHtml(strat.advice)}</div>`;
-        }
-      }
-    }
-  }
-
-  // --- La tua lega (squadre; punti quando ci sarà lo storico risultati) ---
-  const standBox = document.getElementById('arenaStandings');
-  const gEl = document.getElementById('arenaLeagueG');
-  if (gEl) gEl.textContent = gLabel ? gLabel.replace('GIORNATA ', 'G') : '';
-  if (standBox) {
-    const teams = (listone && listone.leagueTeams && listone.leagueTeams.length) ? listone.leagueTeams.slice() : [];
-    if (teams.length === 0) {
-      standBox.innerHTML = '<div class="arena-empty">Carica il file di lega con le fantasquadre per vedere le squadre.</div>';
-    } else {
-      const mine = (typeof getMyTeamName === 'function' && getMyTeamName()) || '';
-      standBox.innerHTML = teams.sort((a, b) => (a === mine ? -1 : b === mine ? 1 : a.localeCompare(b)))
-        .map((t, i) => `<div class="arena-standing-row${t === mine ? ' mine' : ''}"><span class="pos">${i + 1}</span><span class="nm">${escapeHtml(t)}</span><span class="pts">—</span></div>`).join('')
-        + '<div class="arena-empty" style="padding-top:10px">La classifica coi punti arriva quando registreremo i risultati di giornata.</div>';
-    }
-  }
-}
-function onArenaOpponentChange(sel) {
-  setSavedOpponent(sel.value);
-  renderArenaPage();
-}
 
 // Pannello Fantacalcio.it integrato (solo desktop): iframe caricato solo all'apertura
 const FC_EMBED_URL = 'https://leghe.fantacalcio.it';
@@ -13592,10 +13145,6 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   <button class="bottom-nav-tab bn-oracle" data-page="ai" onclick="showPage('ai', document.getElementById('tab-ai'))">
     <span class="bn-orb"><svg class="ico"><use href="#ico-orb"/></svg></span>
     <span class="bn-label">Oracle</span>
-  </button>
-  <button class="bottom-nav-tab" data-page="arena" onclick="showPage('arena', document.getElementById('tab-arena'))">
-    <svg class="ico"><use href="#ico-trophy"/></svg>
-    <span class="bn-label">Arena</span>
   </button>
   <button class="bottom-nav-tab" data-page="news" onclick="showPage('news', document.getElementById('tab-news'))">
     <svg class="ico"><use href="#ico-news"/></svg>
