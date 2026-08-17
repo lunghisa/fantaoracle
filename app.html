@@ -5028,6 +5028,9 @@ function expandListone(arr) {
 // ============================================================
 const LEAGUES_REGISTRY_KEY = 'fantaoracle_leagues_v2';
 const ACTIVE_LEAGUE_KEY = 'fantaoracle_active_league_v2';
+// Registra che la migrazione dalle chiavi v1 e gia avvenuta, cosi non puo
+// ripartire e ricreare una lega dal nulla a ogni caricamento.
+const MIGRAZIONE_V1_KEY = 'fantaoracle_migrazione_v1_fatta';
 
 // Stato leghe registrate
 let leagues = []; // array di { id, name, addedDate }
@@ -5042,14 +5045,23 @@ function loadLeaguesRegistry() {
     activeLeagueId = localStorage.getItem(ACTIVE_LEAGUE_KEY) || null;
   } catch(e) {}
   
-  // Migrazione one-shot: se non c'è registry ma esiste un listone v1, lo migro
+  // Migrazione: se non c'e registry ma esiste un listone v1, lo migro.
+  //
+  // Si chiamava "one-shot" ma non lo era: niente registrava che fosse gia
+  // avvenuta, quindi ripartiva OGNI volta che il registro risultava vuoto al
+  // caricamento — e le chiavi v1 non vengono mai cancellate, quindi la
+  // condizione resta vera per sempre. La lega ricreata nasce senza id cloud,
+  // e la sincronizzazione la inseriva come riga NUOVA accanto all'originale.
+  // Da li le leghe che si moltiplicavano. Ora l'esito viene registrato.
   if (leagues.length === 0) {
+    const migrazioneGiaFatta = (() => { try { return !!localStorage.getItem(MIGRAZIONE_V1_KEY); } catch(e) { return false; } })();
     const hasV1Listino = (() => { try { return !!localStorage.getItem(LISTINO_STORAGE_KEY); } catch(e) { return false; } })();
-    if (hasV1Listino) {
+    if (!migrazioneGiaFatta && hasV1Listino) {
       const existingName = (() => { try { return localStorage.getItem(LEAGUE_NAME_KEY) || 'La mia lega'; } catch(e) { return 'La mia lega'; } })();
       const migratedId = slugifyLeague(existingName);
       leagues = [{ id: migratedId, name: existingName, addedDate: new Date().toISOString() }];
       activeLeagueId = migratedId;
+      try { localStorage.setItem(MIGRAZIONE_V1_KEY, new Date().toISOString()); } catch(e) {}
       saveLeaguesRegistry();
       // Sposto le chiavi v1 globali al namespace della lega migrata
       ['_listino_v1', '_roster_v1', '_my_team_v1', '_league_name_v1'].forEach(suffix => {
@@ -9754,6 +9766,12 @@ let cloudSyncState = {
   lastSyncAt: null,
   pendingDebounce: null,
   migrationDone: false,     // true dopo la migrazione one-shot
+  // true quando la prima riconciliazione col cloud e stata TENTATA (riuscita
+  // o meno). Finche e false lo stato locale non e ancora stato confrontato
+  // con quello remoto, e spingerlo su significherebbe inserire come nuovo
+  // qualcosa che di la esiste gia.
+  primoConfrontoFatto: false,
+  spintaRimandata: false,   // c'era da salvare mentre il confronto non c'era ancora
 };
 
 // Aggiorna la context bar sotto l'header: giornata, rosa, stato sync
@@ -10148,7 +10166,10 @@ async function syncOnLogin() {
   // 2. Leggo dal cloud
   const cloudLeagues = await fetchCloudLeagues();
   if (cloudLeagues === null) {
-    // errore di rete: resto in offline ma uso local
+    // errore di rete: resto in offline ma uso local. Il confronto e comunque
+    // stato tentato: se restasse bloccato, da qui in poi non si
+    // sincronizzerebbe piu niente fino al prossimo caricamento.
+    cloudSyncState.primoConfrontoFatto = true;
     cloudSyncState.status = 'offline';
     updateCloudIndicator();
     return;
@@ -10192,12 +10213,25 @@ async function syncOnLogin() {
     updateCloudIndicator();
   }
   cloudSyncState.migrationDone = true;
+  cloudSyncState.primoConfrontoFatto = true;
   cloudSyncState.lastSyncAt = Date.now();
+  // Se qualcosa era da salvare mentre aspettavamo, ora si puo: il registro e
+  // riconciliato. Meglio una spinta in ritardo che una modifica persa.
+  if (cloudSyncState.spintaRimandata) {
+    cloudSyncState.spintaRimandata = false;
+    scheduleCloudSync();
+  }
 }
 
 // Sync debounced: chiamato dopo ogni modifica locale
 function scheduleCloudSync() {
   if (!currentUser) return; // ospite: no sync
+  // Prima che il confronto col cloud sia avvenuto, una spinta scriverebbe
+  // sulla base di un registro locale non ancora riconciliato: una lega senza
+  // id cloud verrebbe INSERITA, anche se di la esiste. syncOnLogin fa lui la
+  // riconciliazione, e ogni modifica successiva viene sincronizzata
+  // normalmente.
+  if (!cloudSyncState.primoConfrontoFatto) { cloudSyncState.spintaRimandata = true; return; }
   if (cloudSyncState.pendingDebounce) clearTimeout(cloudSyncState.pendingDebounce);
   cloudSyncState.status = 'syncing';
   updateCloudIndicator();
