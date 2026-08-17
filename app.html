@@ -2483,10 +2483,44 @@
     .mng-card--piena { grid-column: auto; }
   }
   .mng-card { display: flex; flex-direction: column; }
-  /* Prova e Abbonamento non hanno abbastanza dentro da giustificare
-     l'imbottitura piena: erano due riquadri quasi vuoti e altissimi. */
-  .mng-card--compatta { padding: 14px 20px 16px; justify-content: center; }
-  .mng-card--compatta .card-title { margin-bottom: 10px; }
+  /* Prova e Abbonamento: due righe, non due colonne.
+     Impaginate in verticale — numero sopra, testo sotto — erano alte il
+     doppio di quello che contengono. Messe in orizzontale, l'altezza la
+     detta la riga piu alta invece della somma di tutto.
+     Il fondo e diverso dalle altre schede: una velatura viola che vira
+     all'oro in basso a destra, piu un bordo appena piu chiaro. Bastano
+     pochi punti percentuali per far staccare il riquadro senza gridare. */
+  .mng-card--compatta {
+    padding: 12px 16px 13px;
+    justify-content: center;
+    background:
+      linear-gradient(135deg,
+        rgba(168,110,245,0.14) 0%,
+        rgba(168,110,245,0.045) 55%,
+        rgba(245,197,66,0.08) 100%),
+      var(--surface);
+    border-color: rgba(201,162,255,0.30);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .mng-card--compatta .card-title { margin-bottom: 8px; }
+
+  /* LA TUA PROVA: il numero a sinistra, la frase accanto. */
+  #trialCardBody { display: flex; align-items: center; gap: 14px; }
+  #trialCardBody .mng-trial-big { margin: 0; flex: none; line-height: 0.95; }
+  #trialCardBody .mng-trial-sub { text-align: left; }
+
+  /* ABBONAMENTO: nome, prezzo e bottone sulla stessa riga. Su schermo
+     stretto il bottone va a capo e prende tutta la larghezza. */
+  .mng-plan {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    text-align: left;
+  }
+  .mng-plan-name { flex: none; }
+  .mng-plan-price { margin: 0; flex: none; }
+  .mng-plan .mng-plan-btn { width: auto; margin-left: auto; flex: none; }
+  @media (max-width: 520px) {
+    .mng-plan .mng-plan-btn { width: 100%; margin-left: 0; }
+  }
   .mng-empty { font-size: 13px; color: var(--muted); line-height: 1.6; padding: 6px 0; }
   .mng-league-row {
     display: flex; align-items: center; gap: 10px;
@@ -2526,7 +2560,7 @@
     flex: 1; text-align: center;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 12px; padding: 10px 10px;
+    border-radius: 12px; padding: 9px 12px;
   }
   .mng-plan.best { border-color: rgba(245,197,66,0.45); background: rgba(245,197,66,0.06); }
   .mng-plan-name { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--muted); }
