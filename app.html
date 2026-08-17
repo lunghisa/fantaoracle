@@ -4179,6 +4179,22 @@
   </div>
 
   <div class="page" id="page-campo">
+    <!-- Compare solo arrivando da "Schiera Oracle": dice qual e il passo dopo.
+         Applicare la formazione qui non serve a niente finche non la si copia
+         su Leghe Fantacalcio, ed era l'unico pezzo del giro non raccontato. -->
+    <div id="campoDopoOracle" style="display:none;margin-bottom:14px;padding:12px 14px;border:1px solid rgba(245,197,66,0.35);background:rgba(245,197,66,0.07);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px;font-size:12.5px;color:var(--text);line-height:1.5">
+          <strong style="color:var(--gold)">Formazione applicata.</strong>
+          <span style="color:var(--muted)">Ora va trascritta su Leghe Fantacalcio: l'Oracle non può schierare al posto tuo.</span>
+        </div>
+        <button onclick="openFcWindow()" style="padding:9px 16px;background:var(--gold);color:#000;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;border:none;border-radius:9px;cursor:pointer;white-space:nowrap">
+          APRI LEGHE FANTACALCIO
+        </button>
+        <button onclick="document.getElementById('campoDopoOracle').style.display='none'" title="Chiudi"
+                style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 8px">×</button>
+      </div>
+    </div>
     <div class="field-container">
       <div class="field-wrap" id="fieldWrap">
         <div class="field-header">
@@ -6939,6 +6955,10 @@ function applyOracleFormation() {
   if (!best) { showToast('⚠️ Carica prima la tua rosa'); return; }
   setModulo(best.modulo, null);
   showPage('campo', document.getElementById('tab-campo'));
+  // La barra col passo successivo compare solo arrivando da qui, non ogni
+  // volta che si apre il Campo per guardare la rosa.
+  const barra = document.getElementById('campoDopoOracle');
+  if (barra) barra.style.display = '';
   showToast('🔮 Oracle ha schierato il ' + best.modulo + ' · ' + best.total.toFixed(1) + ' punti attesi');
 }
 
@@ -11695,6 +11715,12 @@ async function applyGlobalListinoAndCalendar() {
 
 
 function showPage(id, btn) {
+  // La barra "formazione applicata" appartiene al viaggio che arriva
+  // dall'Oracle: uscendo dal Campo perde senso e va spenta.
+  if (id !== 'campo') {
+    const b = document.getElementById('campoDopoOracle');
+    if (b) b.style.display = 'none';
+  }
   if (id === 'admin' && !(currentUser && currentUser.is_admin)) {
     showToast('⛔ Solo per admin');
     return;
