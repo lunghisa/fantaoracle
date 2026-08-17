@@ -3973,7 +3973,7 @@
         <div class="card-title">ABBONAMENTO</div>
         <div id="planBannerBody"></div>
       </div>
-      <div class="card mng-card mng-card--piena">
+      <div class="card mng-card mng-card--piena" id="dashLeaguesCard">
         <div class="card-title">LE MIE LEGHE</div>
         <div id="dashLeaguesList"></div>
         <button class="mng-add-league" onclick="addNewLeague()">+ Nuova lega</button>
@@ -12572,6 +12572,16 @@ function renderDashboardManage() {
 function renderDashLeagues() {
   const box = document.getElementById('dashLeaguesList');
   if (!box) return;
+  // L'admin gestisce l'app, non gioca: non ha una lega e la scheda non gli
+  // serve. Restava visibile mostrando quello che era rimasto nel registro
+  // locale di questo browser da una prova fatta come utente normale — il
+  // registro sta in localStorage, che segue il browser e non l'account.
+  const scheda = document.getElementById('dashLeaguesCard');
+  if (currentUser && currentUser.is_admin) {
+    if (scheda) scheda.style.display = 'none';
+    return;
+  }
+  if (scheda) scheda.style.display = '';
   if (!leagues || leagues.length === 0) {
     box.innerHTML = '<div class="mng-empty">Nessuna lega ancora. Creane una caricando il file della tua lega Fantacalcio.it.</div>';
     return;
