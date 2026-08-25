@@ -11094,6 +11094,7 @@ function astaRankCandidates(role, limit) {
     first1Team = a1 ? normTeamName(a1.team) : null;
   }
   const titSigListone = titolaritaSignalsListone();
+  const votiMedi = mediaVotiGlobali();
   const candidates = (listone.players || [])
     .filter(p => p.role === role)
     .filter(p => !bought.some(b => normTeamName(b.team) === normTeamName(p.team) && rigoristaNameMatches(p.name, b.name)))
@@ -11115,10 +11116,17 @@ function astaRankCandidates(role, limit) {
         fmWeight = pgv > 0 ? pgv / (pgv + 6) : 1; // senza presenze nel file: fantamedia piena (dato di fine stagione)
         baseFm = fmWeight * rawFm + (1 - fmWeight) * prior;
       }
-      // Forma preseason (amichevoli) come moltiplicatore diretto sul valore:
-      // range -0.5..+0.5 → 0.5x..1.5x. Stesso campo usato dall'Oracle per la
-      // rosa (oraclePredictPlayer), qui applicato al piano asta.
-      const formaAdj = Math.max(-0.5, Math.min(0.5, p.formaPreseason || 0));
+      // Voti reali pubblicati dall'admin (scheda VOTI): stessa formula di
+      // prudenza dell'Oracle — con 1 giornata pesano ~14%, con 6 il 50%.
+      // Una doppietta alla prima non deve stravolgere la classifica.
+      const vg = votiMedi[rosterNormalizeName(p.name)] || null;
+      if (vg) {
+        const wv = vg.n / (vg.n + 6);
+        baseFm = wv * vg.media + (1 - wv) * baseFm;
+      }
+      // Forma preseason (amichevoli) come moltiplicatore diretto sul valore.
+      // Era il proxy in attesa dei voti veri: appena ci sono, si spegne.
+      const formaAdj = vg ? 0 : Math.max(-0.5, Math.min(0.5, p.formaPreseason || 0));
       // Griglia portieri: il punteggio-calendario (100 = media lega) diventa
       // un moltiplicatore contenuto (±10% max) sulla qualità attesa del
       // portiere. _gkComp = giornate in casa mentre il primo portiere
@@ -11997,7 +12005,12 @@ async function applyGlobalListinoAndCalendar() {
         const grezzo = localStorage.getItem(nsKey(LISTINO_STORAGE_KEY));
         if (grezzo) sourceSalvata = (JSON.parse(grezzo) || {}).source || '';
       } catch (e) {}
-      const hasPersonalUpload = listone.source === 'uploaded' || sourceSalvata === 'uploaded';
+      // Per l'ADMIN la protezione del file personale non vale: il suo
+      // contesto di lavoro E il cloud, e un residuo di prova caricato come
+      // utente in questo browser gli teneva l'Asta su un listone vecchio —
+      // nomi non piu esistenti compresi. Gli utenti veri restano protetti.
+      const contestoAdmin = !!(currentUser && currentUser.is_admin);
+      const hasPersonalUpload = !contestoAdmin && (listone.source === 'uploaded' || sourceSalvata === 'uploaded');
       if (hasPersonalUpload) {
         // Il file di lega dell'utente ha le rose e i costi, ma non sa niente
         // di rigoristi e forma pre-campionato: quelli li curi tu dall'Admin
@@ -12120,6 +12133,29 @@ async function fetchGlobalVotiForUser() {
 // Ultimi voti scesi dal cloud: servono anche al cambio di lega, perche lo
 // storico Oracle e per-lega e ogni lega va alimentata quando diventa attiva.
 let votiGlobaliInMemoria = null;
+
+// Media dei fantavoti pubblicati (tutte le giornate), per chiave giocatore.
+// La usa il piano asta: e l'unico posto che valuta TUTTI i giocatori del
+// listone, quindi non puo appoggiarsi allo storico per-lega della rosa.
+let _mediaVotiCache = null, _mediaVotiCacheRows = null;
+function mediaVotiGlobali() {
+  if (!Array.isArray(votiGlobaliInMemoria) || votiGlobaliInMemoria.length === 0) return {};
+  if (_mediaVotiCache && _mediaVotiCacheRows === votiGlobaliInMemoria) return _mediaVotiCache;
+  const acc = {};
+  votiGlobaliInMemoria.forEach(r => {
+    const vs = r.votes || {};
+    Object.keys(vs).forEach(k => {
+      const v = (vs[k] && typeof vs[k].v === 'number') ? vs[k].v : null;
+      if (v == null) return;
+      (acc[k] = acc[k] || { sum: 0, n: 0 });
+      acc[k].sum += v; acc[k].n++;
+    });
+  });
+  const out = {};
+  Object.keys(acc).forEach(k => { out[k] = { media: acc[k].sum / acc[k].n, n: acc[k].n }; });
+  _mediaVotiCache = out; _mediaVotiCacheRows = votiGlobaliInMemoria;
+  return out;
+}
 
 // Travasa i voti pubblicati dall'admin nello storico Oracle della lega
 // ATTIVA, limitandosi ai giocatori della rosa: mettere tutti i 500+ voti in
