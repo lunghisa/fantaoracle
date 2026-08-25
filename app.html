@@ -10440,7 +10440,39 @@ function resetAdminListinoZone() {
 async function publishGlobalListino() {
   if (!adminState.pendingListino) return;
   const version = document.getElementById('adminListinoVersion').value.trim() || `Listone ${new Date().toISOString().slice(0,10)}`;
-  const players = adminState.pendingListino.players;
+  let players = adminState.pendingListino.players;
+  // Rigoristi e forma vivono DENTRO i giocatori della riga attiva: una
+  // versione nuova parte dal file appena caricato, che non li ha, e
+  // pubblicarla li cancellava in silenzio (successo il 25/8: quotazioni
+  // aggiornate pubblicate, form rigoristi vuoto). Qui si riportano dalla
+  // versione attiva: nome+squadra, e solo nome per chi ha cambiato maglia —
+  // quelli finiscono in un avviso, perche il rigorista di una squadra nuova
+  // va rivisto a mano, non dato per buono.
+  let riportati = 0; const daRivedere = [];
+  try {
+    const attivo = await fetchGlobalListinoForUser();
+    if (attivo && Array.isArray(attivo.players)) {
+      const perChiave = {}, perNome = {};
+      attivo.players.forEach(v => {
+        if (!v || !v.name) return;
+        const n = rosterNormalizeName(v.name);
+        perChiave[n + '|' + normTeamName(v.team)] = v;
+        if (perNome[n] === undefined) perNome[n] = v;
+      });
+      players = players.map(p => {
+        const n = rosterNormalizeName(p.name);
+        const stesso = perChiave[n + '|' + normTeamName(p.team)];
+        const soloNome = perNome[n];
+        const v = stesso || soloNome;
+        if (!v || (!v.rigorista && !v.formaPreseason)) return p;
+        if (v.rigorista) {
+          riportati++;
+          if (!stesso) daRivedere.push(p.name + ' (' + (p.team || '?') + ')');
+        }
+        return { ...p, rigorista: !!v.rigorista, formaPreseason: v.formaPreseason || 0 };
+      });
+    }
+  } catch (e) { console.warn('[Admin] riporto rigoristi:', e); }
   const btn = document.getElementById('adminListinoPublishBtn');
   btn.disabled = true;
   btn.textContent = '⏳ PUBBLICAZIONE...';
@@ -10459,7 +10491,10 @@ async function publishGlobalListino() {
       players: players,
     });
     if (error) throw error;
-    showAdminFeedback('Listino', `🎉 Listone "${version}" pubblicato! Tutti gli utenti lo vedranno al prossimo refresh.`, 'success');
+    let msgPub = `🎉 Listone "${version}" pubblicato! Tutti gli utenti lo vedranno al prossimo refresh.`;
+    if (riportati > 0) msgPub += ` ${riportati} rigoristi riportati dalla versione precedente.`;
+    if (daRivedere.length > 0) msgPub += ` ⚠️ Hanno cambiato squadra, verifica se tirano ancora: ${daRivedere.join(', ')}`;
+    showAdminFeedback('Listino', msgPub, daRivedere.length > 0 ? 'info' : 'success');
     resetAdminListinoZone();
     await refreshAdminListino();
     // Applica subito anche all'admin
