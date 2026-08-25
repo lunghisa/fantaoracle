@@ -4489,7 +4489,7 @@
             Una riga per giocatore, formato <code>Squadra: Nome Giocatore</code> (es. <code>Inter: Lautaro Martinez</code>).
             Al salvataggio aggiorna il listone attivo; l'Oracle applica un bonus (+0.35) ai giocatori marcati.
           </p>
-          <textarea class="admin-field-input" id="adminRigoristiInput" rows="8"
+          <textarea class="admin-field-input" id="adminRigoristiInput" oninput="modificheAdminNonSalvate = true" rows="8"
             style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
             placeholder="Inter: Lautaro Martinez&#10;Napoli: Kvaratskhelia&#10;Roma: Dybala"></textarea>
           <div style="font-size:11px;color:var(--muted);margin:6px 0 12px" id="adminRigoristiCount"></div>
@@ -10585,47 +10585,70 @@ function parseRigoristiLines(text) {
 }
 
 async function saveRigoristi() {
-  if (!adminState.activeListinoFull || !adminState.activeListinoFull.id) {
-    showAdminFeedback('Listino', '❌ Nessun listone attivo caricato.', 'error');
-    return;
-  }
   const btn = document.getElementById('adminRigoristiSaveBtn');
   const textEl = document.getElementById('adminRigoristiInput');
   const lines = parseRigoristiLines(textEl ? textEl.value : '');
-  const updatedPlayers = adminState.activeListinoFull.players.map(p => {
-    const t = normTeamName(p.team);
-    const hit = lines.find(l => !l.matched && l.team === t && rigoristaNameMatches(p.name, l.name));
-    if (hit) hit.matched = true;
-    return { ...p, rigorista: !!hit };
-  });
-  const unmatched = lines.filter(l => !l.matched);
   if (btn) { btn.disabled = true; btn.textContent = '⏳ SALVATAGGIO...'; }
+  const ripristina = () => { if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA RIGORISTI'; } };
   const client = await ensureSupabaseReady();
-  if (!client) {
-    showAdminFeedback('Listino', '❌ Servizio non disponibile.', 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA RIGORISTI'; }
-    return;
-  }
+  if (!client) { showAdminFeedback('Listino', '❌ Servizio non disponibile.', 'error'); ripristina(); return; }
   try {
-    const { error } = await client.from('global_listino')
+    // Base = il listone attivo LETTO ADESSO, non quello in memoria. Un update
+    // sull'id tenuto in memoria non da errore nemmeno quando quella riga non
+    // e piu il listone attivo (es. ripubblicato in un'altra scheda): Supabase
+    // aggiorna la riga vecchia — o nessuna — e risponde ok. E successo: il
+    // messaggio diceva "salvati", il listone vero restava senza rigoristi, e
+    // al ricaricamento il form tornava vuoto.
+    const attivo = await fetchGlobalListinoForUser();
+    if (!attivo || !attivo.id || !Array.isArray(attivo.players)) {
+      showAdminFeedback('Listino', '❌ Nessun listone attivo nel cloud: pubblica prima il listone.', 'error');
+      ripristina(); return;
+    }
+    const updatedPlayers = attivo.players.map(p => {
+      const t = normTeamName(p.team);
+      const hit = lines.find(l => !l.matched && l.team === t && rigoristaNameMatches(p.name, l.name));
+      if (hit) hit.matched = true;
+      return { ...p, rigorista: !!hit };
+    });
+    const unmatched = lines.filter(l => !l.matched);
+    // Il salvataggio e integrale: riscrive il flag di TUTTI i giocatori. Se
+    // nessuna riga incollata combacia, non e "salva zero", e "cancella tutto"
+    // — quasi sempre per un formato o nomi squadra sbagliati. Ci si ferma.
+    if (lines.length > 0 && lines.every(l => !l.matched)) {
+      showAdminFeedback('Listino', '❌ Nessuna riga abbinata al listone: controlla il formato (Squadra: Nome) e i nomi squadra. Non ho salvato niente.', 'error');
+      ripristina(); return;
+    }
+    if (lines.length === 0) {
+      if (!confirm('Il campo è vuoto: vuoi davvero rimuovere TUTTI i rigoristi?')) { ripristina(); return; }
+    }
+    // .select() sull'update: se non torna nessuna riga il database non ha
+    // aggiornato niente, e va detto — non fingere che sia andata.
+    const { data: aggiornate, error } = await client.from('global_listino')
       .update({ players: updatedPlayers })
-      .eq('id', adminState.activeListinoFull.id);
+      .eq('id', attivo.id)
+      .select('id');
     if (error) throw error;
-    adminState.activeListinoFull.players = updatedPlayers;
+    if (!aggiornate || aggiornate.length === 0) {
+      showAdminFeedback('Listino', '❌ Il database non ha aggiornato nessuna riga (listone cambiato nel frattempo?). Riprova.', 'error');
+      ripristina(); return;
+    }
+    modificheAdminNonSalvate = false;
     const count = updatedPlayers.filter(p => p.rigorista).length;
-    let msg = `✓ ${count} rigoristi salvati.`;
+    let msg = `✓ ${count} rigoristi salvati e verificati nel cloud.`;
     let type = 'success';
     if (unmatched.length > 0) {
       msg += ` ⚠️ Non trovati nel listone: ${unmatched.map(l => l.name).join(', ')}`;
       type = 'info';
     }
     showAdminFeedback('Listino', msg, type);
-    renderRigoristiEditor();
+    // Il form si ridisegna da quello che sta DAVVERO nel cloud, non dalla
+    // copia in memoria: cosi quello che vedi e quello che c'e.
+    await refreshAdminRigoristi();
     try { await applyGlobalListinoAndCalendar(); } catch(e) {}
   } catch(e) {
     showAdminFeedback('Listino', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
   }
-  if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA RIGORISTI'; }
+  ripristina();
 }
 
 // ============ VOTI DI GIORNATA (admin → tutti) ============
@@ -10635,6 +10658,14 @@ async function saveRigoristi() {
 // quel dato serviva solo finche non c'erano voti veri, e da qui in avanti
 // i voti veri arrivano proprio da questo pannello.
 let adminVotiDaFile = {};   // key -> {v, name, team} dal file caricato
+
+// Modifiche nei form admin non ancora salvate. E la cosa che e appena
+// costata a Sacha una lista di rigoristi: incollata, ricaricata la pagina
+// prima del salvataggio andato a buon fine, persa senza un avviso.
+let modificheAdminNonSalvate = false;
+window.addEventListener('beforeunload', (e) => {
+  if (modificheAdminNonSalvate) { e.preventDefault(); e.returnValue = ''; }
+});
 
 function giocatoriListoneAdmin() {
   const players = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
@@ -10746,6 +10777,7 @@ function votiPendentiAdmin() {
 }
 
 function aggiornaAdminVotiCount() {
+  modificheAdminNonSalvate = true;
   const el = document.getElementById('adminVotiCount');
   if (!el) return;
   const { votes, scarti } = votiPendentiAdmin();
@@ -10781,6 +10813,7 @@ async function publishGlobalVoti() {
     let msg = `🎉 Giornata ${num} pubblicata: ${count} voti. Gli utenti li ricevono al prossimo caricamento.`;
     if (scarti.length) msg += ` ⚠️ Righe manuali non riconosciute: ${scarti.slice(0,8).join(', ')}`;
     showAdminFeedback('Voti', msg, scarti.length ? 'info' : 'success');
+    modificheAdminNonSalvate = false;
     adminVotiDaFile = {};
     const ta = document.getElementById('adminVotiManualInput'); if (ta) ta.value = '';
     const gn = document.getElementById('adminVotiGiornata'); if (gn) gn.value = '';
