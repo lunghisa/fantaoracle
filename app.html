@@ -3659,54 +3659,6 @@
     letter-spacing: 0.5px;
   }
 
-  /* Modal voti reali */
-  .voti-modal {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(8px);
-    z-index: 4000;
-    display: none;
-    overflow-y: auto;
-    padding: 18px;
-  }
-  .voti-modal.open { display: block; }
-  .voti-card {
-    max-width: 560px;
-    margin: 0 auto;
-    background: #160f2c;
-    border: 1px solid rgba(168,110,245,0.25);
-    border-radius: 18px;
-    padding: 24px;
-  }
-  .voti-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 7px 10px;
-    background: var(--surface2);
-    border-radius: 8px;
-    margin-bottom: 5px;
-  }
-  .voti-row .vr-role {
-    width: 26px; height: 19px;
-    border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 11px;
-    flex-shrink: 0;
-  }
-  .voti-row .vr-name { flex: 1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .voti-row .vr-pred { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); flex-shrink: 0; }
-  .voti-row input {
-    width: 64px;
-    padding: 7px 8px;
-    background: #0a0714;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    text-align: center;
-    outline: none;
-  }
-  .voti-row input:focus { border-color: var(--oracle); }
 
   .oracle-hist-row {
     display: flex; align-items: center; gap: 12px;
@@ -4406,7 +4358,7 @@
           <p style="color:var(--muted);font-size:13px;margin-top:8px;line-height:1.6">
             Previsioni per la <strong style="color:var(--oracle)">giornata <span id="oracleGiornata">—</span></strong> ·
             fantamedia reale + forma + forza avversario + casa/trasferta.
-            Si <strong style="color:var(--gold)">auto-corregge</strong> con i voti reali che inserisci dopo ogni giornata.
+            Si <strong style="color:var(--gold)">auto-corregge</strong> da solo: dopo ogni giornata riceve i voti ufficiali e ricalibra le previsioni.
           </p>
           <p style="color:var(--muted);font-size:13px;margin-top:10px;line-height:1.55;opacity:.85;border-left:2px solid var(--border);padding-left:10px">
             Sono <strong>stime statistiche, non garanzie</strong>. Nessun modello prevede
@@ -4419,7 +4371,6 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;position:relative">
         <button class="oracle-cta" onclick="oracleRunAndRender()">⚡ CALCOLA PREVISIONI</button>
         <button class="oracle-cta gold" onclick="applyOracleFormation()">🔮 SCHIERA ORACLE</button>
-        <button class="oracle-cta ghost" onclick="openVotiModal()">📝 VOTI REALI GIORNATA</button>
       </div>
     </div>
 
@@ -4476,6 +4427,9 @@
       </button>
       <button class="admin-tab" data-tab="calendar" onclick="switchAdminTab('calendar')">
         📅 CALENDARIO <span class="tab-badge" id="adminCalendarBadge">—</span>
+      </button>
+      <button class="admin-tab" data-tab="voti" onclick="switchAdminTab('voti')">
+        🗳 VOTI <span class="tab-badge" id="adminVotiBadge">—</span>
       </button>
       <button class="admin-tab" data-tab="stats" onclick="switchAdminTab('stats')">
         📊 STATS <span class="tab-badge" id="adminStatsBadge">—</span>
@@ -4542,20 +4496,6 @@
           <button class="admin-btn" id="adminRigoristiSaveBtn" onclick="saveRigoristi()">💾 SALVA RIGORISTI</button>
         </div>
 
-        <!-- Forma preseason (amichevoli) -->
-        <div class="admin-field" style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">
-          <label class="admin-field-label">📋 FORMA PRESEASON (AMICHEVOLI)</label>
-          <p class="section-desc" style="margin-top:0">
-            Una riga per giocatore, formato <code>Squadra: Nome Giocatore: valore</code>, valore da -0.5 a +0.5
-            (es. <code>Milan: Leao: +0.3</code>). Usata dall'Oracle come proxy della forma solo finché non ci sono
-            ancora voti reali di campionato (giornate iniziali): smette di applicarsi da sola non appena arrivano.
-          </p>
-          <textarea class="admin-field-input" id="adminFormaPreseasonInput" rows="8"
-            style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
-            placeholder="Milan: Leao: +0.3&#10;Napoli: Kvaratskhelia: +0.2&#10;Inter: Correa: -0.2"></textarea>
-          <div style="font-size:11px;color:var(--muted);margin:6px 0 12px" id="adminFormaPreseasonCount"></div>
-          <button class="admin-btn" id="adminFormaPreseasonSaveBtn" onclick="saveFormaPreseason()">💾 SALVA FORMA PRESEASON</button>
-        </div>
       </div>
 
       <!-- ============ SECTION: CALENDARIO ============ -->
@@ -4593,6 +4533,47 @@
 
         <!-- Storico -->
         <div class="admin-history" id="adminCalendarHistory"></div>
+      </div>
+
+      <!-- ============ SECTION: VOTI GIORNATA ============ -->
+      <div class="admin-section" id="adminSecVoti">
+        <div class="admin-feedback" id="adminVotiFeedback"></div>
+        <p class="section-desc">
+          I fantavoti della giornata, caricati una volta e pubblicati per tutti: ogni utente
+          li riceve al prossimo caricamento e l'Oracle si ricalibra da solo sui suoi giocatori.
+          Lo storico resta qui sotto — e nell'app di ogni utente alimenta forma e accuracy.
+        </p>
+        <div class="admin-field">
+          <label class="admin-field-label">GIORNATA</label>
+          <input type="number" class="admin-field-input" id="adminVotiGiornata" min="1" max="38"
+            style="width:110px;font-family:'DM Mono',monospace;text-align:center">
+        </div>
+        <div class="admin-field" style="margin-top:14px">
+          <label class="admin-field-label">📂 FILE VOTI UFFICIALE</label>
+          <p class="section-desc" style="margin-top:0">
+            Il file voti di Fantacalcio.it (xlsx o csv). Il fantavoto viene calcolato da voto e
+            bonus/malus; i nomi vengono abbinati al listone attivo.
+          </p>
+          <button class="admin-btn admin-btn-secondary" onclick="document.getElementById('adminVotiFileInput').click()">SCEGLI FILE</button>
+          <input type="file" id="adminVotiFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleAdminVotiFile(event)">
+        </div>
+        <div class="admin-field" style="margin-top:14px">
+          <label class="admin-field-label">✍️ CORREZIONI E AGGIUNTE A MANO</label>
+          <p class="section-desc" style="margin-top:0">
+            Una riga per giocatore, formato <code>Squadra: Nome: fantavoto</code>
+            (es. <code>Inter: Lautaro Martinez: 9.5</code>). Per lo stesso giocatore vince sul file.
+          </p>
+          <textarea class="admin-field-input" id="adminVotiManualInput" rows="5"
+            style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
+            placeholder="Inter: Lautaro Martinez: 9.5" oninput="aggiornaAdminVotiCount()"></textarea>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin:10px 0" id="adminVotiCount">Nessun voto caricato.</div>
+        <button class="admin-btn" id="adminVotiPublishBtn" onclick="publishGlobalVoti()">🚀 PUBBLICA VOTI GIORNATA</button>
+
+        <div class="admin-field" style="margin-top:22px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08)">
+          <label class="admin-field-label">📚 GIORNATE PUBBLICATE</label>
+          <div id="adminVotiHistory" style="margin-top:8px"></div>
+        </div>
       </div>
 
       <!-- ============ SECTION: STATS ============ -->
@@ -4761,35 +4742,6 @@
   </div>
 </div>
 </div>
-
-<!-- MODAL VOTI REALI -->
-<div class="voti-modal" id="votiModal" onclick="if(event.target===this)closeVotiModal()">
-  <div class="voti-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--oracle)">📝 VOTI REALI</div>
-      <button class="fo-btn fo-btn--neutro" onclick="closeVotiModal()" style="width:32px">✕</button>
-    </div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6">
-      Inserisci i <strong>fantavoti</strong> dei tuoi giocatori dopo la giornata.
-      L'Oracolo confronta previsto vs reale e si ricalibra. Lascia vuoto chi non ha giocato.
-    </div>
-
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-      <div>
-        <div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Giornata</div>
-        <input id="votiGiornataNum" type="number" min="1" max="50" style="width:80px;padding:8px 10px;background:#0a0714;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:15px;text-align:center;outline:none">
-      </div>
-      <div style="flex:1"></div>
-      <button class="oracle-cta ghost" style="font-size:13px;padding:9px 14px" onclick="document.getElementById('votiFileInput').click()">📂 IMPORTA DA FILE VOTI</button>
-      <input type="file" id="votiFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleVotiFileImport(event)">
-    </div>
-
-    <div id="votiPlayersList" style="max-height:46vh;overflow-y:auto;margin-bottom:18px"></div>
-
-    <button class="oracle-cta" style="width:100%;background:var(--green);color:#fff" onclick="saveVotiReali()">✅ SALVA E RICALIBRA L'ORACOLO</button>
-  </div>
-</div>
-
 
 <!-- ROSTER EDITOR (legacy) -->
 
@@ -5135,6 +5087,9 @@ function switchToLeague(leagueId) {
   loadListinoFromStorage();
   loadRosterFromStorage();
   oracleLoadState();   // storico Oracle per-lega
+  // I voti pubblicati valgono per tutte le leghe, ma lo storico e per-lega:
+  // quella appena attivata potrebbe non averli ancora ricevuti.
+  try { if (votiGlobaliInMemoria) applicaVotiGlobali(votiGlobaliInMemoria); } catch (e) {}
   // Aggiorna UI
   updateListinoBadge();
   updateLeagueBanner();
@@ -7114,101 +7069,6 @@ function applyOracleFormation() {
   showToast('🔮 Oracle ha schierato il ' + best.modulo + ' · ' + best.total.toFixed(1) + ' punti attesi');
 }
 
-// ---- VOTI REALI: input manuale o import file ----
-function openVotiModal() {
-  const all = [...players.starters, ...players.bench]
-    .filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
-  if (all.length === 0) { showToast('⚠️ Carica prima la tua rosa'); return; }
-
-  // Giornata di default: l'ultima per cui esiste uno snapshot, altrimenti
-  // la giornata precedente a quella corrente del calendario.
-  let defNum = '';
-  const snapNums = Object.keys(oracleState.snapshots).map(Number).sort((a,b) => b-a);
-  if (snapNums.length > 0) defNum = snapNums[0];
-  else if (calendario.giornate.length && calendario.currentIdx > 0) {
-    defNum = calendario.giornate[calendario.currentIdx - 1].num;
-  }
-  const numInput = document.getElementById('votiGiornataNum');
-  if (numInput) {
-    numInput.value = defNum;
-    numInput.onchange = () => renderVotiList();
-  }
-  renderVotiList();
-  document.getElementById('votiModal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeVotiModal() {
-  document.getElementById('votiModal').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function renderVotiList() {
-  const listEl = document.getElementById('votiPlayersList');
-  if (!listEl) return;
-  const all = [...players.starters, ...players.bench]
-    .filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
-  const roleHex = COLORI_RUOLO;
-  const order = { P:0, D:1, C:2, A:3 };
-  const sorted = all.slice().sort((a,b) =>
-    (order[a.role] || 9) - (order[b.role] || 9) || (b.score || 0) - (a.score || 0));
-
-  // Pre-compila se esiste già un record per questa giornata
-  const num = parseInt((document.getElementById('votiGiornataNum') || {}).value, 10);
-  const existing = oracleState.history.find(r => r.num === num);
-  const snap = num ? oracleState.snapshots[num] : null;
-
-  listEl.innerHTML = sorted.map(p => {
-    const key = rosterNormalizeName(p.name);
-    const rc = roleHex[p.role] || '#888';
-    const pre = existing && typeof existing.votes[key] === 'number' ? existing.votes[key] : '';
-    const predHtml = (snap && snap.predictions[key])
-      ? 'previsto ' + snap.predictions[key].exp.toFixed(1)
-      : '';
-    return '<div class="voti-row">'
-      + '<span class="vr-role" style="background:' + rc + '22;color:' + rc + '">' + p.role + '</span>'
-      + '<span class="vr-name">' + escapeHtml(p.name) + '</span>'
-      + '<span class="vr-pred">' + predHtml + '</span>'
-      + '<input type="number" step="0.5" min="1" max="20" placeholder="—" data-votekey="' + key + '" value="' + pre + '">'
-      + '</div>';
-  }).join('');
-}
-
-function saveVotiReali() {
-  const num = parseInt(document.getElementById('votiGiornataNum').value, 10);
-  if (!num || num < 1 || num > 50) { showToast('⚠️ Inserisci il numero della giornata'); return; }
-  const votes = {};
-  let count = 0;
-  document.querySelectorAll('#votiModal input[data-votekey]').forEach(inp => {
-    const v = parseFloat(String(inp.value).replace(',', '.'));
-    if (!isNaN(v) && v > 0 && v <= 20) { votes[inp.dataset.votekey] = v; count++; }
-  });
-  if (count === 0) { showToast('⚠️ Inserisci almeno un voto'); return; }
-
-  // Abbina lo snapshot di previsioni della stessa giornata (se l'Oracolo era stato eseguito prima)
-  const snap = oracleState.snapshots[num] || null;
-  const bench = computeBenchAnalysis(num, votes, snap);
-  oracleState.history = oracleState.history.filter(r => r.num !== num);
-  oracleState.history.push({
-    num,
-    dateISO: new Date().toISOString(),
-    votes,
-    predictions: snap ? snap.predictions : null,
-    bench, // { fielded, optimal, gap, leftOut:[{name,role,vote}], modulo } | null
-  });
-  recalibrateOracle();
-  oracleSaveState();
-  closeVotiModal();
-  if (bench && bench.gap > 0.5) {
-    showToast('✅ Voti salvati (G' + num + ') — hai lasciato ' + bench.gap.toFixed(1) + ' punti in panchina');
-  } else if (snap) {
-    showToast('✅ ' + count + ' voti salvati (G' + num + ') — Oracolo ricalibrato');
-  } else {
-    showToast('✅ ' + count + ' voti salvati (G' + num + ') — alimentano la forma dei giocatori');
-  }
-  renderOraclePage();
-}
-
 // ---- POST-PARTITA: quanti punti hai lasciato in panchina ----
 // Confronta la formazione che avevi impostato (snapshot) con l'XI ottimale
 // a posteriori, calcolato sui voti reali rispettando un modulo valido.
@@ -7316,40 +7176,25 @@ function oracleAccuracy() {
   return Math.round((c.hits / c.samples) * 100);
 }
 
-// ---- IMPORT FILE VOTI (xlsx/csv) → pre-compila il modal ----
-// Supporta: file con colonna fantavoto (FV) diretta, oppure file voti
-// Fantacalcio.it (Voto + bonus) da cui calcola il fantavoto classic.
-function handleVotiFileImport(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  event.target.value = '';
-  if (typeof XLSX === 'undefined') { showToast('❌ Libreria Excel non caricata'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-      const filled = parseVotiWorkbook(wb);
-      if (filled > 0) showToast('✅ ' + filled + ' voti pre-compilati dal file — verifica e salva');
-      else showToast('⚠️ Nessun voto riconosciuto nel file');
-    } catch(err) {
-      console.error('[Oracle] voti import', err);
-      showToast('❌ Errore lettura file voti');
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
+// ---- ESTRAZIONE VOTI DA FILE (xlsx/csv) ----
+// Legge il file voti ufficiale (colonna FV diretta, oppure Voto + bonus da
+// cui calcola il fantavoto classic) e abbina le righe a un elenco di
+// giocatori dato. L'abbinamento e a livelli: nome esatto, poi cognome se
+// unico. In caso di ambiguita la riga si SCARTA e finisce tra i non
+// abbinati: su un listone da 500+ nomi un abbinamento azzardato mette il
+// voto sul giocatore sbagliato, che e peggio di un voto mancante.
+function estraiVotiDaWorkbook(wb, giocatori) {
+  const perChiave = {};
+  const perCognome = {};
+  giocatori.forEach(g => {
+    perChiave[g.key] = g;
+    const parti = (g.name || '').trim().split(/\s+/).filter(w => w.length > 2);
+    const cognome = rosterNormalizeName(parti.length ? parti[parti.length - 1] : g.name);
+    if (cognome.length >= 4) (perCognome[cognome] = perCognome[cognome] || []).push(g);
+  });
 
-function parseVotiWorkbook(wb) {
-  // Indice cognomi della rosa
-  const all = [...players.starters, ...players.bench]
-    .filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
-  const index = all.map(p => {
-    const parts = p.name.trim().split(/\s+/).filter(w => w.length > 2);
-    const surname = rosterNormalizeName(parts.length ? parts[parts.length - 1] : p.name);
-    return { key: rosterNormalizeName(p.name), surname };
-  }).filter(x => x.surname.length >= 4);
-
-  const found = {}; // key -> fantavoto
+  const trovati = {};
+  const nonAbbinati = [];
   const num = v => {
     const n = parseFloat(String(v == null ? '' : v).replace(',', '.'));
     return isNaN(n) ? null : n;
@@ -7357,21 +7202,19 @@ function parseVotiWorkbook(wb) {
 
   wb.SheetNames.forEach(sn => {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '', raw: false });
-
     // Cerca un header con colonne note (voti ufficiali: Nome|Voto|Gf|Gs|Rp|Rs|Au|Amm|Esp|Ass — o FV diretta)
     let cols = null;
-    for (let i = 0; i < Math.min(15, rows.length); i++) {
-      const h = rows[i].map(c => String(c || '').trim().toLowerCase().replace(/\.+$/, ''));
-      const nameI = h.findIndex(c => c === 'nome' || c.includes('giocator'));
-      if (nameI === -1) continue;
-      const fvI = h.findIndex(c => c === 'fv' || c === 'fantavoto' || (c.includes('fanta') && c.includes('voto')));
-      const votoI = h.findIndex(c => c === 'voto' || c === 'v');
-      if (fvI === -1 && votoI === -1) continue;
+    for (let ri = 0; ri < Math.min(rows.length, 10); ri++) {
+      const h = rows[ri].map(c => String(c).trim().toLowerCase());
+      const iNome = h.findIndex(c => c === 'nome' || c === 'giocatore' || c === 'calciatore');
+      if (iNome < 0) continue;
       cols = {
-        start: i + 1, name: nameI, fv: fvI, voto: votoI,
-        gf: h.findIndex(c => c === 'gf'), gs: h.findIndex(c => c === 'gs'),
+        start: ri + 1, name: iNome,
+        fv: h.findIndex(c => c === 'fv' || c === 'fantavoto' || c === 'f.voto'),
+        voto: h.findIndex(c => c === 'voto' || c === 'v'),
+        gf: h.findIndex(c => c === 'gf' || c === 'g'), gs: h.findIndex(c => c === 'gs'),
         rp: h.findIndex(c => c === 'rp'), rs: h.findIndex(c => c === 'rs'),
-        au: h.findIndex(c => c === 'au'), amm: h.findIndex(c => c === 'amm'),
+        au: h.findIndex(c => c === 'au' || c === 'ag'), amm: h.findIndex(c => c === 'amm'),
         esp: h.findIndex(c => c === 'esp'), ass: h.findIndex(c => c === 'ass'),
       };
       break;
@@ -7408,20 +7251,23 @@ function parseVotiWorkbook(wb) {
       }
       if (!nameCell || fv == null || fv < 1 || fv > 20) return;
       const norm = rosterNormalizeName(nameCell);
-      const hit = index.find(x => norm.includes(x.surname));
-      if (hit && found[hit.key] == null) found[hit.key] = Math.round(fv * 2) / 2;
+      let g = perChiave[norm] || null;                      // 1. nome esatto
+      if (!g) {
+        const candidati = [];
+        Object.keys(perCognome).forEach(c => {
+          if (norm.includes(c)) perCognome[c].forEach(x => candidati.push(x));
+        });
+        if (candidati.length === 1) g = candidati[0];       // 2. cognome, se unico
+        else if (candidati.length > 1) { nonAbbinati.push(nameCell + ' (ambiguo)'); return; }
+      }
+      if (!g) { nonAbbinati.push(nameCell); return; }
+      if (trovati[g.key] == null) {
+        trovati[g.key] = { v: Math.round(fv * 2) / 2, name: g.name, team: g.team || '' };
+      }
     });
   });
-
-  // Pre-compila gli input del modal (l'utente verifica prima di salvare)
-  let filled = 0;
-  Object.keys(found).forEach(k => {
-    const inp = document.querySelector('#votiModal input[data-votekey="' + k + '"]');
-    if (inp) { inp.value = found[k]; filled++; }
-  });
-  return filled;
+  return { trovati, nonAbbinati };
 }
-
 // ============================================================
 // ORACLE DASHBOARD — render con dati reali dell'engine
 // ============================================================
@@ -7590,7 +7436,7 @@ function renderOracleHistory() {
     box.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;line-height:1.8">'
       + 'Il loop di auto-correzione parte da qui.<br>'
       + '<strong style="color:var(--text)">1.</strong> Prima della giornata: premi <strong style="color:var(--oracle)">Calcola previsioni</strong> (l\'Oracolo salva uno snapshot)<br>'
-      + '<strong style="color:var(--text)">2.</strong> Dopo la giornata: inserisci i <strong style="color:var(--oracle)">voti reali</strong><br>'
+      + '<strong style="color:var(--text)">2.</strong> Dopo la giornata: i <strong style="color:var(--oracle)">voti ufficiali</strong> arrivano da soli<br>'
       + '<strong style="color:var(--text)">3.</strong> L\'Oracolo misura l\'errore, si ricalibra per ruolo e migliora giornata dopo giornata.'
       + '</div>';
     return;
@@ -10352,12 +10198,13 @@ let adminState = {
 
 function switchAdminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  ['listino','calendar','stats','users','asta'].forEach(t => {
+  ['listino','calendar','voti','stats','users','asta'].forEach(t => {
     const el = document.getElementById('adminSec' + t.charAt(0).toUpperCase() + t.slice(1));
     if (el) el.classList.toggle('active', t === tab);
   });
   // Lazy-load dei dati del tab selezionato
-  if (tab === 'stats') refreshAdminStats();
+  if (tab === 'voti') refreshAdminVoti();
+  else if (tab === 'stats') refreshAdminStats();
   else if (tab === 'users') refreshAdminUsers();
   else if (tab === 'asta') renderPianoAsta();
 }
@@ -10687,7 +10534,6 @@ async function refreshAdminRigoristi() {
   const data = await fetchGlobalListinoForUser();
   adminState.activeListinoFull = data || null;
   renderRigoristiEditor();
-  renderFormaPreseasonEditor();
 }
 
 function renderRigoristiEditor() {
@@ -10782,78 +10628,182 @@ async function saveRigoristi() {
   if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA RIGORISTI'; }
 }
 
-// ============ FORMA PRESEASON (AMICHEVOLI) ============
-// Stesso meccanismo dei rigoristi: campo formaPreseason dentro players,
-// nessuna tabella nuova. Serve da proxy per la "forma" prima che esistano
-// voti reali di campionato (vedi oraclePredictPlayer, sezione 1).
-function renderFormaPreseasonEditor() {
-  const el = document.getElementById('adminFormaPreseasonInput');
-  if (!el) return;
+// ============ VOTI DI GIORNATA (admin → tutti) ============
+// I fantavoti li carica l'admin una volta e li pubblica per tutti, come il
+// listone: una riga per giornata nella tabella global_voti (setup in
+// global_voti_setup.sql). Ha preso il posto del form "forma preseason":
+// quel dato serviva solo finche non c'erano voti veri, e da qui in avanti
+// i voti veri arrivano proprio da questo pannello.
+let adminVotiDaFile = {};   // key -> {v, name, team} dal file caricato
+
+function giocatoriListoneAdmin() {
   const players = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
-  const lines = players
-    .filter(p => typeof p.formaPreseason === 'number' && p.formaPreseason !== 0)
-    .map(p => (p.team || '') + ': ' + (p.name || '') + ': ' + (p.formaPreseason > 0 ? '+' : '') + p.formaPreseason.toFixed(2));
-  el.value = lines.join('\n');
-  const countEl = document.getElementById('adminFormaPreseasonCount');
-  if (countEl) countEl.textContent = lines.length + ' giocator' + (lines.length === 1 ? 'e' : 'i') + ' con forma preseason impostata';
+  return players
+    .filter(p => p && p.name)
+    .map(p => ({ key: rosterNormalizeName(p.name), name: p.name, team: p.team || '' }));
 }
 
-function parseFormaPreseasonLines(text) {
-  return (text || '').split(/\r?\n/)
-    .map(line => {
-      const parts = line.split(':');
-      if (parts.length < 3) return null;
-      const team = parts[0].trim();
-      const value = parseFloat(parts[parts.length - 1].trim().replace(',', '.'));
-      const name = parts.slice(1, -1).join(':').trim();
-      if (!team || !name || isNaN(value)) return null;
-      return { team: normTeamName(team), name, value: Math.max(-0.5, Math.min(0.5, value)), matched: false };
-    })
-    .filter(Boolean);
+async function refreshAdminVoti() {
+  // Serve il listone attivo per abbinare i nomi: se non e ancora in memoria
+  // lo porta dentro il refresh del listone (stesso dato dei rigoristi).
+  if (!adminState.activeListinoFull) {
+    try { await refreshAdminListino(); } catch (e) {}
+  }
+  const client = await ensureSupabaseReady();
+  if (!client) return;
+  try {
+    const { data, error } = await client
+      .from('global_voti')
+      .select('id, giornata, players_count, uploaded_at')
+      .order('giornata', { ascending: true });
+    if (error) throw error;
+    renderAdminVotiHistory(data || []);
+    const badge = document.getElementById('adminVotiBadge');
+    if (badge) badge.textContent = (data || []).length || '—';
+    // Giornata proposta: la prima non ancora pubblicata
+    const numEl = document.getElementById('adminVotiGiornata');
+    if (numEl && !numEl.value) {
+      const fatte = new Set((data || []).map(r => r.giornata));
+      let g = 1; while (fatte.has(g)) g++;
+      numEl.value = g;
+    }
+  } catch (e) {
+    // Colonna/tabella mancante: messaggio esplicito invece di un pannello muto
+    showAdminFeedback('Voti', '❌ Tabella global_voti non trovata: esegui global_voti_setup.sql su Supabase. (' + (e.message || '') + ')', 'error');
+  }
 }
 
-async function saveFormaPreseason() {
-  if (!adminState.activeListinoFull || !adminState.activeListinoFull.id) {
-    showAdminFeedback('Listino', '❌ Nessun listone attivo caricato.', 'error');
+function renderAdminVotiHistory(rows) {
+  const box = document.getElementById('adminVotiHistory');
+  if (!box) return;
+  if (!rows || rows.length === 0) {
+    box.innerHTML = '<div class="mng-empty">Nessuna giornata pubblicata.</div>';
     return;
   }
-  const btn = document.getElementById('adminFormaPreseasonSaveBtn');
-  const textEl = document.getElementById('adminFormaPreseasonInput');
-  const lines = parseFormaPreseasonLines(textEl ? textEl.value : '');
-  const updatedPlayers = adminState.activeListinoFull.players.map(p => {
-    const t = normTeamName(p.team);
-    const hit = lines.find(l => !l.matched && l.team === t && rigoristaNameMatches(p.name, l.name));
-    if (hit) hit.matched = true;
-    return { ...p, formaPreseason: hit ? hit.value : 0 };
+  box.innerHTML = rows.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--surface2);border-radius:8px;margin-bottom:5px">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--gold);width:44px">G${r.giornata}</span>
+      <span style="font-size:13px;color:var(--text)">${r.players_count} voti</span>
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto">${String(r.uploaded_at).slice(0,10)}</span>
+      <button class="fo-btn fo-btn--icona" title="Elimina questa giornata" onclick="deleteGlobalVoti('${r.id}', ${r.giornata})">🗑</button>
+    </div>`).join('');
+}
+
+function handleAdminVotiFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  if (typeof XLSX === 'undefined') { showAdminFeedback('Voti', '❌ Libreria Excel non caricata.', 'error'); return; }
+  const giocatori = giocatoriListoneAdmin();
+  if (giocatori.length === 0) { showAdminFeedback('Voti', '❌ Nessun listone attivo: pubblica prima il listone.', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const { trovati, nonAbbinati } = estraiVotiDaWorkbook(wb, giocatori);
+      adminVotiDaFile = trovati;
+      const n = Object.keys(trovati).length;
+      let msg = '✓ ' + n + ' voti letti dal file e abbinati al listone.';
+      if (nonAbbinati.length > 0) {
+        msg += ' ⚠️ Non abbinati (' + nonAbbinati.length + '): ' + nonAbbinati.slice(0, 12).join(', ')
+             + (nonAbbinati.length > 12 ? '…' : '') + ' — aggiungili a mano qui sotto.';
+      }
+      showAdminFeedback('Voti', msg, nonAbbinati.length > 0 ? 'info' : 'success');
+      aggiornaAdminVotiCount();
+    } catch (err) {
+      console.error('[Admin] voti file', err);
+      showAdminFeedback('Voti', '❌ Errore lettura file voti.', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Righe manuali `Squadra: Nome: fantavoto`. Stesso abbinamento dei rigoristi:
+// squadra+nome, con la squadra che disambigua gli omonimi.
+function parseVotiManuali(testo) {
+  const giocatori = giocatoriListoneAdmin();
+  const out = {}; const scarti = [];
+  (testo || '').split(/\r?\n/).forEach(line => {
+    if (!line.trim()) return;
+    const parts = line.split(':');
+    if (parts.length < 3) { scarti.push(line.trim()); return; }
+    const team = normTeamName(parts[0].trim());
+    const value = parseFloat(parts[parts.length - 1].trim().replace(',', '.'));
+    const name = parts.slice(1, -1).join(':').trim();
+    if (!team || !name || isNaN(value) || value < 1 || value > 20) { scarti.push(line.trim()); return; }
+    const hit = giocatori.find(g => normTeamName(g.team) === team && rigoristaNameMatches(g.name, name))
+             || giocatori.find(g => rigoristaNameMatches(g.name, name));
+    if (!hit) { scarti.push(name); return; }
+    out[hit.key] = { v: Math.round(value * 2) / 2, name: hit.name, team: hit.team };
   });
-  const unmatched = lines.filter(l => !l.matched);
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ SALVATAGGIO...'; }
+  return { voti: out, scarti };
+}
+
+function votiPendentiAdmin() {
+  const manuale = parseVotiManuali((document.getElementById('adminVotiManualInput') || {}).value);
+  // il manuale vince sul file per lo stesso giocatore
+  return { votes: { ...adminVotiDaFile, ...manuale.voti }, scarti: manuale.scarti };
+}
+
+function aggiornaAdminVotiCount() {
+  const el = document.getElementById('adminVotiCount');
+  if (!el) return;
+  const { votes, scarti } = votiPendentiAdmin();
+  const n = Object.keys(votes).length;
+  el.textContent = n === 0 ? 'Nessun voto caricato.'
+    : n + ' voti pronti da pubblicare' + (scarti.length ? ' · righe non riconosciute: ' + scarti.length : '');
+}
+
+async function publishGlobalVoti() {
+  const num = parseInt((document.getElementById('adminVotiGiornata') || {}).value, 10);
+  if (!num || num < 1 || num > 50) { showAdminFeedback('Voti', '⚠️ Indica il numero della giornata.', 'error'); return; }
+  const { votes, scarti } = votiPendentiAdmin();
+  const count = Object.keys(votes).length;
+  if (count === 0) { showAdminFeedback('Voti', '⚠️ Nessun voto da pubblicare: carica il file o scrivi le righe.', 'error'); return; }
+  const btn = document.getElementById('adminVotiPublishBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ PUBBLICAZIONE...'; }
   const client = await ensureSupabaseReady();
   if (!client) {
-    showAdminFeedback('Listino', '❌ Servizio non disponibile.', 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA FORMA PRESEASON'; }
+    showAdminFeedback('Voti', '❌ Servizio non disponibile.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 PUBBLICA VOTI GIORNATA'; }
     return;
   }
   try {
-    const { error } = await client.from('global_listino')
-      .update({ players: updatedPlayers })
-      .eq('id', adminState.activeListinoFull.id);
+    // upsert sulla giornata: ripubblicare corregge, non duplica
+    const { error } = await client.from('global_voti').upsert({
+      giornata: num,
+      votes,
+      players_count: count,
+      uploaded_by: currentUser.id,
+      uploaded_at: new Date().toISOString(),
+    }, { onConflict: 'giornata' });
     if (error) throw error;
-    adminState.activeListinoFull.players = updatedPlayers;
-    const count = updatedPlayers.filter(p => p.formaPreseason).length;
-    let msg = `✓ ${count} giocatori aggiornati.`;
-    let type = 'success';
-    if (unmatched.length > 0) {
-      msg += ` ⚠️ Non trovati nel listone: ${unmatched.map(l => l.name).join(', ')}`;
-      type = 'info';
-    }
-    showAdminFeedback('Listino', msg, type);
-    renderFormaPreseasonEditor();
-    try { await applyGlobalListinoAndCalendar(); } catch(e) {}
-  } catch(e) {
-    showAdminFeedback('Listino', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
+    let msg = `🎉 Giornata ${num} pubblicata: ${count} voti. Gli utenti li ricevono al prossimo caricamento.`;
+    if (scarti.length) msg += ` ⚠️ Righe manuali non riconosciute: ${scarti.slice(0,8).join(', ')}`;
+    showAdminFeedback('Voti', msg, scarti.length ? 'info' : 'success');
+    adminVotiDaFile = {};
+    const ta = document.getElementById('adminVotiManualInput'); if (ta) ta.value = '';
+    const gn = document.getElementById('adminVotiGiornata'); if (gn) gn.value = '';
+    aggiornaAdminVotiCount();
+    await refreshAdminVoti();
+  } catch (e) {
+    showAdminFeedback('Voti', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
   }
-  if (btn) { btn.disabled = false; btn.textContent = '💾 SALVA FORMA PRESEASON'; }
+  if (btn) { btn.disabled = false; btn.textContent = '🚀 PUBBLICA VOTI GIORNATA'; }
+}
+
+async function deleteGlobalVoti(id, giornata) {
+  if (!confirm('Eliminare i voti pubblicati della giornata ' + giornata + '?')) return;
+  const client = await ensureSupabaseReady();
+  if (!client) return;
+  try {
+    const { error } = await client.from('global_voti').delete().eq('id', id);
+    if (error) throw error;
+    showAdminFeedback('Voti', '✓ Giornata ' + giornata + ' eliminata.', 'success');
+    await refreshAdminVoti();
+  } catch (e) {
+    showAdminFeedback('Voti', '❌ Errore: ' + e.message, 'error');
+  }
 }
 
 // ============ PIANO ASTA ============
@@ -11992,9 +11942,10 @@ let listinoGlobaleInMemoria = null;
 async function applyGlobalListinoAndCalendar() {
   if (!currentUser) return; // ospite: skip
   try {
-    const [listinoData, calData] = await Promise.all([
+    const [listinoData, calData, votiData] = await Promise.all([
       fetchGlobalListinoForUser(),
-      fetchGlobalCalendarForUser()
+      fetchGlobalCalendarForUser(),
+      fetchGlobalVotiForUser()
     ]);
 
     // ============ LISTONE GLOBALE ============
@@ -12106,9 +12057,81 @@ async function applyGlobalListinoAndCalendar() {
         console.log('[Cloud] Calendario globale applicato:', calData.matches.length, 'partite in', giornate.length, 'giornate');
       }
     }
+    // ============ VOTI DI GIORNATA (pubblicati dall'admin) ============
+    if (Array.isArray(votiData) && votiData.length > 0) {
+      votiGlobaliInMemoria = votiData;
+      const applicate = applicaVotiGlobali(votiData);
+      if (applicate.length > 0) {
+        try { renderOraclePage(); renderField(); renderLists(); } catch (e) {}
+        showToast('📊 Voti ufficiali applicati: giornata ' + applicate.join(', ') + ' — Oracolo ricalibrato');
+      }
+    }
   } catch(e) {
     console.warn('[Cloud] applyGlobalListinoAndCalendar error:', e);
   }
+}
+
+async function fetchGlobalVotiForUser() {
+  const client = await ensureSupabaseReady();
+  if (!client || !currentUser) return null;
+  try {
+    const { data, error } = await client
+      .from('global_voti')
+      .select('giornata, votes, uploaded_at')
+      .order('giornata', { ascending: true });
+    if (error) { console.warn('[User] global voti fetch:', error); return null; }
+    return data;
+  } catch (e) { console.warn('[User] global voti fetch err:', e); return null; }
+}
+
+// Ultimi voti scesi dal cloud: servono anche al cambio di lega, perche lo
+// storico Oracle e per-lega e ogni lega va alimentata quando diventa attiva.
+let votiGlobaliInMemoria = null;
+
+// Travasa i voti pubblicati dall'admin nello storico Oracle della lega
+// ATTIVA, limitandosi ai giocatori della rosa: mettere tutti i 500+ voti in
+// ogni lega gonfierebbe storage e sync senza che l'Oracle li usi.
+// Idempotente: una giornata gia registrata con almeno altrettanti voti non
+// viene toccata, quindi si puo chiamare a ogni caricamento.
+// Restituisce i numeri delle giornate aggiunte o completate.
+function applicaVotiGlobali(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  const rosa = [...players.starters, ...players.bench]
+    .filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
+  if (rosa.length === 0) return [];
+  const applicate = [];
+  rows.forEach(r => {
+    const num = r.giornata;
+    const globali = r.votes || {};
+    const votes = {};
+    let count = 0;
+    rosa.forEach(p => {
+      const k = rosterNormalizeName(p.name);
+      const g = globali[k];
+      if (g && typeof g.v === 'number') { votes[k] = g.v; count++; }
+    });
+    if (count === 0) return;
+    const esistente = oracleState.history.find(h => h.num === num);
+    if (esistente && Object.keys(esistente.votes || {}).length >= count) return;
+    const snap = oracleState.snapshots[num] || null;
+    const bench = computeBenchAnalysis(num, votes, snap);
+    oracleState.history = oracleState.history.filter(h => h.num !== num);
+    oracleState.history.push({
+      num,
+      dateISO: r.uploaded_at || new Date().toISOString(),
+      votes,
+      predictions: snap ? snap.predictions : null,
+      bench,
+      fonte: 'admin',
+    });
+    applicate.push(num);
+  });
+  if (applicate.length > 0) {
+    oracleState.history.sort((a, b) => a.num - b.num);
+    recalibrateOracle();
+    oracleSaveState();
+  }
+  return applicate;
 }
 
 // ============================================================
