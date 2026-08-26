@@ -10515,6 +10515,8 @@ async function publishGlobalListino() {
     return;
   }
   try {
+    // Spegni le versioni precedenti: "attiva" deve voler dire UNA versione.
+    await client.from('global_listino').update({ is_active: false }).eq('is_active', true);
     const { error } = await client.from('global_listino').insert({
       version_label: version,
       uploaded_by: currentUser.id,
@@ -10541,6 +10543,9 @@ async function activateListino(id) {
   const client = await ensureSupabaseReady();
   if (!client) return;
   try {
+    // Prima si spengono le altre: senza, vinceva comunque la piu recente
+    // e "riattiva" non riattivava niente.
+    await client.from('global_listino').update({ is_active: false }).eq('is_active', true);
     const { error } = await client.from('global_listino').update({ is_active: true }).eq('id', id);
     if (error) throw error;
     showAdminFeedback('Listino', '✓ Listone riattivato.', 'success');
@@ -11702,6 +11707,7 @@ async function publishGlobalCalendar() {
     return;
   }
   try {
+    await client.from('global_calendar').update({ is_active: false }).eq('is_active', true);
     const { error } = await client.from('global_calendar').insert({
       season,
       uploaded_by: currentUser.id,
@@ -11725,6 +11731,7 @@ async function activateCalendar(id) {
   const client = await ensureSupabaseReady();
   if (!client) return;
   try {
+    await client.from('global_calendar').update({ is_active: false }).eq('is_active', true);
     const { error } = await client.from('global_calendar').update({ is_active: true }).eq('id', id);
     if (error) throw error;
     showAdminFeedback('Calendar', '✓ Calendario riattivato.', 'success');
