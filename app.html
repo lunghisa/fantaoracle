@@ -5708,7 +5708,19 @@ function sembraExportRoseCSV(rows) {
 // gia sa leggere. Ruolo, squadra e quotazione NON sono nel file: si prendono
 // dal listone caricato, incrociando per nome normalizzato.
 function traduciExportRose(rows) {
-  const daListone = (listone && Array.isArray(listone.players)) ? listone.players : [];
+  // Base per l'abbinamento: il listone della lega attiva PIU il listone
+  // globale pubblicato dall'admin. Il primo da solo non basta: e congelato
+  // al giorno del suo import, e chi arriva in Serie A col mercato (Vicario,
+  // Elmas...) non c'e — cosi 10 giocatori comprati regolarmente all'asta
+  // finivano scartati e le rose comparivano da 24 o 22. Il listone globale
+  // segue il mercato ed e la rete di sicurezza.
+  const daListone = (listone && Array.isArray(listone.players)) ? listone.players.slice() : [];
+  if (Array.isArray(listinoGlobaleInMemoria)) {
+    const gia = new Set(daListone.map(p => rosterNormalizeName(p.name)));
+    listinoGlobaleInMemoria.forEach(g => {
+      if (g && g.name && !gia.has(rosterNormalizeName(g.name))) daListone.push(g);
+    });
+  }
   if (daListone.length === 0) {
     showToast('❌ Questo file ha solo le rose: serve il file .xlsx completo della lega.');
     return null;
@@ -5765,10 +5777,10 @@ function traduciExportRose(rows) {
       p.name,
       p.role || '',
       p.team || '',
-      val(p.quotation),
-      val(p.fmReal),
+      val(p.quotation !== undefined ? p.quotation : p.quotazione),
+      val(p.fmReal !== undefined ? p.fmReal : p.fanta_media),
       val(p.fvm),
-      val(p.mv),
+      val(p.mv !== undefined ? p.mv : p.media_voto),
       val(p.pgv),
       pos ? pos.squadra : '',
       pos ? pos.costo : '',
