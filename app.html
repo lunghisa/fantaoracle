@@ -2690,7 +2690,7 @@
     flex-shrink: 0; line-height: 1.4;
   }
 
-  /* ============ LA MIA ROSA (scheda Campo) ============ */
+  /* ============ LA MIA ROSA (in fondo alla pagina Oracle) ============ */
   /* Titolo e conteggio: su schermo stretto il conteggio va a capo da solo
      invece di spezzare il titolo in due righe. */
   .rosa-testa {
@@ -3948,8 +3948,8 @@
     <div style="font-size:42px;margin-bottom:10px">🔮</div>
     <div class="profile-title" style="margin-bottom:6px">LA PROVA È FINITA</div>
     <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px">
-      Il tuo periodo di prova completa è terminato: <strong style="color:var(--text)">Oracle</strong> è in pausa.<br>
-      Campo, Dashboard e News restano gratis, sempre.
+      Il tuo periodo di prova completa è terminato: <strong style="color:var(--text)">Oracle</strong> — previsioni e campo — è in pausa.<br>
+      Dashboard e News restano gratis, sempre.
     </div>
     <div class="mng-plans-row" style="margin-bottom:14px">
       <div class="mng-plan best">
@@ -3979,7 +3979,6 @@
     <div class="nav-tabs">
       <button class="nav-tab active" id="tab-dashboard" onclick="showPage('dashboard', this)"><svg class="ico"><use href="#ico-home"/></svg>Dashboard</button>
       <button class="nav-tab tab-oracle" id="tab-ai" onclick="showPage('ai', this)"><svg class="ico"><use href="#ico-orb"/></svg>Oracle</button>
-      <button class="nav-tab" id="tab-campo" onclick="showPage('campo', this)"><svg class="ico"><use href="#ico-field"/></svg>Campo</button>
       <button class="nav-tab" id="tab-news" onclick="showPage('news', this)"><svg class="ico"><use href="#ico-news"/></svg>News <span class="news-dot" id="newsDot" style="display:none"></span></button>
       <button class="nav-tab" id="tab-admin" onclick="showPage('admin', this)" style="display:none"><svg class="ico"><use href="#ico-gear"/></svg>Admin</button>
     </div>
@@ -4189,7 +4188,96 @@
 
   </div>
 
-  <div class="page" id="page-campo">
+
+  <div class="page" id="page-news">
+    <div class="news-header">
+      <h2>NEWS FANTACALCIO</h2>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="news-status">
+          <span class="news-status-dot" id="newsStatusDot"></span>
+          <span id="newsStatusText">CARICAMENTO</span>
+        </div>
+        <button class="news-refresh-btn" id="newsRefreshBtn" onclick="loadNews(true)" title="Aggiorna">↻</button>
+      </div>
+    </div>
+    <div class="news-sources-bar" id="newsSourcesBar"><span style="color:var(--muted);font-size:11px">FONTI:</span></div>
+    <div class="news-filters" id="newsFilters">
+      <button class="news-filter active" data-cat="all" onclick="filterNews(this, 'all')">Tutte <span class="count" id="cnt-all">0</span></button>
+      <button class="news-filter" data-cat="formazioni" onclick="filterNews(this, 'formazioni')"><svg class="ico"><use href="#ico-ball"/></svg> Formazioni <span class="count" id="cnt-formazioni">0</span></button>
+      <button class="news-filter" data-cat="infortuni" onclick="filterNews(this, 'infortuni')"><svg class="ico"><use href="#ico-medic"/></svg> Infortuni <span class="count" id="cnt-infortuni">0</span></button>
+      <button class="news-filter" data-cat="consigli" onclick="filterNews(this, 'consigli')"><svg class="ico"><use href="#ico-bulb"/></svg> Consigli <span class="count" id="cnt-consigli">0</span></button>
+      <button class="news-filter" data-cat="mercato" onclick="filterNews(this, 'mercato')"><svg class="ico"><use href="#ico-coins"/></svg> Mercato <span class="count" id="cnt-mercato">0</span></button>
+      <button class="news-filter" data-cat="news" onclick="filterNews(this, 'news')"><svg class="ico"><use href="#ico-pin"/></svg> Generale <span class="count" id="cnt-news">0</span></button>
+    </div>
+    <div id="newsGrid" class="news-grid"></div>
+  </div>
+
+  <div class="page" id="page-ai">
+    <!-- ORACLE ENGINE v1 — dashboard reale -->
+    <div class="oracle-dash-hero">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:18px;position:relative">
+        <div style="flex:1;min-width:240px">
+          <div class="oracle-soon-tag" style="margin-bottom:10px">⚡ ATTIVO · ENGINE V1</div>
+          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,6vw,52px);letter-spacing:5px;background:linear-gradient(90deg,var(--oracle),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin:0">ORACLE ENGINE</h2>
+          <p style="color:var(--muted);font-size:13px;margin-top:8px;line-height:1.6">
+            Previsioni per la <strong style="color:var(--oracle)">giornata <span id="oracleGiornata">—</span></strong> ·
+            fantamedia reale + forma + forza avversario + casa/trasferta.
+            Si <strong style="color:var(--gold)">auto-corregge</strong> da solo: dopo ogni giornata riceve i voti ufficiali e ricalibra le previsioni.
+          </p>
+          <p style="color:var(--muted);font-size:13px;margin-top:10px;line-height:1.55;opacity:.85;border-left:2px solid var(--border);padding-left:10px">
+            Sono <strong>stime statistiche, non garanzie</strong>. Nessun modello prevede
+            una partita di calcio: l'Oracle sbaglia, e continuerà a sbagliare.
+            La formazione la scegli tu, e la responsabilità della scelta resta tua.
+          </p>
+        </div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap" id="oracleHeroStats"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;position:relative">
+        <button class="oracle-cta" onclick="oracleRunAndRender()">⚡ CALCOLA PREVISIONI</button>
+        <button class="oracle-cta gold" onclick="applyOracleFormation()">🔮 SCHIERA ORACLE</button>
+      </div>
+    </div>
+
+    <!-- Stato vuoto: rosa mancante -->
+    <div id="oracleEmptyState" style="display:none;text-align:center;padding:48px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:12px;color:var(--muted)">
+      <div style="font-size:42px;margin-bottom:10px">🔮</div>
+      <div style="font-size:15px;line-height:1.7">L'Oracolo ha bisogno della tua rosa per vedere il futuro.<br>
+      <span style="font-size:13px">Vai in <strong style="color:var(--gold)">Dashboard</strong> e carica il file della tua lega.</span></div>
+    </div>
+
+    <div id="oracleBody">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">🏆 TOP PICKS — CHI SCHIERARE</div>
+        <div class="oracle-picks-grid" id="oraclePicksGrid"></div>
+      </div>
+
+      <div class="two-col" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-title">⚠️ SLOT RISCHIOSI</div>
+          <div class="oracle-risky-list" id="oracleRiskyList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📐 MODULO CONSIGLIATO</div>
+          <div id="oracleModuloBox"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">⚔️ SCONTRO DIRETTO — STRATEGIA</div>
+        <div id="oracleH2HBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📈 AUTO-CORREZIONE & ACCURACY</div>
+        <div id="oracleHistoryBox"></div>
+      </div>
+    </div>
+
+    <!-- ============ IL CAMPO — dentro Oracle ============
+         Era una scheda a se. Sacha ha deciso di eliminarla: il sito deve
+         lavorare e convincere sull'Oracle, e il campo e il suo braccio
+         operativo — si consulta la previsione e si schiera nello stesso
+         posto, senza cambiare pagina. -->
     <!-- Compare solo arrivando da "Schiera Oracle": dice qual e il passo dopo.
          Applicare la formazione qui non serve a niente finche non la si copia
          su Leghe Fantacalcio, ed era l'unico pezzo del giro non raccontato. -->
@@ -4324,91 +4412,6 @@
         <div class="rosa-conteggio" id="rosaConteggio">—</div>
       </div>
       <div id="rosaCompleta"></div>
-    </div>
-  </div>
-
-  <div class="page" id="page-news">
-    <div class="news-header">
-      <h2>NEWS FANTACALCIO</h2>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div class="news-status">
-          <span class="news-status-dot" id="newsStatusDot"></span>
-          <span id="newsStatusText">CARICAMENTO</span>
-        </div>
-        <button class="news-refresh-btn" id="newsRefreshBtn" onclick="loadNews(true)" title="Aggiorna">↻</button>
-      </div>
-    </div>
-    <div class="news-sources-bar" id="newsSourcesBar"><span style="color:var(--muted);font-size:11px">FONTI:</span></div>
-    <div class="news-filters" id="newsFilters">
-      <button class="news-filter active" data-cat="all" onclick="filterNews(this, 'all')">Tutte <span class="count" id="cnt-all">0</span></button>
-      <button class="news-filter" data-cat="formazioni" onclick="filterNews(this, 'formazioni')"><svg class="ico"><use href="#ico-ball"/></svg> Formazioni <span class="count" id="cnt-formazioni">0</span></button>
-      <button class="news-filter" data-cat="infortuni" onclick="filterNews(this, 'infortuni')"><svg class="ico"><use href="#ico-medic"/></svg> Infortuni <span class="count" id="cnt-infortuni">0</span></button>
-      <button class="news-filter" data-cat="consigli" onclick="filterNews(this, 'consigli')"><svg class="ico"><use href="#ico-bulb"/></svg> Consigli <span class="count" id="cnt-consigli">0</span></button>
-      <button class="news-filter" data-cat="mercato" onclick="filterNews(this, 'mercato')"><svg class="ico"><use href="#ico-coins"/></svg> Mercato <span class="count" id="cnt-mercato">0</span></button>
-      <button class="news-filter" data-cat="news" onclick="filterNews(this, 'news')"><svg class="ico"><use href="#ico-pin"/></svg> Generale <span class="count" id="cnt-news">0</span></button>
-    </div>
-    <div id="newsGrid" class="news-grid"></div>
-  </div>
-
-  <div class="page" id="page-ai">
-    <!-- ORACLE ENGINE v1 — dashboard reale -->
-    <div class="oracle-dash-hero">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:18px;position:relative">
-        <div style="flex:1;min-width:240px">
-          <div class="oracle-soon-tag" style="margin-bottom:10px">⚡ ATTIVO · ENGINE V1</div>
-          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,6vw,52px);letter-spacing:5px;background:linear-gradient(90deg,var(--oracle),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin:0">ORACLE ENGINE</h2>
-          <p style="color:var(--muted);font-size:13px;margin-top:8px;line-height:1.6">
-            Previsioni per la <strong style="color:var(--oracle)">giornata <span id="oracleGiornata">—</span></strong> ·
-            fantamedia reale + forma + forza avversario + casa/trasferta.
-            Si <strong style="color:var(--gold)">auto-corregge</strong> da solo: dopo ogni giornata riceve i voti ufficiali e ricalibra le previsioni.
-          </p>
-          <p style="color:var(--muted);font-size:13px;margin-top:10px;line-height:1.55;opacity:.85;border-left:2px solid var(--border);padding-left:10px">
-            Sono <strong>stime statistiche, non garanzie</strong>. Nessun modello prevede
-            una partita di calcio: l'Oracle sbaglia, e continuerà a sbagliare.
-            La formazione la scegli tu, e la responsabilità della scelta resta tua.
-          </p>
-        </div>
-        <div style="display:flex;gap:18px;flex-wrap:wrap" id="oracleHeroStats"></div>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;position:relative">
-        <button class="oracle-cta" onclick="oracleRunAndRender()">⚡ CALCOLA PREVISIONI</button>
-        <button class="oracle-cta gold" onclick="applyOracleFormation()">🔮 SCHIERA ORACLE</button>
-      </div>
-    </div>
-
-    <!-- Stato vuoto: rosa mancante -->
-    <div id="oracleEmptyState" style="display:none;text-align:center;padding:48px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:12px;color:var(--muted)">
-      <div style="font-size:42px;margin-bottom:10px">🔮</div>
-      <div style="font-size:15px;line-height:1.7">L'Oracolo ha bisogno della tua rosa per vedere il futuro.<br>
-      <span style="font-size:13px">Vai in <strong style="color:var(--gold)">Dashboard</strong> e carica il file della tua lega.</span></div>
-    </div>
-
-    <div id="oracleBody">
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-title">🏆 TOP PICKS — CHI SCHIERARE</div>
-        <div class="oracle-picks-grid" id="oraclePicksGrid"></div>
-      </div>
-
-      <div class="two-col" style="margin-bottom:16px">
-        <div class="card">
-          <div class="card-title">⚠️ SLOT RISCHIOSI</div>
-          <div class="oracle-risky-list" id="oracleRiskyList"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">📐 MODULO CONSIGLIATO</div>
-          <div id="oracleModuloBox"></div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-title">⚔️ SCONTRO DIRETTO — STRATEGIA</div>
-        <div id="oracleH2HBox"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">📈 AUTO-CORREZIONE & ACCURACY</div>
-        <div id="oracleHistoryBox"></div>
-      </div>
     </div>
   </div>
 
@@ -5767,7 +5770,11 @@ function traduciExportRose(rows) {
   // 1) Dal file: chi possiede chi, e a che prezzo.
   const intestazione = rows[0].map(c => String(c || '').trim());
   const possesso = new Map();
-  let nonTrovati = 0;
+  // Giocatori posseduti nella lega ma assenti dal listone attuale: usciti
+  // dalla Serie A col mercato. Nella lega esistono ancora — costano crediti
+  // e occupano uno slot — quindi vanno tenuti come "fuori lista", non
+  // scartati. Scartarli faceva vedere rose da 24 nel selettore squadra.
+  const fuoriLista = [];
 
   intestazione.forEach((cella, col) => {
     const squadra = String(cella || '').trim();
@@ -5781,7 +5788,10 @@ function traduciExportRose(rows) {
       if (nome.toLowerCase() === 'totale') continue;
 
       const chiave = rosterNormalizeName(nome);
-      if (!indice.has(chiave)) { nonTrovati++; continue; }
+      if (!indice.has(chiave)) {
+        fuoriLista.push({ nome: nome, squadra: squadra, costo: String(riga[col + 1] || '').trim() });
+        continue;
+      }
       possesso.set(chiave, { squadra: squadra, costo: String(riga[col + 1] || '').trim() });
     }
   });
@@ -5794,7 +5804,7 @@ function traduciExportRose(rows) {
   // 2) Si riemette il listone INTERO, non solo i giocatori in rosa: gli
   //    svincolati servono al Piano Asta, e i campi FM/FVM/Mv/Pg all'Oracle.
   //    Emettere solo le rose li cancellerebbe in silenzio.
-  const out = [['Nome', 'R', 'Squadra', 'Qt.A', 'FM', 'FVM', 'Mv', 'Pg', 'FantaSquadra', 'Costo']];
+  const out = [['Nome', 'R', 'Squadra', 'Qt.A', 'FM', 'FVM', 'Mv', 'Pg', 'FantaSquadra', 'Costo', 'Fuori lista']];
   const val = v => (v === null || v === undefined || v === '' || v === 0) ? '' : String(v);
 
   daListone.forEach(p => {
@@ -5810,11 +5820,15 @@ function traduciExportRose(rows) {
       val(p.pgv),
       pos ? pos.squadra : '',
       pos ? pos.costo : '',
+      '',
     ]);
   });
+  fuoriLista.forEach(f => {
+    out.push([f.nome, '', '', '', '', '', '', '', f.squadra, f.costo, 'SI']);
+  });
 
-  if (nonTrovati > 0) {
-    console.warn('[FantaOracle] rose: ' + nonTrovati + ' nomi non trovati nel listone');
+  if (fuoriLista.length > 0) {
+    console.warn('[FantaOracle] rose: fuori lista', fuoriLista.map(f => f.nome + ' (' + f.squadra + ')').join(', '));
   }
   console.log('[FantaOracle] rose importate: ' + possesso.size + ' giocatori assegnati su ' + daListone.length + ' del listone');
   return out;
@@ -5971,6 +5985,7 @@ function parseListinoWithSheetJS(data, fileName, opts) {
   const parsed = [];
   const seenNames = new Set();
   let fuoriListaCount = 0;
+  const fuoriListaDettaglio = [];
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const cells = rows[i];
     if (!cells || cells.length === 0) continue;
@@ -5983,6 +5998,13 @@ function parseListinoWithSheetJS(data, fileName, opts) {
       const fl = String(cells[fuoriListaIdx] || '').trim().toLowerCase();
       if (fl === 'si' || fl === 'sì' || fl === 'yes' || fl === '1' || fl === 'true' || fl === 'x') {
         fuoriListaCount++;
+        // Il selettore squadra deve poterli contare per fantasquadra: una
+        // rosa con un fuori lista e da 25, non da 24.
+        fuoriListaDettaglio.push({
+          name: name,
+          fantasquadra: fsquadraIdx >= 0 ? String(cells[fsquadraIdx] || '').trim() : '',
+          costo: costoIdx >= 0 ? String(cells[costoIdx] || '').trim() : '',
+        });
         continue;
       }
     }
@@ -6063,6 +6085,7 @@ function parseListinoWithSheetJS(data, fileName, opts) {
     leagueDetected: ownedTeams.length > 0,
     leagueTeams: ownedTeams,
     fuoriListaCount: fuoriListaCount,
+    fuoriLista: fuoriListaDettaglio,
   };
   
   // === MULTI-LEGA: se è un'aggiunta nuova lega, registrala PRIMA di salvare ===
@@ -6113,7 +6136,7 @@ function parseListinoWithSheetJS(data, fileName, opts) {
   
   // Toast informativo
   let msg = `✅ ${parsed.length} giocatori caricati`;
-  if (fuoriListaCount > 0) msg += ` (${fuoriListaCount} fuori lista esclusi)`;
+  if (fuoriListaCount > 0) msg += ` (+${fuoriListaCount} fuori lista, contati in rosa ma non schierabili)`;
   if (ownedTeams.length > 0) msg += ` · ${ownedTeams.length} fantasquadre rilevate`;
   showToast(msg);
   
@@ -6784,15 +6807,19 @@ function renderCalendariCaricati() {
           return '<span title="' + escapeAttr(g + ' giornate · ' + arco) + '" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text);background:rgba(29,185,84,0.10);border:1px solid rgba(29,185,84,0.30);border-radius:999px;padding:4px 10px;white-space:nowrap">'
             + '<span style="color:var(--green)">✓</span>' + escapeHtml(c.nome) + '</span>';
         }).join('')
-      : '<span style="font-size:11px;color:var(--muted);opacity:.75">nessun calendario</span>';
+      : '<span style="font-size:11px;color:var(--orange);font-weight:600">⚠️ calendari mancanti — senza, niente scontro diretto</span>';
 
-    return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--border)">'
+    // Lega senza calendari: la riga stessa chiama l'azione, non un bottone
+    // qualsiasi in fondo. E il passo 2 dell'onboarding e va visto.
+    const daFare = comps.length === 0;
+    return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px'
+      + (daFare ? ' 12px;background:rgba(255,140,66,0.07);border:1px solid rgba(255,140,66,0.35);border-radius:10px;margin-top:8px' : ' 0;border-top:1px solid var(--border)') + '">'
       + '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:15px;letter-spacing:1.5px;color:' + (l.id === activeLeagueId ? 'var(--gold)' : 'var(--text)') + ';min-width:120px">'
       + escapeHtml(nomeLegaVisibile(l)) + '</span>'
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1">' + chip + '</div>'
-      + '<button class="fo-btn fo-btn--fantasma" onclick="caricaCalendarioPerLega(\'' + escapeAttr(l.id) + '\')" '
+      + '<button class="fo-btn ' + (daFare ? 'fo-btn--oro' : 'fo-btn--fantasma') + '" onclick="caricaCalendarioPerLega(\'' + escapeAttr(l.id) + '\')" '
       + 'title="Aggiungi un calendario a ' + escapeAttr(nomeLegaVisibile(l)) + '">'
-      + '📅 Calendari</button>'
+      + '📅 ' + (daFare ? 'CARICA I CALENDARI' : 'Calendari') + '</button>'
       + '</div>';
   }).join('');
 }
@@ -7063,11 +7090,17 @@ function applyOracleFormation() {
   const best = oracleBestFormation();
   if (!best) { showToast('⚠️ Carica prima la tua rosa'); return; }
   setModulo(best.modulo, null);
-  showPage('campo', document.getElementById('tab-campo'));
+  showPage('ai', document.getElementById('tab-ai'));
   // La barra col passo successivo compare solo arrivando da qui, non ogni
-  // volta che si apre il Campo per guardare la rosa.
+  // volta che si guarda il campo.
   const barra = document.getElementById('campoDopoOracle');
   if (barra) barra.style.display = '';
+  // Il campo sta in fondo alla pagina Oracle: senza lo scroll l'utente
+  // resterebbe sui pannelli di previsione senza vedere l'effetto.
+  setTimeout(() => {
+    const f = document.getElementById('fieldWrap');
+    if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 120);
   showToast('🔮 Oracle ha schierato il ' + best.modulo + ' · ' + best.total.toFixed(1) + ' punti attesi');
 }
 
@@ -7909,11 +7942,20 @@ function openLeagueTeamPicker() {
   // Conta giocatori per ogni fantasquadra
   const counts = {};
   const byTeam = {};
+  const flTeam = {};
   listone.players.forEach(p => {
     if (!p.fantasquadra) return;
     counts[p.fantasquadra] = (counts[p.fantasquadra] || 0) + 1;
     if (!byTeam[p.fantasquadra]) byTeam[p.fantasquadra] = { P:0, D:0, C:0, A:0 };
     if (byTeam[p.fantasquadra][p.role] !== undefined) byTeam[p.fantasquadra][p.role]++;
+  });
+  // I fuori lista (usciti dalla Serie A, ma ancora in rosa nella lega)
+  // contano nel totale: senza, una rosa da 25 col portiere trasferito
+  // compariva da 24 — "non possibile", giustamente.
+  (listone.fuoriLista || []).forEach(f => {
+    if (!f.fantasquadra) return;
+    counts[f.fantasquadra] = (counts[f.fantasquadra] || 0) + 1;
+    flTeam[f.fantasquadra] = (flTeam[f.fantasquadra] || 0) + 1;
   });
   
   const teams = [...listone.leagueTeams].sort();
@@ -7957,7 +7999,7 @@ function openLeagueTeamPicker() {
               <div style="flex:1;min-width:0">
                 <div style="font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(t)}${isCurrent?' <span style="font-size:11px;color:var(--gold);letter-spacing:1px">· TUA</span>':''}</div>
                 <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px">
-                  <span style="color:#e63946">${b.P}P</span> · <span style="color:#5e94c4">${b.D}D</span> · <span style="color:#4caf7d">${b.C}C</span> · <span style="color:#c77dff">${b.A}A</span> · ${c} totali
+                  <span style="color:${COLORI_RUOLO.P}">${b.P}P</span> · <span style="color:${COLORI_RUOLO.D}">${b.D}D</span> · <span style="color:${COLORI_RUOLO.C}">${b.C}C</span> · <span style="color:${COLORI_RUOLO.A}">${b.A}A</span> · ${c} totali${(flTeam[t] || 0) > 0 ? ` <span style="color:var(--orange)">(di cui ${flTeam[t]} fuori lista)</span>` : ''}
                 </div>
               </div>
               <div style="color:var(--oracle);font-size:20px">→</div>
@@ -12245,9 +12287,12 @@ function applicaVotiGlobali(rows) {
 
 
 function showPage(id, btn) {
-  // La barra "formazione applicata" appartiene al viaggio che arriva
-  // dall'Oracle: uscendo dal Campo perde senso e va spenta.
-  if (id !== 'campo') {
+  // La scheda Campo non esiste piu: il campo vive dentro Oracle. Ogni
+  // chiamata rimasta (o link vecchio) atterra li.
+  if (id === 'campo') { id = 'ai'; btn = document.getElementById('tab-ai'); }
+  // La barra "formazione applicata" appartiene al viaggio che arriva da
+  // SCHIERA ORACLE: uscendo dalla pagina perde senso e va spenta.
+  if (id !== 'ai') {
     const b = document.getElementById('campoDopoOracle');
     if (b) b.style.display = 'none';
   }
@@ -12266,11 +12311,11 @@ function showPage(id, btn) {
   // Aggiorna titolo pagina (punto 10 UX)
   const pageTitleEl = document.getElementById('pageTitle');
   if (pageTitleEl) {
-    const titles = { dashboard: 'Dashboard', campo: 'Il tuo campo', news: 'News Fantacalcio', ai: 'Oracle', admin: 'Admin Panel' };
+    const titles = { dashboard: 'Dashboard', news: 'News Fantacalcio', ai: 'Oracle', admin: 'Admin Panel' };
     pageTitleEl.textContent = titles[id] || '';
   }
   updateContextBar();
-  if (id === 'campo') renderField();
+  if (id === 'ai') { try { renderField(); renderLists(); } catch (e) {} }
   // Oracle Engine v1: render della dashboard predittiva
   if (id === 'ai') renderOraclePage();
   if (id === 'news') {
@@ -13165,7 +13210,7 @@ function renderTrialCard() {
   }
   if (st.expired) {
     box.innerHTML = '<div class="mng-trial-big" style="color:var(--red)">0</div>'
-      + '<div class="mng-trial-sub"><strong style="color:var(--red)">Prova terminata.</strong> Oracle è in pausa: Campo, Dashboard e News restano tuoi. Scegli un piano qui accanto per riattivare le previsioni.</div>';
+      + '<div class="mng-trial-sub"><strong style="color:var(--red)">Prova terminata.</strong> Oracle è in pausa — previsioni e campo. Dashboard e News restano tuoi: scegli un piano qui accanto per riattivare tutto.</div>';
     return;
   }
   box.innerHTML = '<div class="mng-trial-big" style="color:var(--oracle)">' + st.daysLeft + '</div>'
@@ -13742,10 +13787,6 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   <button class="bottom-nav-tab bn-oracle" data-page="ai" onclick="showPage('ai', document.getElementById('tab-ai'))">
     <span class="bn-orb"><svg class="ico"><use href="#ico-orb"/></svg></span>
     <span class="bn-label">Oracle</span>
-  </button>
-  <button class="bottom-nav-tab" data-page="campo" onclick="showPage('campo', document.getElementById('tab-campo'))">
-    <svg class="ico"><use href="#ico-field"/></svg>
-    <span class="bn-label">Campo</span>
   </button>
   <button class="bottom-nav-tab" data-page="news" onclick="showPage('news', document.getElementById('tab-news'))">
     <svg class="ico"><use href="#ico-news"/></svg>
