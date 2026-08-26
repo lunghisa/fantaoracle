@@ -3072,8 +3072,9 @@
   .alert-show-more:hover { background: rgba(255,76,76,0.06); border-color: rgba(255,76,76,0.5); }
   /* CTA "Costruisci la tua rosa" */
   .build-roster-cta {
-    background: linear-gradient(135deg, rgba(245,197,66,0.08) 0%, rgba(168,110,245,0.05) 100%);
-    border: 1px solid rgba(245,197,66,0.3);
+    background: linear-gradient(135deg, rgba(245,197,66,0.10) 0%, rgba(168,110,245,0.06) 100%);
+    border: 1px solid rgba(245,197,66,0.45);
+    box-shadow: 0 0 18px rgba(245,197,66,0.07);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
@@ -4065,7 +4066,7 @@
       <!-- fallback: no team selected yet -->
       <div class="hero-empty" id="heroEmpty">
         <span id="team-name-banner"></span>
-        <span style="color:var(--muted);font-size:15px">Carica il listone della tua lega per iniziare</span>
+        <span style="color:var(--muted);font-size:15px">Carica la lega in cui giochi — il riquadro è qui sotto in fondo</span>
       </div>
     </div>
 
@@ -4160,10 +4161,11 @@
          ondrop="handleLeagueDrop(event)">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--gold)">CARICA LA TUA LEGA</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--gold)">CARICA LE LEGHE IN CUI GIOCHI</div>
           <div style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.55">
-            Esporta il file della lega da <strong style="color:var(--text)">Fantacalcio.it</strong> o
-            <strong style="color:var(--text)">Leghe Fantacalcio</strong> e trascinalo qui, oppure scegli un file —
+            Esporta il file di ogni lega da <strong style="color:var(--text)">Leghe Fantacalcio</strong>
+            e trascinalo qui, oppure scegli un file. Quotazioni e listone ufficiale non servono:
+            li pubblica l'app. —
             <a href="#" onclick="openImportHelpModal();return false"
                style="color:var(--oracle);text-decoration:underline;text-underline-offset:2px">istruzioni per esportare</a>
           </div>
@@ -5753,7 +5755,7 @@ function sembraExportRoseCSV(rows) {
 function traduciExportRose(rows) {
   const daListone = (listone && Array.isArray(listone.players)) ? listone.players : [];
   if (daListone.length === 0) {
-    showToast('❌ Carica prima il listone: questo file contiene solo le rose, senza ruoli.');
+    showToast('❌ Questo file ha solo le rose: serve il file .xlsx completo della lega.');
     return null;
   }
   const indice = new Map();
@@ -8061,7 +8063,7 @@ function selectMyTeam(teamName) {
 // Bottone "Cambia squadra" se ho già una lega caricata
 function openMyTeamSwitcher() {
   if (!listone.leagueTeams || listone.leagueTeams.length === 0) {
-    showToast('⚠️ Nessuna lega caricata. Importa prima il listone.');
+    showToast('⚠️ Nessuna lega caricata. Importa il file della tua lega dalla Dashboard.');
     return;
   }
   openLeagueTeamPicker();
@@ -8088,20 +8090,20 @@ function openListinoDialog() {
   overlay.innerHTML = `
     <div style="max-width:540px;width:100%;background:#160f2c;border:1px solid rgba(168,110,245,0.3);border-radius:18px;padding:28px;max-height:90vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;color:var(--oracle)">⬆ CARICA LISTONE</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;color:var(--oracle)">⬆ CARICA LA TUA LEGA</div>
         <button class="fo-btn fo-btn--neutro" onclick="closeListinoDialog()" style="width:30px">✕</button>
       </div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5">
-        Carica il listone ufficiale aggiornato di Fantacalcio.it per avere quotazioni, ruoli e nomi reali della stagione corrente.
+        Carica il file della lega in cui giochi: rose, fantasquadre e costi.
+        Quotazioni e listone ufficiale non servono — li pubblica l'app.
       </div>
       
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
-        <div style="font-size:11px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">📥 Come scaricarlo</div>
+        <div style="font-size:11px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px">📥 Come esportare la lega</div>
         <ol style="font-size:13px;color:var(--text);line-height:1.7;padding-left:18px;margin:0">
-          <li>Vai su <a href="https://www.fantacalcio.it/quotazioni-fantacalcio" target="_blank" style="color:var(--oracle)">fantacalcio.it/quotazioni-fantacalcio</a></li>
-          <li>Clicca <strong>"Scarica le quotazioni"</strong> (Excel)</li>
-          <li>Salva il file <code style="background:#000;padding:2px 6px;border-radius:4px;color:var(--gold);font-size:11px">Quotazioni_Fantacalcio_*.xlsx</code></li>
-          <li>Trascinalo qui sotto o clicca per selezionarlo</li>
+          <li>Entra nella tua lega su <strong>Leghe Fantacalcio</strong></li>
+          <li>Sezione <strong>Rose</strong> → esporta il file Excel</li>
+          <li>Trascina qui sotto il file <code style="background:#000;padding:2px 6px;border-radius:4px;color:var(--gold);font-size:11px">*_rosters_*.xlsx</code></li>
         </ol>
       </div>
       
