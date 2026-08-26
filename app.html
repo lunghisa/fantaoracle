@@ -29,11 +29,19 @@
 <!-- PWA: installabile su Android/iOS e base per l'app TWA -->
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<!-- iOS legacy: i Safari meno recenti ignorano il manifest per "Aggiungi
+     alla schermata Home"; questi meta danno comunque schermo pieno. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FantaOracle">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <!-- SheetJS per parsing Excel reale (.xlsx/.xls) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- Supabase JS SDK (auth + DB) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Versione PINNATA: con "@2" nudo il CDN puo servire major-minor diverse
+     a utenti diversi, e un cambio di default (es. flusso PKCE) romperebbe
+     l'OAuth senza che nessuno abbia toccato nulla. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4"></script>
 <style>
   :root {
     --bg: #0a0714;
@@ -5363,7 +5371,8 @@ function loadListinoFromStorage() {
   } catch(e) {}
 }
 function saveListinoToStorage() {
-  try { localStorage.setItem(nsKey(LISTINO_STORAGE_KEY), JSON.stringify(listone)); } catch(e) {}
+  try { localStorage.setItem(nsKey(LISTINO_STORAGE_KEY), JSON.stringify(listone)); }
+  catch(e) { showToast('⚠️ Spazio del browser esaurito: la lega NON è salvata sul dispositivo'); }
 }
 function saveRosterToStorage() {
   try {
@@ -6279,8 +6288,12 @@ function computeTeamRatings() {
 
 // ---- CONTESTO PARTITA della giornata corrente ----
 function oracleMatchContext(p) {
-  if (!calendario.giornate.length || calendario.currentIdx < 0) return null;
-  const g = calendario.giornate[calendario.currentIdx];
+  // SEMPRE la giornata reale dal calendario, MAI l'indice del widget: se
+  // l'utente stava sfogliando la giornata N+3, il motore prevedeva contro
+  // gli avversari sbagliati spacciandoli per "prossima giornata".
+  const idxReale = findCurrentGiornataIdx();
+  if (!calendario.giornate.length || idxReale < 0) return null;
+  const g = calendario.giornate[idxReale];
   if (!g) return null;
   const myT = normTeamName(p.team);
   if (!myT) return null;
@@ -6312,7 +6325,7 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   // Una fantamedia su poche partite è rumorosa: la regredisco verso un prior
   // (stima da quotazione), con peso che cresce col numero di presenze valide.
   const prior = (p.quotation && p.quotation > 0) ? quotationToFm(p.quotation) : 6.0;
-  let base = (p.fmReal && p.fmReal > 0) ? p.fmReal : (p.score || 6.0);
+  let base = (p.fmReal && p.fmReal > 0) ? p.fmReal : (p.score || prior);
   if (p.fmReal > 0 && p.pgv > 0 && p.pgv < 10) {
     const w = p.pgv / (p.pgv + 6); // K=6: a 6 presenze pesa 50/50
     base = w * p.fmReal + (1 - w) * prior;
@@ -6515,8 +6528,9 @@ function runOracleEngine(silent) {
   oracleState.lastRun = Date.now();
   // Snapshot previsioni + formazione schierata, legato alla giornata corrente.
   // Serve all'auto-correzione e al post-partita "punti lasciati in panchina".
-  if (calendario.giornate.length && calendario.currentIdx >= 0) {
-    const gNum = calendario.giornate[calendario.currentIdx].num;
+  const idxSnap = findCurrentGiornataIdx();
+  if (calendario.giornate.length && idxSnap >= 0) {
+    const gNum = calendario.giornate[idxSnap].num;
     const lineup = players.starters
       .filter(p => p && p.name && p.name !== '---' && !p.isEmpty)
       .map(p => ({ key: rosterNormalizeName(p.name), role: p.role, name: p.name }));
@@ -6817,8 +6831,9 @@ function renderCompSwitcher() {
 
 // Giornata di Serie A corrente, dal calendario gia caricato nell'app
 function giornataSerieACorrente() {
-  if (calendario && Array.isArray(calendario.giornate) && calendario.currentIdx >= 0) {
-    const g = calendario.giornate[calendario.currentIdx];
+  const idxSA = (typeof findCurrentGiornataIdx === 'function') ? findCurrentGiornataIdx() : -1;
+  if (calendario && Array.isArray(calendario.giornate) && idxSA >= 0) {
+    const g = calendario.giornate[idxSA];
     if (g && g.num) return parseInt(g.num, 10);
   }
   return null;
@@ -6835,11 +6850,17 @@ function buildTeamRoster(teamName) {
       role: p.role,
       team: p.team || '',
       color: roleColors[p.role] || '#888',
-      score: p.fmIndicativa,
-      oracle: p.fmIndicativa,
-      quotation: p.quotation || 0,
-      fmReal: p.fmReal || 0,
-      mv: p.mv || 0,
+      // Il listone puo parlare due lingue: campi inglesi se viene dal file
+      // di lega tradotto (fmIndicativa, quotation...), italiani se viene dal
+      // cloud admin (fanta_media, quotazione...). Leggere solo l'inglese
+      // dava score undefined a chi sceglie la squadra dal listone globale —
+      // il percorso esatto dei nuovi utenti — e il campo si rompeva a meta
+      // render (score.toFixed su undefined).
+      score: p.fmIndicativa || p.fanta_media || quotationToFm(p.quotation || p.quotazione || 0),
+      oracle: p.fmIndicativa || p.fanta_media || quotationToFm(p.quotation || p.quotazione || 0),
+      quotation: p.quotation || p.quotazione || 0,
+      fmReal: p.fmReal || p.fanta_media || 0,
+      mv: p.mv || p.media_voto || 0,
       pgv: p.pgv || 0,
     }));
 }
@@ -7125,6 +7146,10 @@ function computeBenchAnalysis(num, votes, snap) {
   const fieldedKeys = new Set((snap.lineup || []).map(l => l.key));
   let fielded = 0, fieldedCount = 0;
   fieldedKeys.forEach(k => { if (typeof votes[k] === 'number') { fielded += votes[k]; fieldedCount++; } });
+  // Gli schierati senza voto (SV) valevano zero nel confronto con l'XI
+  // ottimale: "hai lasciato 19 punti in panchina" quando erano 5. Si
+  // imputa il 6 d'ufficio, come fa il fantacalcio.
+  fielded += 6 * Math.max(0, Math.min(11, fieldedKeys.size) - fieldedCount);
 
   // XI ottimale a posteriori: miglior modulo per somma voti
   let bestOpt = null;
@@ -7323,8 +7348,9 @@ function oracleRunAndRender() {
 function renderOracleGiornata() {
   const el = document.getElementById('oracleGiornata');
   if (!el) return;
-  if (calendario.giornate && calendario.giornate.length > 0 && calendario.currentIdx >= 0) {
-    const g = calendario.giornate[calendario.currentIdx];
+  const idxOra = findCurrentGiornataIdx();
+  if (calendario.giornate && calendario.giornate.length > 0 && idxOra >= 0) {
+    const g = calendario.giornate[idxOra];
     if (g) { el.textContent = g.num; return; }
   }
   el.textContent = '—';
@@ -8058,11 +8084,17 @@ function selectMyTeam(teamName) {
     role: p.role,
     team: p.team || '',
     color: roleColors[p.role] || '#888',
-    score: p.fmIndicativa,
-    oracle: p.fmIndicativa, // sarà ricalcolato dall'Oracle Engine
-    quotation: p.quotation || 0,
-    fmReal: p.fmReal || 0,
-    mv: p.mv || 0,
+    // Il listone puo parlare due lingue: campi inglesi se viene dal file
+    // di lega tradotto (fmIndicativa, quotation...), italiani se viene dal
+    // cloud admin (fanta_media, quotazione...). Leggere solo l'inglese
+    // dava score undefined a chi sceglie la squadra dal listone globale —
+    // il percorso esatto dei nuovi utenti — e il campo si rompeva a meta
+    // render (score.toFixed su undefined).
+    score: p.fmIndicativa || p.fanta_media || quotationToFm(p.quotation || p.quotazione || 0),
+    oracle: p.fmIndicativa || p.fanta_media || quotationToFm(p.quotation || p.quotazione || 0),
+    quotation: p.quotation || p.quotazione || 0,
+    fmReal: p.fmReal || p.fanta_media || 0,
+    mv: p.mv || p.media_voto || 0,
     pgv: p.pgv || 0,
     costo: p.costo || 0,
   }));
@@ -8189,6 +8221,10 @@ function openListinoDialog() {
 function closeListinoDialog() {
   const overlay = document.getElementById('listinoDialogOverlay');
   if (overlay) overlay.remove();
+  // Chi apre "aggiungi lega" e chiude senza caricare non deve lasciare il
+  // flag armato: il PROSSIMO aggiornamento della sua lega, anche giorni
+  // dopo, avrebbe creato una lega duplicata con la rosa azzerata.
+  pendingNewLeague = false;
 }
 
 function handleListinoDrop(event) {
@@ -8756,10 +8792,26 @@ function initSupabase() {
             if (!document.body.classList.contains('app-ready')) enterApp();
           });
         }
+      } else if (event === 'PASSWORD_RECOVERY') {
+        // Link "password dimenticata": Supabase logga l'utente, ma senza
+        // questo ramo nessuno gli chiedeva la nuova password — al login
+        // successivo la vecchia non funzionava ancora.
+        setTimeout(() => {
+          try {
+            if (!document.body.classList.contains('app-ready')) enterApp();
+            openProfileModal();
+            showToast('🔐 Imposta ora la tua nuova password dal profilo');
+          } catch (e) {}
+        }, 600);
       } else if (event === 'SIGNED_OUT') {
         currentUser = null;
         updateUserPill();
         if (typeof updateSplashButton === 'function') updateSplashButton();
+        // Sessione morta ad app aperta: senza avviso l'utente continua a
+        // modificare convinto di salvare nel cloud.
+        if (document.body.classList.contains('app-ready')) {
+          showToast('⚠️ Sessione scaduta: accedi di nuovo per salvare nel cloud');
+        }
       }
     });
     supabaseClient.auth.getSession().then(({ data }) => {
@@ -8946,7 +8998,13 @@ async function loadUserProfile(authUser) {
   if (!supabaseClient || !authUser) return;
   try {
     const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
-    if (error) console.warn('[FantaOracle] loadUserProfile error:', error);
+    if (error) {
+      // Un timeout di rete NON significa "profilo inesistente": proseguire
+      // faceva vedere la UI free a un abbonato e poteva sovrascrivere lo
+      // username personalizzato col prefisso dell'email.
+      console.warn('[FantaOracle] loadUserProfile: errore transitorio, riprovo al prossimo evento:', error.message);
+      return;
+    }
     
     // Username: priorità a profiles.username, poi metadata, poi parte prima di @
     // (per utenti Google: prima entrata → non c'è profilo → usa email.split('@')[0])
@@ -8956,6 +9014,16 @@ async function loadUserProfile(authUser) {
       || authUser.email.split('@')[0];
     const finalUsername = (data && data.username) || fallbackUsername;
     
+    // Cambio di account su questo browser: i dati locali del precedente
+    // (leghe, rose, prova) non devono migrare nel cloud del nuovo. Con la
+    // sync "cloud vuoto + locale pieno = spingi", un nuovo iscritto su un
+    // computer condiviso si sarebbe ritrovato le leghe di un altro.
+    try {
+      const prevId = localStorage.getItem('fantaoracle_ultimo_utente');
+      if (prevId && prevId !== authUser.id) pulisciDatiLocaliAltroUtente();
+      localStorage.setItem('fantaoracle_ultimo_utente', authUser.id);
+    } catch (e) {}
+
     // Identifico il provider (google, email, ecc.) dai metadata Supabase
     // Lo uso nel modal Profilo per mostrare/nascondere "cambia email/password"
     const provider = (authUser.app_metadata && authUser.app_metadata.provider) || 'email';
@@ -8975,13 +9043,27 @@ async function loadUserProfile(authUser) {
     } else {
       try {
         const loc = localStorage.getItem(TRIAL_LOCAL_KEY);
-        if (loc) {
+        // La chiave e per-BROWSER, non per-account: senza questo controllo un
+        // nuovo iscritto su un computer gia usato da altri ereditava la data
+        // di prova altrui e nasceva con la prova mezza consumata o scaduta.
+        // La data vale solo se posteriore alla creazione dell'account, con
+        // una settimana di margine per chi ha provato da ospite e poi si
+        // e registrato.
+        const creato = authUser.created_at ? new Date(authUser.created_at).getTime() : 0;
+        const inizio = loc ? new Date(loc).getTime() : NaN;
+        if (loc && !isNaN(inizio) && inizio >= creato - 7 * 24 * 3600 * 1000) {
           currentUser.trial_started_at = loc;
           supabaseClient.from('profiles').update({ trial_started_at: loc }).eq('id', currentUser.id)
             .then(({ error }) => { if (error) console.warn('[FantaOracle] sync trial fallito:', error.message); });
+        } else if (loc) {
+          localStorage.removeItem(TRIAL_LOCAL_KEY);
         }
       } catch (e) {}
     }
+    // L'admin non deve MAI avere una lega attiva: la regola sta in
+    // loadLeaguesRegistry, ma quella gira all'avvio quando is_admin puo non
+    // essere ancora noto. Si riapplica qui, a profilo caricato.
+    if (currentUser.is_admin) activeLeagueId = null;
     if (typeof renderDashboardManage === 'function') renderDashboardManage();
     
     // Se il profilo non esiste ancora (primo login Google), lo crea ora
@@ -9587,6 +9669,22 @@ async function doForgotPassword() {
   } catch(e) { showAuthError('Errore di rete.'); }
 }
 
+function pulisciDatiLocaliAltroUtente() {
+  try {
+    const daTenere = /^(fantaoracle_guest|fantaoracle_migrazione_v1_fatta|fantaoracle_ultimo_utente)$/;
+    const chiavi = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('fantaoracle') === 0 && !daTenere.test(k)) chiavi.push(k);
+    }
+    chiavi.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  } catch (e) {}
+  leagues = []; activeLeagueId = null;
+  players.starters = []; players.bench = [];
+  listone = { source:'builtin', uploadedName:null, uploadedDate:null, players:[], leagueDetected:false, leagueTeams:[], fuoriListaCount:0 };
+  console.log('[FantaOracle] cambio account: dati locali del precedente rimossi');
+}
+
 async function doLogout() {
   const client = supabaseClient || await ensureSupabaseReady();
   if (client) {
@@ -9833,6 +9931,20 @@ function readLocalLeaguesSnapshot() {
 // Sync di TUTTO lo stato locale al cloud (upsert)
 async function pushAllToCloud() {
   if (!supabaseClient || !currentUser) return false;
+  // Un push su rete mobile dura piu del debounce da 1.5s: due push
+  // intrecciati facevano delete+insert incrociati sulle rose → righe
+  // duplicate nel cloud → rosa rifiutata al pull sull'altro dispositivo.
+  if (cloudSyncState.pushInFlight) { cloudSyncState.ripetiDopoPush = true; return false; }
+  cloudSyncState.pushInFlight = true;
+  try {
+    return await pushAllToCloudInterno();
+  } finally {
+    cloudSyncState.pushInFlight = false;
+    if (cloudSyncState.ripetiDopoPush) { cloudSyncState.ripetiDopoPush = false; scheduleCloudSync(); }
+  }
+}
+
+async function pushAllToCloudInterno() {
   cloudSyncState.status = 'syncing';
   updateCloudIndicator();
   try {
@@ -9862,7 +9974,11 @@ async function pushAllToCloud() {
     const adottati = new Set();
     let registroDaRiscrivere = false;
 
+    const eliminateAltrove = [];
     for (const ll of localSnap) {
+      // Aveva un id cloud che non esiste piu: eliminata da un altro
+      // dispositivo. Re-inserirla per nome la farebbe RISORGERE ovunque.
+      if (ll.cloudId && !idsCloud.has(ll.cloudId)) { eliminateAltrove.push(ll.id); continue; }
       let cloudId = (ll.cloudId && idsCloud.has(ll.cloudId)) ? ll.cloudId : null;
       // Lega che non ha ancora un id cloud (registro vecchio, o creata qui e
       // mai spinta). Se nel cloud c'e UNA sola riga con questo nome la
@@ -9882,7 +9998,8 @@ async function pushAllToCloud() {
       };
       if (cloudId) {
         // Update lega esistente
-        await supabaseClient.from('leagues').update(leagueData).eq('id', cloudId);
+        const { error: upErr } = await supabaseClient.from('leagues').update(leagueData).eq('id', cloudId);
+        if (upErr) throw upErr;
       } else {
         // Insert nuova lega
         const { data: ins, error } = await supabaseClient
@@ -9901,6 +10018,12 @@ async function pushAllToCloud() {
       const reg = leagues.find(l => l.id === ll.id);
       if (reg && reg._cloudId !== cloudId) { reg._cloudId = cloudId; registroDaRiscrivere = true; }
     }
+    if (eliminateAltrove.length > 0) {
+      leagues = leagues.filter(l => !eliminateAltrove.includes(l.id));
+      registroDaRiscrivere = true;
+      try { renderLeagueSwitcher(); renderDashLeagues(); } catch (e) {}
+      console.log('[Cloud] leghe eliminate da un altro dispositivo, rimosse anche qui:', eliminateAltrove.join(', '));
+    }
     if (registroDaRiscrivere) {
       try { localStorage.setItem(LEAGUES_REGISTRY_KEY, JSON.stringify(leagues)); } catch(e) {}
     }
@@ -9909,8 +10032,11 @@ async function pushAllToCloud() {
     for (const ll of localSnap) {
       const cloudId = idMap[ll.id];
       if (!cloudId || ll.roster.length === 0) continue;
-      // Delete vecchi giocatori della lega
-      await supabaseClient.from('roster_players').delete().eq('league_id', cloudId);
+      // Delete vecchi giocatori della lega. L'errore va controllato: una
+      // delete rifiutata in silenzio seguita dall'insert DUPLICA la rosa a
+      // ogni push, e al pull sull'altro dispositivo la rosa viene rifiutata.
+      const { error: delErr } = await supabaseClient.from('roster_players').delete().eq('league_id', cloudId);
+      if (delErr) throw delErr;
       // Insert nuovi
       const rows = ll.roster.map(p => ({
         league_id: cloudId,
@@ -10024,6 +10150,7 @@ async function pullFromCloud(cloudLeagues) {
   // cancellava la rosa di entrambe. Ora una lega gia conosciuta mantiene il
   // suo id (cosi i dati namespacizzati restano al loro posto) e le omonime
   // ne ricevono uno distinto.
+  const registroPrecedente = leagues;
   const perCloudId = {};
   leagues.forEach(l => { if (l._cloudId) perCloudId[l._cloudId] = l; });
   const idUsati = new Set();
@@ -10042,6 +10169,18 @@ async function pullFromCloud(cloudLeagues) {
     addedDate: cl.created_at,
     _cloudId: cl.id, // tengo il riferimento al UUID cloud
   }));
+  // Le leghe solo-locali (mai spinte nel cloud: _cloudId assente) vanno
+  // conservate: il pull le cancellava dal registro e i loro dati restavano
+  // orfani in localStorage, invisibili per sempre. Si tengono e si mette
+  // in coda una spinta che le porti nel cloud.
+  const nomiCloud = new Set(cloudLeagues.map(c => c.league_name));
+  const soloLocali = registroPrecedente.filter(l =>
+    !l._cloudId && !nomiCloud.has(l.name) && !idUsati.has(l.id));
+  if (soloLocali.length > 0) {
+    leagues = leagues.concat(soloLocali);
+    console.log('[Cloud] leghe solo-locali conservate:', soloLocali.map(l => l.name).join(', '));
+    try { scheduleCloudSync(); } catch (e) {}
+  }
   saveLeaguesRegistry();
   // Per ogni lega, ricostruisco lo storage locale
   for (const { cl, localId } of abbinate) {
@@ -10111,6 +10250,16 @@ async function pullFromCloud(cloudLeagues) {
 // Logica decisionale al login: cosa fare con dati local vs cloud?
 async function syncOnLogin() {
   if (!supabaseClient || !currentUser) return;
+  // supabase-js riemette SIGNED_IN anche al refocus della scheda: due
+  // syncOnLogin in parallelo su cloud vuoto significano doppio push e
+  // leghe duplicate al primissimo login.
+  if (cloudSyncState.syncInFlight) return;
+  cloudSyncState.syncInFlight = true;
+  try { await syncOnLoginInterno(); }
+  finally { cloudSyncState.syncInFlight = false; }
+}
+
+async function syncOnLoginInterno() {
   console.log('[Cloud] Sync on login start...');
   cloudSyncState.status = 'syncing';
   updateCloudIndicator();
@@ -10217,6 +10366,48 @@ async function syncOnLogin() {
 }
 
 // Sync debounced: chiamato dopo ogni modifica locale
+// ============ VERSIONE DELL'APP ============
+// L'app riaperta dalle "recenti" del telefono NON ri-naviga: nessuna
+// rivalidazione scattava e si restava su versioni vecchie per giorni
+// (il service worker e a posto — il problema era proprio l'assenza di
+// navigazione). Al ritorno in primo piano si confronta l'ETag di /app
+// con quello di partenza: se e cambiato, banner per ricaricare.
+let etagVersioneApp = null, ultimaVerificaVersione = 0;
+async function controllaVersioneApp() {
+  const adesso = Date.now();
+  if (adesso - ultimaVerificaVersione < 10 * 60 * 1000) return;
+  ultimaVerificaVersione = adesso;
+  try {
+    const r = await fetch('/app', { method: 'HEAD', cache: 'no-store' });
+    const tag = r.headers.get('etag');
+    if (!tag) return;
+    if (etagVersioneApp === null) { etagVersioneApp = tag; return; }
+    if (tag !== etagVersioneApp && !document.getElementById('bannerNuovaVersione')) {
+      const div = document.createElement('div');
+      div.id = 'bannerNuovaVersione';
+      div.textContent = '🔄 Nuova versione disponibile — tocca per aggiornare';
+      div.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--oracle);color:#fff;text-align:center;padding:11px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.4)';
+      div.onclick = () => location.reload();
+      document.body.appendChild(div);
+    }
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') controllaVersioneApp();
+});
+controllaVersioneApp(); // memorizza l'etag di partenza
+
+// L'app che va in secondo piano con una spinta in attesa: il debounce da
+// 1.5s non scatta piu se il telefono sospende la pagina, e le ultime
+// modifiche restavano solo in locale — poi il cloud "vinceva" al pull.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && cloudSyncState.pendingDebounce) {
+    clearTimeout(cloudSyncState.pendingDebounce);
+    cloudSyncState.pendingDebounce = null;
+    try { pushAllToCloud(); } catch (e) {}
+  }
+});
+
 function scheduleCloudSync() {
   if (!currentUser) return; // ospite: no sync
   // Prima che il confronto col cloud sia avvenuto, una spinta scriverebbe
@@ -10748,6 +10939,18 @@ function parseRigoristiLines(text) {
     .filter(Boolean);
 }
 
+// Trova UN giocatore tra i candidati dati: prima il nome esatto, poi il
+// cognome ma SOLO se e unico tra loro. Con "Martinez L." e "Martinez J."
+// nella stessa Inter, il vecchio primo-match-vince poteva marcare
+// rigorista il portiere o dare il voto al gemello sbagliato.
+function abbinaGiocatoreInSquadra(candidati, nomeInput) {
+  const n = rosterNormalizeName(nomeInput);
+  const esatto = candidati.find(p => rosterNormalizeName(p.name) === n);
+  if (esatto) return esatto;
+  const perCognome = candidati.filter(p => rigoristaNameMatches(p.name, nomeInput));
+  return perCognome.length === 1 ? perCognome[0] : null;
+}
+
 async function saveRigoristi() {
   const btn = document.getElementById('adminRigoristiSaveBtn');
   const textEl = document.getElementById('adminRigoristiInput');
@@ -10768,12 +10971,20 @@ async function saveRigoristi() {
       showAdminFeedback('Listino', '❌ Nessun listone attivo nel cloud: pubblica prima il listone.', 'error');
       ripristina(); return;
     }
-    const updatedPlayers = attivo.players.map(p => {
-      const t = normTeamName(p.team);
-      const hit = lines.find(l => !l.matched && l.team === t && rigoristaNameMatches(p.name, l.name));
-      if (hit) hit.matched = true;
-      return { ...p, rigorista: !!hit };
+    // Abbinamento per riga, non per giocatore: cosi il nome esatto vince
+    // sempre sul cognome, e gli omonimi ambigui si fermano invece di
+    // finire sul primo della lista.
+    const daMarcare = new Set();
+    lines.forEach(l => {
+      const squadra = attivo.players.filter(p => normTeamName(p.team) === l.team);
+      const hit = abbinaGiocatoreInSquadra(squadra, l.name);
+      if (hit) {
+        l.matched = true;
+        daMarcare.add(rosterNormalizeName(hit.name) + '|' + normTeamName(hit.team));
+      }
     });
+    const updatedPlayers = attivo.players.map(p =>
+      ({ ...p, rigorista: daMarcare.has(rosterNormalizeName(p.name) + '|' + normTeamName(p.team)) }));
     const unmatched = lines.filter(l => !l.matched);
     // Il salvataggio e integrale: riscrive il flag di TUTTI i giocatori. Se
     // nessuna riga incollata combacia, non e "salva zero", e "cancella tutto"
@@ -10926,8 +11137,9 @@ function parseVotiManuali(testo) {
     const value = parseFloat(parts[parts.length - 1].trim().replace(',', '.'));
     const name = parts.slice(1, -1).join(':').trim();
     if (!team || !name || isNaN(value) || value < 1 || value > 20) { scarti.push(line.trim()); return; }
-    const hit = giocatori.find(g => normTeamName(g.team) === team && rigoristaNameMatches(g.name, name))
-             || giocatori.find(g => rigoristaNameMatches(g.name, name));
+    const squadra = giocatori.filter(g => normTeamName(g.team) === team);
+    const hit = abbinaGiocatoreInSquadra(squadra, name)
+             || abbinaGiocatoreInSquadra(giocatori, name);
     if (!hit) { scarti.push(name); return; }
     out[hit.key] = { v: Math.round(value * 2) / 2, name: hit.name, team: hit.team };
   });
@@ -11259,9 +11471,22 @@ function astaRankCandidates(role, limit) {
   }
   const titSigListone = titolaritaSignalsListone();
   const votiMedi = mediaVotiGlobali();
+  // Chi e gia stato comprato si risolve UNA volta al giocatore preciso:
+  // il vecchio confronto per cognome faceva sparire dai candidati anche
+  // l'omonimo di squadra mai comprato (compri Lautaro, sparisce anche il
+  // portiere Martinez).
+  const compratiChiavi = new Set();
+  const compratiVaghi = [];
+  bought.forEach(b => {
+    const squadra = (listone.players || []).filter(p => normTeamName(p.team) === normTeamName(b.team));
+    const hit = abbinaGiocatoreInSquadra(squadra, b.name);
+    if (hit) compratiChiavi.add(rosterNormalizeName(hit.name) + '|' + normTeamName(hit.team));
+    else compratiVaghi.push(b);
+  });
   const candidates = (listone.players || [])
     .filter(p => p.role === role)
-    .filter(p => !bought.some(b => normTeamName(b.team) === normTeamName(p.team) && rigoristaNameMatches(p.name, b.name)))
+    .filter(p => !compratiChiavi.has(rosterNormalizeName(p.name) + '|' + normTeamName(p.team)))
+    .filter(p => !compratiVaghi.some(b => normTeamName(b.team) === normTeamName(p.team) && rigoristaNameMatches(p.name, b.name)))
     .filter(p => !astaListMatch(astaState.esclusi, p))
     .map(p => {
       const rawQ = p.quotazione || p.quotation || 0;
@@ -12991,7 +13216,7 @@ function renderField() {
           ${isAlerted ? '<div class="token-flag token-flag--inj" title="Menzionato in news infortunio">🚑</div>' : ''}
           ${p.rigorista ? '<div class="token-rig" title="Rigorista designato">RIG</div>' : ''}
         </div>
-        <div class="token-name" style="${isAlerted?'color:#ff8a8a;font-weight:700':''}">${p.name}</div>
+        <div class="token-name" style="${isAlerted?'color:#ff8a8a;font-weight:700':''}">${escapeHtml(p.name)}</div>
       `;
       row.appendChild(token);
     });
@@ -13508,7 +13733,7 @@ function renderLists() {
       });
       item.innerHTML = `
         <div class="pli-role" style="background:${rc}22;color:${rc}">${p.role}</div>
-        <div class="pli-name" style="${isAlerted?'color:var(--red);font-weight:600':''}">${isAlerted?'🚑 ':titMark}${p.name}</div>
+        <div class="pli-name" style="${isAlerted?'color:var(--red);font-weight:600':''}">${isAlerted?'🚑 ':titMark}${escapeHtml(p.name)}</div>
         ${p.rigorista ? '<span class="chip-rig" title="Rigorista designato">RIG</span>' : ''}
         ${currentMode === 'oracle' ? `<div class="pli-oracle">${diff > 0 ? '+' : ''}${diff}</div>` : ''}
         <div class="pli-score" style="color:${score >= 7 ? 'var(--green)' : score >= 6.5 ? 'var(--gold)' : 'var(--muted)'}">${score.toFixed(1)}</div>

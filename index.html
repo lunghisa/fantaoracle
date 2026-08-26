@@ -30,7 +30,7 @@
                     || /[#&](access_token|refresh_token|error)=/.test(h);
     var installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
                     || window.navigator.standalone === true
-                    || document.referrer.indexOf('android-app://') === 0;
+                    || document.referrer.indexOf('android-app://ch.fantaoracle') === 0;
     if (authCallback || installed) location.replace('/app' + q + h);
   }catch(e){}
 })();
