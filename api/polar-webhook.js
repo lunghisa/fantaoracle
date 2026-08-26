@@ -243,7 +243,27 @@ export default async function handler(req, res) {
 
   const tipo = evento?.type;
   const dati = evento?.data || {};
-  const userId = trovaUserId(dati);
+  let userId = trovaUserId(dati);
+
+  // Gli eventi *order* possono arrivare senza riferimenti all'utente nel
+  // payload. Per un rimborso non possiamo permettercelo: un rimborsato che
+  // mantiene l'accesso e il buco che questo blocco esiste per chiudere.
+  // La riga di subscriptions ha provider_ref = subscription_id: si risale
+  // da li prima di arrendersi.
+  if (!userId && tipo === 'order.refunded' && dati?.subscription_id) {
+    try {
+      const r = await db(`subscriptions?provider_ref=eq.${encodeURIComponent(dati.subscription_id)}&select=user_id&limit=1`);
+      if (r.ok) {
+        const righe = await r.json();
+        if (righe.length > 0 && righe[0].user_id) {
+          userId = righe[0].user_id;
+          console.log('[webhook] order.refunded: utente risalito da provider_ref');
+        }
+      }
+    } catch (e) {
+      console.error('[webhook] risalita da provider_ref fallita:', e.message);
+    }
+  }
 
   if (!userId) {
     // Rispondiamo 200 lo stesso: se dicessimo errore, Polar continuerebbe a

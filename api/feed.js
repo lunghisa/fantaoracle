@@ -27,8 +27,10 @@ const ALLOWED_HOSTS = [
 ];
 
 export default async function handler(req, res) {
-  // CORS: consenti al frontend (anche da altri domini) di chiamare la funzione
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS: la funzione serve solo la nostra app, che sta sullo stesso
+  // dominio. Il '*' di prima rendeva l'endpoint invocabile da qualsiasi
+  // sito: banda nostra al servizio di chiunque.
+  res.setHeader('Access-Control-Allow-Origin', 'https://fantaoracle.ch');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
 
@@ -63,6 +65,17 @@ export default async function handler(req, res) {
     });
     clearTimeout(timer);
 
+    // L'allowlist controlla l'URL di partenza, ma un redirect puo portare
+    // altrove (open-redirect su una testata → servizi interni). Si verifica
+    // quindi anche l'host FINALE, prima di leggere il corpo.
+    try {
+      const finale = new URL(upstream.url).hostname;
+      if (!ALLOWED_HOSTS.includes(finale)) {
+        res.status(403).json({ error: 'redirect fuori dagli host consentiti' });
+        return;
+      }
+    } catch (e) { /* upstream.url assente: si prosegue col controllo ok */ }
+
     if (!upstream.ok) {
       res.status(502).json({ error: 'feed non raggiungibile', status: upstream.status });
       return;
@@ -74,7 +87,9 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
     res.status(200).send(xml);
   } catch (e) {
-    const msg = (e && e.name === 'AbortError') ? 'timeout' : String((e && e.message) || e);
-    res.status(504).json({ error: 'lettura feed fallita', detail: msg });
+    // Il dettaglio interno resta nei log, non nella risposta.
+    const msg = (e && e.name === 'AbortError') ? 'timeout' : 'errore di rete';
+    console.warn('[feed] lettura fallita:', String((e && e.message) || e));
+    res.status(504).json({ error: 'lettura feed fallita', tipo: msg });
   }
 }
