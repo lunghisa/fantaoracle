@@ -7312,7 +7312,12 @@ function renderOracleHeroStats() {
     + '<div class="oracle-hero-stat"><div class="ohs-val" style="color:' + (acc == null ? 'var(--muted)' : acc >= 60 ? 'var(--green)' : 'var(--gold)') + '">' + (acc == null ? '—' : acc + '%') + '</div><div class="ohs-label">Accuracy ±1pt</div></div>'
     + '<div class="oracle-hero-stat"><div class="ohs-val" style="color:var(--gold)">' + giornate + '</div><div class="ohs-label">Giornate registrate</div></div>'
     + '<div class="oracle-hero-stat"><div class="ohs-val">' + samples + '</div><div class="ohs-label">Voti analizzati</div></div>'
-    + benchHtml;
+    + benchHtml
+    // Con una o due giornate l'accuracy oscilla per natura: va detto li,
+    // non lasciato indovinare.
+    + (giornate > 0 && giornate < 3
+        ? '<div style="flex-basis:100%;font-size:11px;color:var(--muted);line-height:1.5">Con ' + (giornate === 1 ? 'una sola giornata' : 'due giornate') + ' l\'accuracy è ancora ballerina: il dato diventa affidabile dalla 3ª-4ª in poi.</div>'
+        : '');
 }
 
 function renderOraclePicks() {
@@ -7471,13 +7476,32 @@ function renderOracleHistory() {
       + '</div>';
   }).join('');
 
-  // Bias appresi per ruolo
+  // Bias appresi per ruolo. Uno zero puo voler dire due cose opposte —
+  // "mancano dati" oppure "previsioni centrate, niente da correggere" —
+  // e mostrarle uguali faceva sembrare rotta la calibrazione (segnalato da
+  // Sacha alla 1ª giornata: accuracy 75% e correzioni tutte a 0).
   const b = oracleState.calib.biasByRole || {};
+  const campioniRuolo = { P:0, D:0, C:0, A:0 };
+  oracleState.history.forEach(rec => {
+    if (!rec.predictions || !rec.votes) return;
+    Object.keys(rec.votes).forEach(k => {
+      const pred = rec.predictions[k];
+      if (pred && campioniRuolo[pred.role] !== undefined) campioniRuolo[pred.role]++;
+    });
+  });
   const biasChips = ['P','D','C','A'].map(r => {
     const v = b[r] || 0;
-    const col = Math.abs(v) < 0.05 ? 'var(--muted)' : v > 0 ? 'var(--green)' : 'var(--red)';
-    return '<span class="oracle-conf-pill" style="background:rgba(255,255,255,0.04);color:' + col + ';border:1px solid var(--border)">'
-      + roleLabel(r) + ' ' + (v > 0 ? '+' : '') + v.toFixed(2) + '</span>';
+    const n = campioniRuolo[r];
+    if (n < 3) {
+      return '<span class="oracle-conf-pill" style="background:rgba(255,255,255,0.04);color:var(--muted);border:1px dashed var(--border)" '
+        + 'title="Servono almeno 3 voti con previsione per imparare una correzione: finora ' + n + '">'
+        + roleLabel(r) + ' — <span style="opacity:.6">(' + n + '/3 voti)</span></span>';
+    }
+    const centrato = Math.abs(v) < 0.05;
+    const col = centrato ? 'var(--muted)' : v > 0 ? 'var(--green)' : 'var(--red)';
+    return '<span class="oracle-conf-pill" style="background:rgba(255,255,255,0.04);color:' + col + ';border:1px solid var(--border)" '
+      + 'title="' + (centrato ? 'Previsioni centrate su ' + n + ' voti: nessuna correzione necessaria' : 'Correzione appresa da ' + n + ' voti') + '">'
+      + roleLabel(r) + ' ' + (centrato ? '✓ centrato' : (v > 0 ? '+' : '') + v.toFixed(2)) + '</span>';
   }).join(' ');
 
   box.innerHTML = rows
