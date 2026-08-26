@@ -1709,45 +1709,6 @@
   .mode-btn.active { background: var(--gold); color: #000; }
 
   /* Toggle Standard/Oracle locale sopra il campo */
-  .field-mode-toggle {
-    display: flex;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px;
-    margin-bottom: 12px;
-    gap: 0;
-  }
-  .field-mode-btn {
-    flex: 1;
-    padding: 10px 12px;
-    background: none; border: none;
-    color: var(--muted);
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 15px;
-    letter-spacing: 2px;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.2s;
-    min-height: 40px;
-    display: flex; align-items: center; justify-content: center;
-    gap: 6px;
-  }
-  .field-mode-btn:hover { color: var(--text); }
-  .field-mode-btn.active.standard {
-    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
-    color: #1a1408;
-    box-shadow: 0 2px 10px rgba(245,197,66,0.35);
-  }
-  .field-mode-btn.active.oracle {
-    background: linear-gradient(135deg, var(--oracle) 0%, #7c3fd4 100%);
-    color: #fff;
-    box-shadow: 0 2px 14px rgba(168,110,245,0.5);
-  }
-  .field-mode-btn .fmb-icon { font-size: 17px; line-height: 1; }
-  @media (max-width: 699px) {
-    .field-mode-btn { font-size: 13px; letter-spacing: 1.5px; padding: 9px 10px; }
-  }
   .bottom-nav {
     display: none;
     position: fixed;
@@ -4301,17 +4262,8 @@
         </div>
 
         <!-- Toggle Standard/Oracle locale (subito sopra al campo) -->
-        <div class="field-mode-toggle">
-          <button class="field-mode-btn standard active" id="fieldModeStd" onclick="setMode('standard')">
-            <svg class="ico fmb-icon"><use href="#ico-chart"/></svg>STANDARD
-          </button>
-          <button class="field-mode-btn oracle" id="fieldModeOracle" onclick="setMode('oracle')">
-            <svg class="ico fmb-icon"><use href="#ico-orb"/></svg>ORACLE
-          </button>
-        </div>
-        
         <div class="mode-explain" id="modeExplain">
-          <span><strong>STANDARD:</strong> punteggi basati su fantamedia reale stagionale. Numeri oggettivi, nessuna previsione.</span>
+          <span>Carica la tua rosa dalla Dashboard: appena c'è, il campo mostra le previsioni dell'Oracle.</span>
         </div>
 
         <!-- Selettore modulo SOPRA al campo (punto B UX round 2) -->
@@ -12315,7 +12267,12 @@ function showPage(id, btn) {
     pageTitleEl.textContent = titles[id] || '';
   }
   updateContextBar();
-  if (id === 'ai') { try { renderField(); renderLists(); } catch (e) {} }
+  if (id === 'ai') {
+    try {
+      if (currentMode !== 'oracle') setMode('oracle'); // rosa vuota: resta com'e
+      renderField(); renderLists();
+    } catch (e) {}
+  }
   // Oracle Engine v1: render della dashboard predittiva
   if (id === 'ai') renderOraclePage();
   if (id === 'news') {
@@ -12338,11 +12295,9 @@ function setMode(mode) {
   }
   currentMode = mode;
   const isOracle = mode === 'oracle';
-  // sincronizza il toggle locale del campo
-  const fStd = document.getElementById('fieldModeStd');
-  const fOracle = document.getElementById('fieldModeOracle');
-  if (fStd) fStd.classList.toggle('active', !isOracle);
-  if (fOracle) fOracle.classList.toggle('active', isOracle);
+  // Il selettore STANDARD/ORACLE non esiste piu: il campo e sempre in
+  // modalita Oracle. Lo standard sopravvive solo come ripiego interno
+  // quando la rosa e vuota e il motore non ha su cosa lavorare.
   const wrap = document.getElementById('fieldWrap');
   if (wrap) wrap.classList.toggle('oracle-active', isOracle);
   // aggiorna l'explainer sopra il campo
@@ -12354,7 +12309,7 @@ function setMode(mode) {
       ex.innerHTML = '<span><strong>🔮 ORACLE:</strong> punteggi attesi per la ' + (gNum ? 'giornata ' + gNum : 'prossima giornata') + ' — fantamedia + forma + avversario + casa/trasferta. Si ricalibra coi voti reali.</span>';
     } else {
       ex.className = 'mode-explain';
-      ex.innerHTML = '<span><strong>STANDARD:</strong> punteggi basati su fantamedia reale stagionale. Numeri oggettivi, nessuna previsione.</span>';
+      ex.innerHTML = '<span>Carica la tua rosa dalla Dashboard: appena c\'è, il campo mostra le previsioni dell\'Oracle.</span>';
     }
   }
   renderField(); renderLists();
