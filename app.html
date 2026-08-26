@@ -4439,6 +4439,26 @@
         <!-- Storico versioni -->
         <div class="admin-history" id="adminListinoHistory"></div>
 
+        <!-- Verifica del listone pubblicato: quello che c'e DAVVERO nel
+             cloud, riga per riga. Nato dopo tre giri di conteggi che non
+             tornavano: un posto dove guardare chiude i dubbi alla fonte. -->
+        <div class="admin-field" style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">
+          <label class="admin-field-label">🔍 VERIFICA LISTONE PUBBLICATO</label>
+          <p class="section-desc" style="margin-top:0">
+            Tutti i giocatori della versione attiva nel cloud — quella che vedono gli utenti.
+          </p>
+          <button class="admin-btn admin-btn-secondary" id="adminVerificaBtn" onclick="apriVerificaListino()">APRI LA VERIFICA</button>
+          <div id="verificaListinoPanel" style="display:none;margin-top:12px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+              <input type="text" id="verificaCerca" placeholder="Cerca nome o squadra…" oninput="renderVerificaListino()"
+                style="flex:1;min-width:180px;padding:9px 12px;background:#0a0714;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+              <div style="display:flex;gap:4px" id="verificaRuoli"></div>
+            </div>
+            <div id="verificaIntestazione" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:8px"></div>
+            <div id="verificaLista" style="max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:10px"></div>
+          </div>
+        </div>
+
         <!-- Rigoristi designati -->
         <div class="admin-field" style="margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">
           <label class="admin-field-label">🎯 RIGORISTI DESIGNATI</label>
@@ -10537,6 +10557,78 @@ async function publishGlobalListino() {
     showAdminFeedback('Listino', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
   }
   btn.disabled = false; btn.textContent = '🚀 PUBBLICA PER TUTTI GLI UTENTI';
+}
+
+// ============ VERIFICA LISTONE PUBBLICATO ============
+let verificaRuoloAttivo = '';
+async function apriVerificaListino() {
+  const panel = document.getElementById('verificaListinoPanel');
+  const btn = document.getElementById('adminVerificaBtn');
+  if (!panel) return;
+  if (panel.style.display !== 'none') {
+    panel.style.display = 'none';
+    if (btn) btn.textContent = 'APRI LA VERIFICA';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ CARICO DAL CLOUD...'; }
+  // Sempre riletto dal cloud, MAI dalla copia in memoria: il punto di
+  // questo pannello e vedere quello che c'e davvero.
+  const attivo = await fetchGlobalListinoForUser();
+  if (btn) { btn.disabled = false; }
+  if (!attivo || !Array.isArray(attivo.players)) {
+    showAdminFeedback('Listino', '❌ Nessun listone attivo nel cloud.', 'error');
+    if (btn) btn.textContent = 'APRI LA VERIFICA';
+    return;
+  }
+  adminState.activeListinoFull = attivo;
+  panel.style.display = '';
+  if (btn) btn.textContent = 'CHIUDI LA VERIFICA';
+  const testata = document.getElementById('verificaIntestazione');
+  if (testata) testata.textContent = (attivo.version_label || 'senza nome') + ' · pubblicato ' + String(attivo.uploaded_at).slice(0,10) + ' · ' + attivo.players.length + ' giocatori';
+  const ruoli = document.getElementById('verificaRuoli');
+  if (ruoli) {
+    ruoli.innerHTML = ['','P','D','C','A'].map(r =>
+      '<button class="fo-btn fo-btn--neutro verifica-ruolo" data-ruolo="' + r + '" style="padding:7px 12px' + (r === '' ? ';font-weight:700' : ';color:' + (COLORI_RUOLO[r] || 'inherit')) + '">' + (r === '' ? 'TUTTI' : r) + '</button>').join('');
+    ruoli.querySelectorAll('.verifica-ruolo').forEach(b => b.addEventListener('click', () => {
+      verificaRuoloAttivo = b.dataset.ruolo;
+      renderVerificaListino();
+    }));
+  }
+  verificaRuoloAttivo = '';
+  const cerca = document.getElementById('verificaCerca');
+  if (cerca) cerca.value = '';
+  renderVerificaListino();
+}
+
+function renderVerificaListino() {
+  const box = document.getElementById('verificaLista');
+  const attivo = adminState.activeListinoFull;
+  if (!box || !attivo) return;
+  const filtro = ((document.getElementById('verificaCerca') || {}).value || '').toLowerCase().trim();
+  const ordine = { P:0, D:1, C:2, A:3 };
+  const lista = attivo.players
+    .filter(p => !verificaRuoloAttivo || p.role === verificaRuoloAttivo)
+    .filter(p => !filtro
+      || (p.name || '').toLowerCase().includes(filtro)
+      || (p.team || '').toLowerCase().includes(filtro))
+    .sort((a, b) => (ordine[a.role] ?? 9) - (ordine[b.role] ?? 9)
+      || (b.quotazione || 0) - (a.quotazione || 0)
+      || String(a.name).localeCompare(String(b.name)));
+  const testata = document.getElementById('verificaIntestazione');
+  if (testata && attivo.players) {
+    const base = (attivo.version_label || 'senza nome') + ' · pubblicato ' + String(attivo.uploaded_at).slice(0,10) + ' · ' + attivo.players.length + ' giocatori';
+    testata.textContent = lista.length === attivo.players.length ? base : base + ' — filtrati: ' + lista.length;
+  }
+  box.innerHTML = lista.map(p => {
+    const rc = COLORI_RUOLO[p.role] || '#888';
+    return '<div style="display:flex;align-items:center;gap:9px;padding:6px 12px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px">'
+      + '<span style="width:20px;height:16px;border-radius:4px;background:' + rc + '22;color:' + rc + ';display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">' + (p.role || '?') + '</span>'
+      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(p.name || '') + '</span>'
+      + (p.rigorista ? '<span class="chip-rig" title="Rigorista designato">RIG</span>' : '')
+      + '<span style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted);width:70px;text-align:right;flex-shrink:0">' + escapeHtml(p.team || '') + '</span>'
+      + '<span style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--gold);width:34px;text-align:right;flex-shrink:0" title="Quotazione">' + (p.quotazione || 0) + '</span>'
+      + '</div>';
+  }).join('') || '<div style="padding:18px;text-align:center;color:var(--muted);font-size:13px">Nessun giocatore per questo filtro.</div>';
 }
 
 async function activateListino(id) {
