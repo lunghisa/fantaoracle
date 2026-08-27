@@ -586,6 +586,13 @@ footer{
       <a class="btn btn-ghost" href="#come-funziona">Scopri come funziona</a>
     </div>
 
+    <!-- Solo su iPhone: la "versione iOS" e la PWA, ma nessuno la scopre
+         da solo. Lo script in fondo mostra questa riga solo a chi serve. -->
+    <div id="iosHint" style="display:none;margin:14px auto 0;max-width:520px;padding:10px 16px;background:rgba(168,110,245,0.10);border:1px solid rgba(168,110,245,0.30);border-radius:10px;font-size:14px;color:#cbbfe8;line-height:1.5">
+      📲 <strong style="color:#efe9ff">Su iPhone?</strong> Dopo la registrazione, in Safari tocca
+      <strong style="color:#efe9ff">Condividi → Aggiungi alla schermata Home</strong>: FantaOracle diventa un'app a schermo pieno.
+    </div>
+
     <div class="trust" data-reveal style="--d:320ms">
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Nessuna carta richiesta</span>
       <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Import lega da Fantacalcio.it</span>
@@ -800,5 +807,13 @@ footer{
 })();
 </script>
 
+<script>
+  // Il suggerimento iPhone appare solo su iPhone/iPad fuori dall'app installata
+  try {
+    var ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    if (ios && !standalone) { var h = document.getElementById('iosHint'); if (h) h.style.display = ''; }
+  } catch (e) {}
+</script>
 </body>
 </html>

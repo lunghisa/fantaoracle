@@ -10508,6 +10508,41 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') controllaVersioneApp();
 });
 controllaVersioneApp(); // memorizza l'etag di partenza
+
+// ============ INSTALLAZIONE SU IPHONE ============
+// Su iOS la "versione app" e la PWA, ma il gesto Condividi → Aggiungi alla
+// schermata Home non lo scopre nessuno da solo. A chi usa l'app da Safari
+// su iPhone si mostra UNA volta un invito, congedabile per sempre.
+function suggerisciInstallazioneIos() {
+  try {
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+      || window.navigator.standalone === true;
+    if (!ios || standalone) return;
+    if (localStorage.getItem('fantaoracle_ios_invito_chiuso')) return;
+    if (document.getElementById('iosInstallBanner')) return;
+    const b = document.createElement('div');
+    b.id = 'iosInstallBanner';
+    b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:5000;'
+      + 'background:#1a1136;border:1px solid rgba(168,110,245,0.45);border-radius:12px;padding:12px 14px;'
+      + 'box-shadow:0 8px 30px rgba(0,0,0,0.5);font-size:13px;color:var(--text);line-height:1.5;display:flex;gap:10px;align-items:flex-start';
+    b.innerHTML = '<span style="font-size:20px">📲</span>'
+      + '<span style="flex:1"><strong>Installa FantaOracle</strong><br>'
+      + 'Tocca <strong>Condividi</strong> <span style="opacity:.7">(il quadrato con la freccia)</span> e poi '
+      + '<strong>Aggiungi alla schermata Home</strong>: app a schermo pieno, con la sua icona.</span>'
+      + '<button class="fo-btn fo-btn--neutro" style="flex:none;padding:6px 10px" '
+      + 'onclick="try{localStorage.setItem(\'fantaoracle_ios_invito_chiuso\',\'1\')}catch(e){};this.parentNode.remove()">OK</button>';
+    document.body.appendChild(b);
+  } catch (e) {}
+}
+// Compare quando si entra davvero nell'app, non sullo splash
+const _osservaAppReady = new MutationObserver(() => {
+  if (document.body.classList.contains('app-ready')) {
+    _osservaAppReady.disconnect();
+    setTimeout(suggerisciInstallazioneIos, 2500);
+  }
+});
+_osservaAppReady.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 // Data di pubblicazione di QUESTO file, dal server: risponde alla domanda
 // "che versione sto guardando?" senza aprire la console.
 try {
