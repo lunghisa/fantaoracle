@@ -13799,11 +13799,19 @@ function renderDashLeagues() {
   // locale di questo browser da una prova fatta come utente normale — il
   // registro sta in localStorage, che segue il browser e non l'account.
   const scheda = document.getElementById('dashLeaguesCard');
+  const ctaCarica = document.getElementById('buildRosterCta');
+  const introOnboarding = document.getElementById('onboardingIntro');
   if (currentUser && currentUser.is_admin) {
+    // L'admin non carica leghe: oltre alla scheda, si spengono anche il
+    // riquadro di caricamento e l'invito dell'onboarding — a rosa vuota
+    // (che per l'admin e la norma) gli comparirebbero in versione grande.
     if (scheda) scheda.style.display = 'none';
+    if (ctaCarica) ctaCarica.style.display = 'none';
+    if (introOnboarding) introOnboarding.style.display = 'none';
     return;
   }
   if (scheda) scheda.style.display = '';
+  if (ctaCarica) ctaCarica.style.display = '';
   if (!leagues || leagues.length === 0) {
     box.innerHTML = '<div class="mng-empty">Nessuna lega ancora. Creane una caricando il file della tua lega Fantacalcio.it.</div>';
     return;
