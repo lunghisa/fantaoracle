@@ -9958,6 +9958,7 @@ function readLocalLeaguesSnapshot() {
     snapshot.push({
       id: lg.id,
       cloudId: lg._cloudId || null,
+      attiva: lg.id === activeLeagueId,
       name: lg.name,
       competizioni, compAttiva, listinoPersonale,
       teamName, modulo, mode,
@@ -10034,9 +10035,10 @@ async function pushAllToCloudInterno() {
         user_id: currentUser.id,
         league_name: ll.name,
         team_name: ll.teamName,
-        modulo: ll.modulo,
-        mode: ll.mode,
       };
+      // currentModulo e un globale della lega ATTIVA: scriverlo su tutte le
+      // righe corrompeva il modulo delle altre leghe nel cloud.
+      if (ll.attiva) { leagueData.modulo = ll.modulo; leagueData.mode = ll.mode; }
       if (cloudId) {
         // Update lega esistente
         const { error: upErr } = await supabaseClient.from('leagues').update(leagueData).eq('id', cloudId);
@@ -10334,6 +10336,19 @@ async function syncOnLoginInterno() {
       loadListinoFromStorage();
       loadRosterFromStorage();
       oracleLoadState();
+      // La rosa dal cloud arriva per POSIZIONE: prima si ripristina il
+      // modulo sotto cui era stata salvata, poi si verifica la coerenza.
+      // Senza, un 3-5-2 salvato altrove si riversava in un 4-3-3 locale e
+      // i ruoli slittavano (un C schierato in difesa, visto in produzione).
+      try {
+        const attivaCloud = cloudLeagues.find(c => leagues.some(l => l.id === activeLeagueId && l._cloudId === c.id));
+        if (attivaCloud && attivaCloud.modulo && formations[attivaCloud.modulo]) {
+          currentModulo = attivaCloud.modulo;
+          const lbl = document.getElementById('moduloLabel');
+          if (lbl) lbl.textContent = currentModulo;
+        }
+      } catch (e) {}
+      try { if (!formazioneCoerente()) rebalanceForFormation(currentModulo); } catch (e) {}
       try { renderField(); renderLists(); updateListinoBadge(); updateLeagueBanner(); } catch(e) {}
       // I calendari appena scesi dal cloud vanno anche mostrati: senza questo
       // arriverebbero ma resterebbero invisibili fino al ricaricamento dopo.
@@ -10366,6 +10381,19 @@ async function syncOnLoginInterno() {
       loadListinoFromStorage();
       loadRosterFromStorage();
       oracleLoadState();
+      // La rosa dal cloud arriva per POSIZIONE: prima si ripristina il
+      // modulo sotto cui era stata salvata, poi si verifica la coerenza.
+      // Senza, un 3-5-2 salvato altrove si riversava in un 4-3-3 locale e
+      // i ruoli slittavano (un C schierato in difesa, visto in produzione).
+      try {
+        const attivaCloud = cloudLeagues.find(c => leagues.some(l => l.id === activeLeagueId && l._cloudId === c.id));
+        if (attivaCloud && attivaCloud.modulo && formations[attivaCloud.modulo]) {
+          currentModulo = attivaCloud.modulo;
+          const lbl = document.getElementById('moduloLabel');
+          if (lbl) lbl.textContent = currentModulo;
+        }
+      } catch (e) {}
+      try { if (!formazioneCoerente()) rebalanceForFormation(currentModulo); } catch (e) {}
       try { renderField(); renderLists(); updateListinoBadge(); updateLeagueBanner(); } catch(e) {}
       // I calendari appena scesi dal cloud vanno anche mostrati: senza questo
       // arriverebbero ma resterebbero invisibili fino al ricaricamento dopo.
@@ -13359,9 +13387,30 @@ function titolaritaSignalsListone() {
 }
 
 
+// La formazione e un array POSIZIONALE: lo slot 3 e "terzo difensore"
+// solo finche l'ordine corrisponde al modulo. Un recupero dal cloud fatto
+// sotto un altro modulo, o qualsiasi disallineamento storico, mette un C
+// in uno slot da D — e nel fantacalcio quella formazione e nulla. Questa
+// guardia controlla ruolo-per-slot e, se qualcosa non torna, ricostruisce
+// dai ruoli veri (visto in produzione: Pierotti C schierato in difesa).
+function formazioneCoerente() {
+  const formation = formations[currentModulo];
+  if (!formation) return true;
+  let i = 0, ok = true;
+  formation.rows.forEach(row => row.forEach(ruoloAtteso => {
+    const p = players.starters[i++];
+    if (p && p.name && p.name !== '---' && !p.isEmpty && p.role && p.role !== ruoloAtteso) ok = false;
+  }));
+  return ok;
+}
+
 function renderField() {
   const container = document.getElementById('fieldPlayers');
   if (!container) return;
+  if (!formazioneCoerente()) {
+    console.warn('[FantaOracle] formazione disallineata dal modulo: riallineo dai ruoli');
+    rebalanceForFormation(currentModulo);
+  }
   container.innerHTML = '';
   const formation = formations[currentModulo] || formations['4-3-3'];
   const rows = formation.rows;
@@ -14286,8 +14335,46 @@ function autoBenchInjured() {
     swappedNames.push(`${tmp.name} → ${sub.player.name}`);
   });
   
+  // Ruoli rimasti scoperti: nessun sostituto sano dello stesso ruolo in
+  // panchina. Un C al posto di un D renderebbe la formazione NULLA: la
+  // mossa giusta e cambiare modulo — 4-3-3 con un difensore fuori e senza
+  // ricambi diventa 3-4-3, mai una difesa col centrocampista.
+  const ancoraARischio = players.starters.some(isRisk);
+  if (ancoraARischio) {
+    const sani = { P:0, D:0, C:0, A:0 };
+    [...players.starters, ...players.bench].forEach(p => {
+      if (isHealthyCandidate(p) && sani[p.role] !== undefined) sani[p.role]++;
+    });
+    const modeVal = p => currentMode === 'oracle' ? (p.oracle || p.score || 0) : (p.score || 0);
+    let migliore = null;
+    Object.keys(formations).forEach(m => {
+      const need = formations[m].requirements;
+      const copribile = ['P','D','C','A'].every(r => sani[r] >= (need[r] || 0));
+      if (!copribile) return;
+      // punteggio del miglior XI sano di questo modulo
+      const perRuolo = { P:[], D:[], C:[], A:[] };
+      [...players.starters, ...players.bench].forEach(p => {
+        if (isHealthyCandidate(p) && perRuolo[p.role]) perRuolo[p.role].push(modeVal(p));
+      });
+      let tot = 0;
+      ['P','D','C','A'].forEach(r => {
+        perRuolo[r].sort((a, b) => b - a);
+        tot += perRuolo[r].slice(0, need[r] || 0).reduce((x, y) => x + y, 0);
+      });
+      if (!migliore || tot > migliore.tot) migliore = { modulo: m, tot };
+    });
+    if (migliore && migliore.modulo !== currentModulo) {
+      const vecchio = currentModulo;
+      setModulo(migliore.modulo, null);   // rebalance mette gia gli infortunati per ultimi
+      saveRosterToStorage();
+      renderLists();
+      showToast('🚑 Ruolo senza ricambi: modulo cambiato ' + vecchio + ' → ' + migliore.modulo);
+      return;
+    }
+  }
+
   if (swapsCount === 0) {
-    showToast('⚠️ Rischi rilevati ma nessun sostituto sicuro disponibile in panchina');
+    showToast('⚠️ Rischi rilevati ma nessun sostituto sicuro disponibile (nemmeno cambiando modulo)');
     return;
   }
   
