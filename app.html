@@ -1020,7 +1020,11 @@
     padding: 0;
     box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 100px rgba(245,197,66,0.05);
     display: flex; flex-direction: column;
-    max-height: calc(100vh - 40px);
+    /* Tutta la scheda deve stare SOTTO la testata (nav 60px + barra titolo):
+       se sfora, a scorrere e la pagina intera e le linguette spariscono.
+       Con questa altezza scorre solo il corpo, e linguette e intestazione
+       restano sempre in vista — richiesto da Sacha. */
+    max-height: calc(100vh - 132px);
   }
   .admin-header {
     padding: 22px 28px 18px;
@@ -1050,6 +1054,15 @@
     -webkit-overflow-scrolling: touch;
     flex-shrink: 0; /* mai schiacciati dal body (flex column con max-height) */
   }
+  /* Bottone che ha gia eseguito: opaco finche non cambia qualcosa nei
+     form. E la certezza visiva del "l'ho gia caricato" — richiesta di
+     Sacha dopo una giornata passata a chiederselo. */
+  .admin-btn.fatto {
+    opacity: 0.4;
+    filter: saturate(0.4);
+  }
+  .admin-btn.fatto::after { content: ' ✓'; }
+
   .admin-tab {
     padding: 10px 14px;
     background: none;
@@ -1562,7 +1575,7 @@
   }
 
   @media (max-width: 699px) {
-    .admin-card { max-height: 100vh; }
+    .admin-card { max-height: calc(100vh - 200px); } /* nav + titolo + barra in basso */
     .admin-header { padding: 16px 18px 12px; }
     .admin-title { font-size: 20px; letter-spacing: 3px; }
     .admin-body { padding: 16px 18px 22px; }
@@ -10535,6 +10548,20 @@ function switchAdminTab(tab) {
   else if (tab === 'asta') renderPianoAsta();
 }
 
+// Marca un bottone admin come "gia eseguito". Qualsiasi modifica nei form
+// della pagina (testo, file, numero giornata) lo riattiva: il listener in
+// fondo toglie la classe a tutti in blocco.
+function segnaFatto(id) {
+  const b = document.getElementById(id);
+  if (b) b.classList.add('fatto');
+}
+['input', 'change'].forEach(ev => {
+  const pa = document.getElementById('page-admin');
+  if (pa) pa.addEventListener(ev, () => {
+    pa.querySelectorAll('.admin-btn.fatto').forEach(b => b.classList.remove('fatto'));
+  }, true);
+});
+
 function showAdminFeedback(section, msg, type) {
   const el = document.getElementById('admin' + section + 'Feedback');
   if (!el) return;
@@ -10823,6 +10850,7 @@ async function publishGlobalListino() {
     if (riportati > 0) msgPub += ` ${riportati} rigoristi riportati dalla versione precedente.`;
     if (daRivedere.length > 0) msgPub += ` ⚠️ Hanno cambiato squadra, verifica se tirano ancora: ${daRivedere.join(', ')}`;
     showAdminFeedback('Listino', msgPub, daRivedere.length > 0 ? 'info' : 'success');
+    segnaFatto('adminListinoPublishBtn');
     resetAdminListinoZone();
     await refreshAdminListino();
     // Applica subito anche all'admin
@@ -11106,6 +11134,7 @@ async function saveRigoristi() {
     }
     modificheAdminNonSalvate = false;
     const count = updatedPlayers.filter(p => p.rigorista).length;
+    segnaFatto('adminRigoristiSaveBtn');
     let msg = `✓ ${count} rigoristi salvati e verificati nel cloud.`;
     let type = 'success';
     if (unmatched.length > 0) {
@@ -11295,6 +11324,7 @@ async function publishGlobalVoti() {
       uploaded_at: new Date().toISOString(),
     }, { onConflict: 'giornata' });
     if (error) throw error;
+    segnaFatto('adminVotiPublishBtn');
     let msg = `🎉 Giornata ${num} pubblicata: ${count} voti. Gli utenti li ricevono al prossimo caricamento.`;
     if (scarti.length) msg += ` ⚠️ Righe manuali non riconosciute: ${scarti.slice(0,8).join(', ')}`;
     showAdminFeedback('Voti', msg, scarti.length ? 'info' : 'success');
@@ -11379,6 +11409,7 @@ async function publishGlobalConsigli() {
       uploaded_at: new Date().toISOString(),
     }, { onConflict: 'giornata' });
     if (error) throw error;
+    segnaFatto('adminConsigliPublishBtn');
     let msg = `🎉 Consenso fonti G${num} pubblicato: ${count} giocatori.`;
     if (scarti.length) msg += ` ⚠️ Non riconosciuti: ${scarti.slice(0, 8).join(', ')}`;
     showAdminFeedback('Voti', msg, scarti.length ? 'info' : 'success');
@@ -12275,6 +12306,7 @@ async function publishGlobalCalendar() {
     });
     if (error) throw error;
     showAdminFeedback('Calendar', `🎉 Calendario ${season} pubblicato!`, 'success');
+    segnaFatto('adminCalendarPublishBtn');
     resetAdminCalendarZone();
     await refreshAdminCalendar();
     // Applica subito anche all'admin
