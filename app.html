@@ -10989,7 +10989,21 @@ function abbinaGiocatoreInSquadra(candidati, nomeInput) {
   const esatto = candidati.find(p => rosterNormalizeName(p.name) === n);
   if (esatto) return esatto;
   const perCognome = candidati.filter(p => rigoristaNameMatches(p.name, nomeInput));
-  return perCognome.length === 1 ? perCognome[0] : null;
+  if (perCognome.length === 1) return perCognome[0];
+  if (perCognome.length > 1) {
+    // Omonimi nella stessa squadra: l'iniziale del nome proprio scioglie il
+    // dubbio. "Lautaro Martinez" contro "Martinez L." e "Martinez J.": la L
+    // di Lautaro sceglie il primo. Se anche l'iniziale e ambigua, ci si
+    // ferma: meglio uno scarto dichiarato che un flag sul gemello sbagliato.
+    const parole = (nomeInput || '').trim().split(/\s+/);
+    const iniziali = parole.map(w => rosterNormalizeName(w).charAt(0)).filter(Boolean);
+    const perIniziale = perCognome.filter(p => {
+      const m = (p.name || '').match(/\b([A-Za-z])\.\s*$/);
+      return m && iniziali.includes(m[1].toLowerCase());
+    });
+    if (perIniziale.length === 1) return perIniziale[0];
+  }
+  return null;
 }
 
 async function saveRigoristi() {
@@ -11094,7 +11108,10 @@ async function refreshAdminVoti() {
   // Serve il listone attivo per abbinare i nomi: se non e ancora in memoria
   // lo porta dentro il refresh del listone (stesso dato dei rigoristi).
   if (!adminState.activeListinoFull) {
-    try { await refreshAdminListino(); } catch (e) {}
+    // refreshAdminListino delega il caricamento del listone pieno a una
+    // chiamata NON attesa: contarci sopra lasciava il pannello senza nomi
+    // per qualche secondo, e chi scriveva subito vedeva "0 riconosciuti".
+    try { await refreshAdminRigoristi(); } catch (e) {}
   }
   const client = await ensureSupabaseReady();
   if (!client) return;
@@ -11200,8 +11217,12 @@ function aggiornaAdminVotiCount() {
   if (!el) return;
   const { votes, scarti } = votiPendentiAdmin();
   const n = Object.keys(votes).length;
-  el.textContent = n === 0 ? 'Nessun voto caricato.'
-    : n + ' voti pronti da pubblicare' + (scarti.length ? ' · righe non riconosciute: ' + scarti.length : '');
+  if (n === 0 && scarti.length > 0) {
+    el.textContent = '⚠️ 0 abbinati su ' + scarti.length + ' righe — listone in caricamento o nomi/squadre da controllare';
+  } else {
+    el.textContent = n === 0 ? 'Nessun voto caricato.'
+      : n + ' voti pronti da pubblicare' + (scarti.length ? ' · non riconosciute: ' + scarti.slice(0,4).join(', ') : '');
+  }
 }
 
 async function publishGlobalVoti() {
@@ -11273,16 +11294,28 @@ function aggiornaAdminConsigliCount() {
   if (!el) return;
   const { consigli, scarti } = parseConsigliManuali((document.getElementById('adminConsigliInput') || {}).value);
   const n = Object.keys(consigli).length;
-  el.textContent = n === 0 ? 'Nessun consiglio caricato.'
-    : n + ' consigli pronti' + (scarti.length ? ' · righe non riconosciute: ' + scarti.length : '');
+  if (n === 0 && scarti.length > 0) {
+    el.textContent = '⚠️ 0 abbinati su ' + scarti.length + ' righe — listone in caricamento o nomi/squadre da controllare';
+  } else {
+    el.textContent = n === 0 ? 'Nessun consiglio caricato.'
+      : n + ' consigli pronti' + (scarti.length ? ' · non riconosciute: ' + scarti.slice(0,4).join(', ') : '');
+  }
 }
 
 async function publishGlobalConsigli() {
   const num = parseInt((document.getElementById('adminConsigliGiornata') || {}).value, 10);
   if (!num || num < 1 || num > 50) { showAdminFeedback('Voti', '⚠️ Indica la giornata dei consigli.', 'error'); return; }
+  if (giocatoriListoneAdmin().length === 0) {
+    try { await refreshAdminRigoristi(); } catch (e) {}
+  }
   const { consigli, scarti } = parseConsigliManuali((document.getElementById('adminConsigliInput') || {}).value);
   const count = Object.keys(consigli).length;
-  if (count === 0) { showAdminFeedback('Voti', '⚠️ Nessun consiglio da pubblicare.', 'error'); return; }
+  if (count === 0) {
+    showAdminFeedback('Voti', scarti.length > 0
+      ? '⚠️ Nessuna riga abbinata al listone (' + scarti.length + ' scartate: ' + scarti.slice(0,6).join(', ') + '). Controlla squadre e nomi.'
+      : '⚠️ Nessun consiglio da pubblicare.', 'error');
+    return;
+  }
   const btn = document.getElementById('adminConsigliPublishBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ PUBBLICAZIONE...'; }
   const client = await ensureSupabaseReady();
@@ -11303,6 +11336,10 @@ async function publishGlobalConsigli() {
     let msg = `🎉 Consenso fonti G${num} pubblicato: ${count} giocatori.`;
     if (scarti.length) msg += ` ⚠️ Non riconosciuti: ${scarti.slice(0, 8).join(', ')}`;
     showAdminFeedback('Voti', msg, scarti.length ? 'info' : 'success');
+    // Il riquadro messaggi sta in cima alla scheda; questo blocco in fondo.
+    // L'esito va mostrato anche QUI, dove l'occhio sta guardando.
+    const eco = document.getElementById('adminConsigliCount');
+    if (eco) eco.textContent = msg;
     modificheAdminNonSalvate = false;
     const ta = document.getElementById('adminConsigliInput'); if (ta) ta.value = '';
     aggiornaAdminConsigliCount();
