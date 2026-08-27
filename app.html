@@ -5004,7 +5004,17 @@ function loadLeaguesRegistry() {
   // Da li le leghe che si moltiplicavano. Ora l'esito viene registrato.
   if (leagues.length === 0) {
     const migrazioneGiaFatta = (() => { try { return !!localStorage.getItem(MIGRAZIONE_V1_KEY); } catch(e) { return false; } })();
-    const hasV1Listino = (() => { try { return !!localStorage.getItem(LISTINO_STORAGE_KEY); } catch(e) { return false; } })();
+    // La chiave piatta conta come "dati da migrare" solo se contiene un
+    // upload DELL'UTENTE: il listone globale dell'admin finito li per
+    // sbaglio non deve generare leghe dal nulla.
+    const hasV1Listino = (() => {
+      try {
+        const grezzo = localStorage.getItem(LISTINO_STORAGE_KEY);
+        if (!grezzo) return false;
+        const v = JSON.parse(grezzo);
+        return !!v && v.source !== 'cloud_admin' && v.source !== 'builtin';
+      } catch(e) { return false; }
+    })();
     if (!migrazioneGiaFatta && hasV1Listino) {
       const existingName = (() => { try { return localStorage.getItem(LEAGUE_NAME_KEY) || 'La mia lega'; } catch(e) { return 'La mia lega'; } })();
       const migratedId = slugifyLeague(existingName);
@@ -5197,7 +5207,11 @@ async function eliminaLegaDalCloud(lg) {
       // "gia eliminata" e' esattamente cio che faceva tornare la lega:
       // spariva in locale, restava nel cloud, tornava al refresh.
       if (!data || data.length === 0) {
-        return { ok: false, errore: 'non riesco a identificarla nel cloud (il nome salvato la non combacia)' };
+        // Nessun id cloud E nessuna riga con questo nome: la lega non e mai
+        // stata spinta (dopo le correzioni, ogni push scrive _cloudId nel
+        // registro — una lega senza id dopo un ciclo di sync e davvero solo
+        // locale, come la finta "La mia lega"). Si elimina in locale.
+        return { ok: true };
       }
       if (data.length > 1) return { ok: false, errore: `nel cloud ci sono ${data.length} leghe con questo nome e non so quale sia` };
       cloudId = data[0].id;
@@ -12776,8 +12790,12 @@ async function applyGlobalListinoAndCalendar() {
           uploadedDate: listinoData.uploaded_at,
           players,
         };
-        // Salvo anche in localStorage namespacizzato per lega attiva (così se va offline c'è il fallback)
-        saveListinoToStorage();
+        // Salvo il fallback offline SOLO se c'e una lega attiva: senza,
+        // nsKey ricade sulla chiave piatta di vecchia generazione, e quella
+        // chiave e l'esca della migrazione v1 — al reload successivo nasceva
+        // una finta "La mia lega" col listone globale dentro (successo al
+        // tester dopo una pulizia del browser).
+        if (activeLeagueId) saveListinoToStorage();
         try { updateListinoBadge(); } catch(e) {}
         try { renderListonePage && renderListonePage(); } catch(e) {}
         try { updateLeagueBanner && updateLeagueBanner(); } catch(e) {}
