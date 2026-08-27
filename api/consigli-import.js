@@ -73,10 +73,14 @@ function db(path, opts = {}) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'solo POST' }); return; }
 
-  const attesa = process.env.CONSIGLI_IMPORT_KEY;
+  // Tolleranza agli incidenti di copia: spazi e a-capo ai bordi (frequenti
+  // negli incollaggi) non devono far fallire il confronto, e la chiave vale
+  // anche senza il prefisso "Bearer".
+  const attesa = String(process.env.CONSIGLI_IMPORT_KEY || '').trim();
   if (!attesa) { res.status(503).json({ error: 'CONSIGLI_IMPORT_KEY non configurata' }); return; }
-  const auth = String(req.headers.authorization || '');
-  if (auth !== 'Bearer ' + attesa) { res.status(401).json({ error: 'chiave mancante o errata' }); return; }
+  const grezzo = String(req.headers.authorization || '').trim();
+  const token = (grezzo.toLowerCase().startsWith('bearer ') ? grezzo.slice(7) : grezzo).trim();
+  if (token !== attesa) { res.status(401).json({ error: 'chiave mancante o errata' }); return; }
 
   const body = req.body || {};
   const giornata = parseInt(body.giornata, 10);
