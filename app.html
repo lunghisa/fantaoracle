@@ -12576,6 +12576,19 @@ async function refreshAdminUsers() {
     const { data, error } = await client.rpc('admin_list_users');
     if (error) throw error;
     adminUsersCache = data || [];
+    // Piano e prova, se le funzioni nuove sono gia installate: senza, il
+    // pannello funziona come prima (niente etichette piano).
+    try {
+      const { data: piani } = await client.rpc('admin_list_plans');
+      if (Array.isArray(piani)) {
+        const perId = {};
+        piani.forEach(x => { perId[x.id] = x; });
+        adminUsersCache.forEach(u => {
+          const p = perId[u.id];
+          if (p) { u.plan = p.plan; u.trial_started_at = p.trial_started_at; }
+        });
+      }
+    } catch (e) {}
     renderAdminUsersList();
     const badge = document.getElementById('adminUsersBadge');
     if (badge) badge.textContent = adminUsersCache.length;
@@ -12619,6 +12632,7 @@ function renderAdminUsersList() {
         <button class="micro-btn danger" onclick="toggleUserDisabled('${u.id}', ${!u.disabled})" title="${u.disabled ? 'Riattiva' : 'Disabilita'}">
           ${u.disabled ? '✓' : '🚫'}
         </button>
+        ${u.disabled ? `<button class="micro-btn danger" onclick="deleteUser('${u.id}')" title="Elimina definitivamente l'utente e tutti i suoi dati">🗑</button>` : ''}
       `;
     }
 
@@ -12637,7 +12651,7 @@ function renderAdminUsersList() {
           <div class="admin-user-email">${escapeHtmlSafe(u.email || '')}</div>
         </div>
         <div class="admin-user-stats">
-          <div><span class="num">${u.leagues_count || 0}</span> leghe · <span class="num">${u.players_count || 0}</span> giocatori</div>
+          <div><span class="num">${u.leagues_count || 0}</span> leghe · <span class="num">${u.players_count || 0}</span> giocatori${etichettaPiano(u)}</div>
           <div>signup ${signup} · ${lastSeen}</div>
         </div>
         <div class="admin-user-actions" onclick="event.stopPropagation()">${actions}</div>
@@ -12715,6 +12729,38 @@ async function toggleUserAdmin(userId, makeAdmin) {
     await refreshAdminUsers();
   } catch(e) {
     showAdminFeedback('Users', '❌ ' + (e.message || 'Errore'), 'error');
+  }
+}
+
+// Piano dell'utente, in una parola: ADMIN / PRO / prova coi giorni / scaduta.
+function etichettaPiano(u) {
+  if (u.is_admin) return '';
+  const stile = (colore) => `margin-left:8px;font-family:'DM Mono',monospace;font-size:11px;color:${colore}`;
+  if (u.plan === 'year' || u.plan === 'month') return ` <span style="${stile('var(--green)')}">PRO</span>`;
+  if (u.plan === undefined) return '';   // funzioni SQL non ancora installate
+  if (!u.trial_started_at) return ` <span style="${stile('var(--muted)')}">prova non iniziata</span>`;
+  const giorni = 30 - Math.floor((Date.now() - new Date(u.trial_started_at).getTime()) / 86400000);
+  return giorni > 0
+    ? ` <span style="${stile('var(--oracle)')}">prova · ${giorni}g</span>`
+    : ` <span style="${stile('var(--red)')}">prova SCADUTA</span>`;
+}
+
+// Eliminazione definitiva: solo utenti gia disabilitati (prima OFF, poi
+// cestino — due gesti distinti). La guardia vera sta nella funzione SQL,
+// questa e solo la conferma umana.
+async function deleteUser(userId) {
+  const u = adminUsersCache.find(x => x.id === userId);
+  if (!u) return;
+  if (!confirm(`Eliminare DEFINITIVAMENTE ${u.email}?\n\nSpariscono account, leghe, rose e storico Oracle. Non si torna indietro.`)) return;
+  const client = await ensureSupabaseReady();
+  if (!client) return;
+  try {
+    const { error } = await client.rpc('admin_delete_user', { target_user_id: userId });
+    if (error) throw error;
+    showToast('🗑 Utente eliminato: ' + u.email);
+    await refreshAdminUsers();
+  } catch (e) {
+    showToast('❌ ' + (e.message || 'Eliminazione fallita') + (String(e.message).includes('does not exist') ? ' — esegui admin_utenti_elimina.sql' : ''), 'error');
   }
 }
 
