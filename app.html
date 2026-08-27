@@ -4559,6 +4559,30 @@
           <label class="admin-field-label">📚 GIORNATE PUBBLICATE</label>
           <div id="adminVotiHistory" style="margin-top:8px"></div>
         </div>
+
+        <!-- Consenso delle fonti: fasce dei consigli per la PROSSIMA giornata.
+             Entra nell'Oracle come fattore a peso limitato (±0.3). -->
+        <div class="admin-field" style="margin-top:22px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08)">
+          <label class="admin-field-label">💡 CONSENSO FONTI (PROSSIMA GIORNATA)</label>
+          <p class="section-desc" style="margin-top:0">
+            Una riga per giocatore: <code>Squadra: Nome: fascia</code> — fascia <strong>1</strong> consigliato
+            da tutte le fonti (+0.3), <strong>2</strong> pareri misti (neutro), <strong>3</strong> sconsigliato (−0.3).
+            Quarto campo facoltativo <code>T</code> o <code>D</code> (titolare/dubbio): riempie il pallino
+            dove le news tacciono, mai sopra di esse.
+          </p>
+          <div class="admin-field" style="margin-bottom:10px">
+            <label class="admin-field-label">GIORNATA</label>
+            <input type="number" class="admin-field-input" id="adminConsigliGiornata" min="1" max="38"
+              style="width:110px;font-family:'DM Mono',monospace;text-align:center">
+          </div>
+          <textarea class="admin-field-input" id="adminConsigliInput" rows="7"
+            style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
+            placeholder="Inter: Lautaro Martinez: 1: T&#10;Roma: Dovbyk: 2&#10;Torino: Vlasic: 3: D"
+            oninput="modificheAdminNonSalvate = true; aggiornaAdminConsigliCount()"></textarea>
+          <div style="font-size:13px;color:var(--muted);margin:10px 0" id="adminConsigliCount">Nessun consiglio caricato.</div>
+          <button class="admin-btn" id="adminConsigliPublishBtn" onclick="publishGlobalConsigli()">🚀 PUBBLICA CONSENSO FONTI</button>
+          <div id="adminConsigliHistory" style="margin-top:12px"></div>
+        </div>
       </div>
 
       <!-- ============ SECTION: STATS ============ -->
@@ -6464,6 +6488,23 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   if (p.rigorista) {
     exp += 0.35;
     factors.push('🎯 rigorista designato (+0.35)');
+  }
+
+  // 8. CONSENSO FONTI (fasce dei consigli delle testate, pubblicate
+  // dall'admin per giornata). Peso volutamente limitato: le fonti si
+  // leggono a vicenda, e il fattore va tenuto sotto controllo con
+  // l'accuracy prima di fidarsene di piu. La fascia 2 (pareri misti)
+  // non sposta niente.
+  const consigli = consigliGiornataCorrente();
+  const consiglio = consigli ? consigli[rosterNormalizeName(p.name)] : null;
+  if (consiglio) {
+    if (consiglio.fascia === 1) {
+      exp += 0.3;
+      factors.push('💡 consenso fonti: prima fascia (+0.3)');
+    } else if (consiglio.fascia === 3) {
+      exp -= 0.3;
+      factors.push('💡 consenso fonti: sconsigliato (−0.3)');
+    }
   }
 
   exp = Math.max(4, Math.min(9.5, exp));
@@ -11064,6 +11105,7 @@ async function refreshAdminVoti() {
       .order('giornata', { ascending: true });
     if (error) throw error;
     renderAdminVotiHistory(data || []);
+    try { await refreshAdminConsigli(); } catch (e) {}
     const badge = document.getElementById('adminVotiBadge');
     if (badge) badge.textContent = (data || []).length || '—';
     // Giornata proposta: la prima non ancora pubblicata
@@ -11199,6 +11241,123 @@ async function publishGlobalVoti() {
     showAdminFeedback('Voti', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
   }
   if (btn) { btn.disabled = false; btn.textContent = '🚀 PUBBLICA VOTI GIORNATA'; }
+}
+
+// ============ CONSENSO FONTI (admin → tutti) ============
+// Fasce dei consigli delle testate per la prossima giornata. Stesso giro
+// dei voti: pubblica l'admin, upsert per giornata, gli utenti ricevono col
+// fetch globale. Setup in global_consigli_setup.sql.
+function parseConsigliManuali(testo) {
+  const giocatori = giocatoriListoneAdmin();
+  const out = {}; const scarti = [];
+  (testo || '').split(/\r?\n/).forEach(line => {
+    if (!line.trim()) return;
+    const parts = line.split(':').map(x => x.trim());
+    if (parts.length < 3) { scarti.push(line.trim()); return; }
+    const team = normTeamName(parts[0]);
+    const name = parts[1];
+    const fascia = parseInt(parts[2], 10);
+    const titRaw = (parts[3] || '').toUpperCase();
+    const tit = titRaw === 'T' ? 'in' : titRaw === 'D' ? 'doubt' : null;
+    if (!team || !name || ![1, 2, 3].includes(fascia)) { scarti.push(line.trim()); return; }
+    const squadra = giocatori.filter(g => normTeamName(g.team) === team);
+    const hit = abbinaGiocatoreInSquadra(squadra, name) || abbinaGiocatoreInSquadra(giocatori, name);
+    if (!hit) { scarti.push(name); return; }
+    out[hit.key] = { fascia: fascia, tit: tit, name: hit.name, team: hit.team };
+  });
+  return { consigli: out, scarti };
+}
+
+function aggiornaAdminConsigliCount() {
+  const el = document.getElementById('adminConsigliCount');
+  if (!el) return;
+  const { consigli, scarti } = parseConsigliManuali((document.getElementById('adminConsigliInput') || {}).value);
+  const n = Object.keys(consigli).length;
+  el.textContent = n === 0 ? 'Nessun consiglio caricato.'
+    : n + ' consigli pronti' + (scarti.length ? ' · righe non riconosciute: ' + scarti.length : '');
+}
+
+async function publishGlobalConsigli() {
+  const num = parseInt((document.getElementById('adminConsigliGiornata') || {}).value, 10);
+  if (!num || num < 1 || num > 50) { showAdminFeedback('Voti', '⚠️ Indica la giornata dei consigli.', 'error'); return; }
+  const { consigli, scarti } = parseConsigliManuali((document.getElementById('adminConsigliInput') || {}).value);
+  const count = Object.keys(consigli).length;
+  if (count === 0) { showAdminFeedback('Voti', '⚠️ Nessun consiglio da pubblicare.', 'error'); return; }
+  const btn = document.getElementById('adminConsigliPublishBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ PUBBLICAZIONE...'; }
+  const client = await ensureSupabaseReady();
+  if (!client) {
+    showAdminFeedback('Voti', '❌ Servizio non disponibile.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 PUBBLICA CONSENSO FONTI'; }
+    return;
+  }
+  try {
+    const { error } = await client.from('global_consigli').upsert({
+      giornata: num,
+      consigli: consigli,
+      players_count: count,
+      uploaded_by: currentUser.id,
+      uploaded_at: new Date().toISOString(),
+    }, { onConflict: 'giornata' });
+    if (error) throw error;
+    let msg = `🎉 Consenso fonti G${num} pubblicato: ${count} giocatori.`;
+    if (scarti.length) msg += ` ⚠️ Non riconosciuti: ${scarti.slice(0, 8).join(', ')}`;
+    showAdminFeedback('Voti', msg, scarti.length ? 'info' : 'success');
+    modificheAdminNonSalvate = false;
+    const ta = document.getElementById('adminConsigliInput'); if (ta) ta.value = '';
+    aggiornaAdminConsigliCount();
+    await refreshAdminConsigli();
+  } catch (e) {
+    showAdminFeedback('Voti', '❌ Errore: ' + (e.message || 'sconosciuto') + ' — eseguito global_consigli_setup.sql?', 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '🚀 PUBBLICA CONSENSO FONTI'; }
+}
+
+async function refreshAdminConsigli() {
+  const client = await ensureSupabaseReady();
+  if (!client) return;
+  try {
+    const { data, error } = await client
+      .from('global_consigli')
+      .select('id, giornata, players_count, uploaded_at')
+      .order('giornata', { ascending: true });
+    if (error) throw error;
+    const box = document.getElementById('adminConsigliHistory');
+    if (!box) return;
+    box.innerHTML = (data || []).length === 0
+      ? '<div class="mng-empty">Nessun consenso pubblicato.</div>'
+      : data.map(r => `
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--surface2);border-radius:8px;margin-bottom:5px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--oracle);width:44px">G${r.giornata}</span>
+          <span style="font-size:13px;color:var(--text)">${r.players_count} consigli</span>
+          <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto">${String(r.uploaded_at).slice(0,10)}</span>
+          <button class="fo-btn fo-btn--icona" title="Elimina" onclick="deleteGlobalConsigli('${r.id}', ${r.giornata})">🗑</button>
+        </div>`).join('');
+    const numEl = document.getElementById('adminConsigliGiornata');
+    if (numEl && !numEl.value) {
+      const fatte = new Set((data || []).map(r => r.giornata));
+      let g = 1; while (fatte.has(g)) g++;
+      numEl.value = g;
+    }
+  } catch (e) {
+    // Tabella non ancora creata: il pannello voti deve continuare a funzionare
+    const box = document.getElementById('adminConsigliHistory');
+    if (box) box.innerHTML = '<div class="mng-empty">Tabella global_consigli non trovata: esegui global_consigli_setup.sql.</div>';
+  }
+}
+
+async function deleteGlobalConsigli(id, giornata) {
+  if (!confirm('Eliminare il consenso fonti della giornata ' + giornata + '?')) return;
+  const client = await ensureSupabaseReady();
+  if (!client) return;
+  try {
+    const { error } = await client.from('global_consigli').delete().eq('id', id);
+    if (error) throw error;
+    showAdminFeedback('Voti', '✓ Consenso G' + giornata + ' eliminato.', 'success');
+    await refreshAdminConsigli();
+  } catch (e) {
+    showAdminFeedback('Voti', '❌ Errore: ' + e.message, 'error');
+  }
 }
 
 async function deleteGlobalVoti(id, giornata) {
@@ -12374,11 +12533,13 @@ let listinoGlobaleInMemoria = null;
 async function applyGlobalListinoAndCalendar() {
   if (!currentUser) return; // ospite: skip
   try {
-    const [listinoData, calData, votiData] = await Promise.all([
+    const [listinoData, calData, votiData, consigliData] = await Promise.all([
       fetchGlobalListinoForUser(),
       fetchGlobalCalendarForUser(),
-      fetchGlobalVotiForUser()
+      fetchGlobalVotiForUser(),
+      fetchGlobalConsigliForUser()
     ]);
+    if (Array.isArray(consigliData)) consigliGlobaliInMemoria = consigliData;
 
     // ============ LISTONE GLOBALE ============
     if (listinoData && Array.isArray(listinoData.players)) listinoGlobaleInMemoria = listinoData.players;
@@ -12506,6 +12667,37 @@ async function applyGlobalListinoAndCalendar() {
   } catch(e) {
     console.warn('[Cloud] applyGlobalListinoAndCalendar error:', e);
   }
+}
+
+// Consenso delle fonti per giornata, pubblicato dall'admin. null se la
+// tabella non esiste ancora: il resto non deve accorgersene.
+let consigliGlobaliInMemoria = null;
+async function fetchGlobalConsigliForUser() {
+  const client = await ensureSupabaseReady();
+  if (!client || !currentUser) return null;
+  try {
+    const { data, error } = await client
+      .from('global_consigli')
+      .select('giornata, consigli')
+      .order('giornata', { ascending: true });
+    if (error) { return null; }
+    return data;
+  } catch (e) { return null; }
+}
+
+// I consigli della giornata su cui il motore sta ragionando. Fascia e
+// titolarita valgono per UNA giornata: quelli vecchi non si applicano.
+function consigliGiornataCorrente() {
+  if (!Array.isArray(consigliGlobaliInMemoria) || consigliGlobaliInMemoria.length === 0) return null;
+  const idx = (typeof findCurrentGiornataIdx === 'function') ? findCurrentGiornataIdx() : -1;
+  if (idx >= 0 && calendario.giornate[idx]) {
+    const num = calendario.giornate[idx].num;
+    const riga = consigliGlobaliInMemoria.find(r => r.giornata === num);
+    return riga ? (riga.consigli || null) : null;
+  }
+  // Senza calendario Serie A caricato: l'ultima giornata pubblicata e la
+  // migliore approssimazione della "prossima".
+  return consigliGlobaliInMemoria[consigliGlobaliInMemoria.length - 1].consigli || null;
 }
 
 async function fetchGlobalVotiForUser() {
@@ -13054,10 +13246,23 @@ function getTitolaritaSignals() {
 // Memo leggero: ricalcola solo se cambiano news o dimensione rosa
 let _titCache = { sig: {}, key: null };
 function titolaritaSignals() {
+  const consigli = consigliGiornataCorrente();
   const key = (newsState.lastUpdate ? newsState.lastUpdate.getTime() : 0)
-    + '|' + (players.starters.length + players.bench.length);
+    + '|' + (players.starters.length + players.bench.length)
+    + '|' + (consigli ? Object.keys(consigli).length : 0);
   if (_titCache.key === key) return _titCache.sig;
-  _titCache.sig = getTitolaritaSignals();
+  const sig = getTitolaritaSignals();
+  // Il consenso delle fonti riempie SOLO dove le news tacciono: un pallino
+  // gia acceso da una notizia vera non va mai sovrascritto da un parere.
+  if (consigli) {
+    [...players.starters, ...players.bench].forEach(p => {
+      if (!p || !p.name || p.name === '---' || p.isEmpty) return;
+      if (sig[p.name]) return;
+      const c = consigli[rosterNormalizeName(p.name)];
+      if (c && c.tit) sig[p.name] = { status: c.tit, source: 'consenso fonti' };
+    });
+  }
+  _titCache.sig = sig;
   _titCache.key = key;
   return _titCache.sig;
 }
