@@ -8524,7 +8524,11 @@ function loadCache() {
     if (!raw) return null;
     const p = JSON.parse(raw);
     if ((Date.now() - p.ts) / 60000 > NEWS_CACHE_TTL_MIN) return null;
-    return p.items.map(i => ({...i, date: new Date(i.date)}));
+    // Stesso taglio stagionale del fetch: una card vecchia gia in cache non
+    // deve sopravvivere nei minuti di validita della cache.
+    const daStagione = inizioStagione();
+    return p.items.map(i => ({...i, date: new Date(i.date)}))
+      .filter(i => isNaN(i.date) || i.date >= daStagione);
   } catch(e) { return null; }
 }
 function getDemoNews() {
@@ -8552,9 +8556,18 @@ async function loadNews(forceRefresh = false) {
   }
   await fetchAllFeeds(false);
 }
+// Inizio della stagione in corso: 1 luglio. Da luglio in poi e l'anno
+// corrente, da gennaio a giugno e quello precedente. Si ricalcola da solo
+// a ogni stagione, niente date fisse nel codice.
+function inizioStagione() {
+  const oggi = new Date();
+  const anno = oggi.getMonth() >= 6 ? oggi.getFullYear() : oggi.getFullYear() - 1;
+  return new Date(anno, 6, 1);
+}
 async function fetchAllFeeds(silent) {
   const btn = document.getElementById('newsRefreshBtn');
   if (btn) btn.classList.add('loading');
+  const daStagione = inizioStagione();
   const results = await Promise.allSettled(
     NEWS_FEEDS.map(async feed => {
       const xml = await fetchFeed(feed.url);
@@ -8567,9 +8580,15 @@ async function fetchAllFeeds(silent) {
     if (r.status === 'fulfilled' && r.value.items.length > 0) {
       // Si prende solo la quota della fonte: le notizie sono gia ordinate
       // dalla piu recente, quindi tagliare in coda scarta le piu vecchie.
+      // PRIMA della quota si buttano gli articoli della stagione passata:
+      // certi feed rigurgitano pezzi vecchi di mesi (visto un 31 marzo in
+      // card), e non devono nemmeno consumare posti. Una data illeggibile
+      // pero non condanna l'articolo: si tiene.
       const prioritaria = !!r.value.feed.priority;
       allItems = allItems.concat(
-        r.value.items.slice(0, r.value.feed.quota || 10)
+        r.value.items
+          .filter(it => !(it.date instanceof Date) || isNaN(it.date) || it.date >= daStagione)
+          .slice(0, r.value.feed.quota || 10)
           .map(it => Object.assign({}, it, { priority: prioritaria }))
       );
       loadedSources.push(r.value.feed);
