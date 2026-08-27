@@ -5062,7 +5062,9 @@ function loadLeaguesRegistry() {
   // ACTIVE_LEAGUE_KEY è globale al browser (non legata all'account loggato):
   // senza questo, uno stato locale residuo da test come utente normale sullo
   // stesso dispositivo resterebbe agganciato alla sessione admin. Il registro
-  // leghe resta intatto: l'admin può comunque passarci a mano dal selettore.
+  // leghe qui resta intatto solo perché all'avvio is_admin può non essere
+  // ancora noto: la bonifica completa (registro + chiavi namespaced) avviene
+  // a profilo caricato, e il push leghe per l'admin è comunque spento.
   if (currentUser && currentUser.is_admin) {
     activeLeagueId = null;
     return;
@@ -9142,6 +9144,20 @@ async function loadUserProfile(authUser) {
         localStorage.removeItem(ROSTER_STORAGE_KEY);
         localStorage.removeItem(ROSTER_STORAGE_KEY + '__admin_empty');
       } catch (e) {}
+      // Stessa bonifica per il REGISTRO leghe: l'admin non possiede leghe
+      // (le prove da giocatore si fanno con l'account giocatore), quindi
+      // qualunque lega registrata qui e un residuo di test. Insieme al push
+      // spento per l'admin, chiude la via con cui la lega demo risorgeva.
+      try {
+        (leagues || []).forEach(lg => {
+          Object.keys(localStorage)
+            .filter(k => k.endsWith('__' + lg.id))
+            .forEach(k => localStorage.removeItem(k));
+        });
+        leagues = [];
+        localStorage.removeItem(LEAGUES_REGISTRY_KEY);
+        localStorage.removeItem(ACTIVE_LEAGUE_KEY);
+      } catch (e) {}
     }
     if (typeof renderDashboardManage === 'function') renderDashboardManage();
     
@@ -10011,6 +10027,14 @@ function readLocalLeaguesSnapshot() {
 // Sync di TUTTO lo stato locale al cloud (upsert)
 async function pushAllToCloud() {
   if (!supabaseClient || !currentUser) return false;
+  // L'admin non possiede leghe: qualunque cosa ci sia nel registro locale e
+  // residuo di test, e spingerla ricrea nel cloud dati appena bonificati
+  // (successo: la lega demo risorta subito dopo la pulizia SQL).
+  if (currentUser.is_admin) {
+    cloudSyncState.status = 'synced';
+    updateCloudIndicator();
+    return true;
+  }
   // Un push su rete mobile dura piu del debounce da 1.5s: due push
   // intrecciati facevano delete+insert incrociati sulle rose → righe
   // duplicate nel cloud → rosa rifiutata al pull sull'altro dispositivo.
@@ -12651,7 +12675,7 @@ function renderAdminUsersList() {
           <div class="admin-user-email">${escapeHtmlSafe(u.email || '')}</div>
         </div>
         <div class="admin-user-stats">
-          <div><span class="num">${u.leagues_count || 0}</span> legh${(u.leagues_count || 0) === 1 ? 'a' : 'e'} · <span class="num">${u.players_count || 0}</span> giocator${(u.players_count || 0) === 1 ? 'e' : 'i'}${etichettaPiano(u)}</div>
+          <div><span class="num">${u.leagues_count || 0}</span> ${(u.leagues_count || 0) === 1 ? 'lega' : 'leghe'} · <span class="num">${u.players_count || 0}</span> giocator${(u.players_count || 0) === 1 ? 'e' : 'i'}${etichettaPiano(u)}</div>
           <div>signup ${signup} · ${lastSeen}</div>
         </div>
         <div class="admin-user-actions" onclick="event.stopPropagation()">${actions}</div>
@@ -12690,7 +12714,7 @@ async function toggleAdminUserDrawer(userId, ev) {
       return;
     }
     drawer.innerHTML = `
-      <div class="admin-user-drawer-title">📋 ${data.length} legh${data.length === 1 ? 'a' : 'e'}</div>
+      <div class="admin-user-drawer-title">📋 ${data.length} ${data.length === 1 ? 'lega' : 'leghe'}</div>
       ${data.map(l => {
         const date = l.created_at ? new Date(l.created_at).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}) : '—';
         return `
