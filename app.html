@@ -10586,6 +10586,13 @@ async function refreshAdminListino() {
     adminState.activeListino = (data || []).find(r => r.is_active) || null;
     renderAdminListinoCurrent();
     renderAdminListinoHistory();
+    // Stato del bottone derivato dai dati, cosi sopravvive ai ricaricamenti:
+    // niente file in attesa = niente da pubblicare = spento e opaco.
+    const pubBtn = document.getElementById('adminListinoPublishBtn');
+    if (pubBtn && !adminState.pendingListino) {
+      pubBtn.disabled = true;
+      pubBtn.classList.add('fatto');
+    }
     // Badge tab
     const badge = document.getElementById('adminListinoBadge');
     if (badge) badge.textContent = adminState.activeListino ? adminState.activeListino.players_count : '—';
@@ -10767,17 +10774,23 @@ function finalizePendingListino(players, fileName) {
     return;
   }
   // Auto-popolo il nome versione se vuoto
+  // L'etichetta si rigenera SEMPRE con data e ora: il vecchio default al
+  // mese ('Agosto') restava uguale per settimane e Sacha non distingueva
+  // piu una versione dall'altra. Resta modificabile prima di pubblicare.
   const verInput = document.getElementById('adminListinoVersion');
-  if (verInput && !verInput.value.trim()) {
+  if (verInput) {
     const now = new Date();
-    const month = now.toLocaleString('it-IT', { month: 'long' });
-    verInput.value = `Listone ${now.getFullYear()}-${(now.getFullYear()+1).toString().slice(-2)} · ${month.charAt(0).toUpperCase()+month.slice(1)}`;
+    const gg = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    verInput.value = 'Listone ' + gg + ' · ' + hh;
+    adminState.etichettaAuto = verInput.value;
   }
   adminState.pendingListino = { players, fileName };
   document.getElementById('adminListinoIcon').textContent = '✅';
   document.getElementById('adminListinoUploadTitle').textContent = players.length + ' GIOCATORI PRONTI';
   document.getElementById('adminListinoUploadDesc').textContent = fileName + ' — Clicca "PUBBLICA" per renderlo attivo';
-  document.getElementById('adminListinoPublishBtn').disabled = false;
+  const pubB = document.getElementById('adminListinoPublishBtn');
+  pubB.disabled = false; pubB.classList.remove('fatto');
   showAdminFeedback('Listino', `✓ ${players.length} giocatori pronti per la pubblicazione.`, 'success');
 }
 
@@ -10792,7 +10805,12 @@ function resetAdminListinoZone() {
 
 async function publishGlobalListino() {
   if (!adminState.pendingListino) return;
-  const version = document.getElementById('adminListinoVersion').value.trim() || `Listone ${new Date().toISOString().slice(0,10)}`;
+  let version = document.getElementById('adminListinoVersion').value.trim();
+  if (!version || version === adminState.etichettaAuto) {
+    const now = new Date();
+    version = 'Listone ' + String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0')
+      + ' · ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  }
   let players = adminState.pendingListino.players;
   // Rigoristi e forma vivono DENTRO i giocatori della riga attiva: una
   // versione nuova parte dal file appena caricato, che non li ha, e
@@ -10853,12 +10871,25 @@ async function publishGlobalListino() {
     segnaFatto('adminListinoPublishBtn');
     resetAdminListinoZone();
     await refreshAdminListino();
+    // Storico essenziale: l'attiva piu le ultime 3 precedenti. Le piu
+    // vecchie si eliminano da sole — la rete di sicurezza resta, la lista
+    // non cresce all'infinito.
+    try {
+      const daPotare = (adminState.historyListino || []).slice(4);
+      for (const v of daPotare) {
+        await client.from('global_listino').delete().eq('id', v.id);
+      }
+      if (daPotare.length > 0) await refreshAdminListino();
+    } catch (e) { console.warn('[Admin] potatura versioni:', e.message); }
     // Applica subito anche all'admin
     try { await applyGlobalListinoAndCalendar(); } catch(e) {}
   } catch(e) {
     showAdminFeedback('Listino', '❌ Errore: ' + (e.message || 'sconosciuto'), 'error');
   }
-  btn.disabled = false; btn.textContent = '🚀 PUBBLICA PER TUTTI GLI UTENTI';
+  // Riattivo solo se c'e ancora qualcosa da pubblicare: a pubblicazione
+  // riuscita il pending e vuoto e il bottone resta spento e opaco.
+  btn.disabled = !adminState.pendingListino;
+  btn.textContent = '🚀 PUBBLICA PER TUTTI GLI UTENTI';
 }
 
 // ============ VERIFICA LISTONE PUBBLICATO ============
