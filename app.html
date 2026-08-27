@@ -4487,7 +4487,7 @@
             Una riga per giocatore, formato <code>Squadra: Nome Giocatore</code> (es. <code>Inter: Lautaro Martinez</code>).
             Al salvataggio aggiorna il listone attivo; l'Oracle applica un bonus (+0.35) ai giocatori marcati.
           </p>
-          <textarea class="admin-field-input" id="adminRigoristiInput" oninput="modificheAdminNonSalvate = true" rows="8"
+          <textarea class="admin-field-input" id="adminRigoristiInput" oninput="segnaModificaRigoristi()" rows="8"
             style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
             placeholder="es. → Inter: Lautaro Martinez"></textarea>
           <div style="font-size:11px;color:var(--muted);margin:6px 0 12px" id="adminRigoristiCount"></div>
@@ -11039,8 +11039,26 @@ function renderRigoristiEditor() {
   const players = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
   const lines = players.filter(p => p.rigorista).map(p => (p.team || '') + ': ' + (p.name || ''));
   el.value = lines.join('\n');
+  // Il testo appena scritto E lo stato del cloud: e il riferimento per
+  // capire se c'e qualcosa da salvare. Bottone spento finche combaciano —
+  // stesso principio del PUBBLICA del listone, derivato dai dati.
+  adminState.rigoristiRiferimento = el.value;
+  const btn = document.getElementById('adminRigoristiSaveBtn');
+  if (btn) { btn.disabled = true; btn.classList.add('fatto'); }
   const countEl = document.getElementById('adminRigoristiCount');
   if (countEl) countEl.textContent = lines.length + ' rigorist' + (lines.length === 1 ? 'a' : 'i') + ' designat' + (lines.length === 1 ? 'o' : 'i');
+}
+
+// Ad ogni tasto: se il testo differisce dal cloud c'e da salvare (bottone
+// acceso), se torna identico non c'e piu niente da fare (spento e opaco).
+function segnaModificaRigoristi() {
+  const el = document.getElementById('adminRigoristiInput');
+  const btn = document.getElementById('adminRigoristiSaveBtn');
+  if (!el || !btn) return;
+  const cambiato = el.value !== (adminState.rigoristiRiferimento !== undefined ? adminState.rigoristiRiferimento : el.value);
+  btn.disabled = !cambiato;
+  btn.classList.toggle('fatto', !cambiato);
+  if (cambiato) modificheAdminNonSalvate = true;
 }
 
 // Estrae il "cognome" (ultima parola valida) di un nome, stessa euristica
