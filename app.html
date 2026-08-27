@@ -4548,7 +4548,7 @@
             Una riga per giocatore, formato <code>Squadra: Nome: fantavoto</code>
             (es. <code>Inter: Lautaro Martinez: 9.5</code>). Per lo stesso giocatore vince sul file.
           </p>
-          <textarea class="admin-field-input" id="adminVotiManualInput" rows="5"
+          <textarea class="admin-field-input" id="adminVotiManualInput" rows="5" onfocus="aggiornaAdminVotiCount()"
             style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
             placeholder="Inter: Lautaro Martinez: 9.5" oninput="aggiornaAdminVotiCount()"></textarea>
         </div>
@@ -4575,7 +4575,7 @@
             <input type="number" class="admin-field-input" id="adminConsigliGiornata" min="1" max="38"
               style="width:110px;font-family:'DM Mono',monospace;text-align:center">
           </div>
-          <textarea class="admin-field-input" id="adminConsigliInput" rows="7"
+          <textarea class="admin-field-input" id="adminConsigliInput" rows="7" onfocus="aggiornaAdminConsigliCount()"
             style="font-family:'DM Mono',monospace;font-size:13px;resize:vertical;line-height:1.6"
             placeholder="Inter: Lautaro Martinez: 1: T&#10;Roma: Dovbyk: 2&#10;Torino: Vlasic: 3: D"
             oninput="modificheAdminNonSalvate = true; aggiornaAdminConsigliCount()"></textarea>
@@ -11380,14 +11380,13 @@ async function publishGlobalConsigli() {
     let msg = `🎉 Consenso fonti G${num} pubblicato: ${count} giocatori.`;
     if (scarti.length) msg += ` ⚠️ Non riconosciuti: ${scarti.slice(0, 8).join(', ')}`;
     showAdminFeedback('Voti', msg, scarti.length ? 'info' : 'success');
-    // Il riquadro messaggi sta in cima alla scheda; questo blocco in fondo.
-    // L'esito va mostrato anche QUI, dove l'occhio sta guardando.
-    const eco = document.getElementById('adminConsigliCount');
-    if (eco) eco.textContent = msg;
     modificheAdminNonSalvate = false;
     const ta = document.getElementById('adminConsigliInput'); if (ta) ta.value = '';
-    aggiornaAdminConsigliCount();
     await refreshAdminConsigli();
+    // L'esito va mostrato anche QUI, dove l'occhio sta guardando — e per
+    // ULTIMO, altrimenti il ricalcolo del contatore lo sovrascrive subito.
+    const eco = document.getElementById('adminConsigliCount');
+    if (eco) eco.textContent = msg;
   } catch (e) {
     showAdminFeedback('Voti', '❌ Errore: ' + (e.message || 'sconosciuto') + ' — eseguito global_consigli_setup.sql?', 'error');
   }
