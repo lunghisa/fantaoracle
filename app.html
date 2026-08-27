@@ -12651,7 +12651,7 @@ function renderAdminUsersList() {
           <div class="admin-user-email">${escapeHtmlSafe(u.email || '')}</div>
         </div>
         <div class="admin-user-stats">
-          <div><span class="num">${u.leagues_count || 0}</span> leghe · <span class="num">${u.players_count || 0}</span> giocatori${etichettaPiano(u)}</div>
+          <div><span class="num">${u.leagues_count || 0}</span> legh${(u.leagues_count || 0) === 1 ? 'a' : 'e'} · <span class="num">${u.players_count || 0}</span> giocator${(u.players_count || 0) === 1 ? 'e' : 'i'}${etichettaPiano(u)}</div>
           <div>signup ${signup} · ${lastSeen}</div>
         </div>
         <div class="admin-user-actions" onclick="event.stopPropagation()">${actions}</div>
@@ -12690,7 +12690,7 @@ async function toggleAdminUserDrawer(userId, ev) {
       return;
     }
     drawer.innerHTML = `
-      <div class="admin-user-drawer-title">📋 ${data.length} leghe</div>
+      <div class="admin-user-drawer-title">📋 ${data.length} legh${data.length === 1 ? 'a' : 'e'}</div>
       ${data.map(l => {
         const date = l.created_at ? new Date(l.created_at).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}) : '—';
         return `
