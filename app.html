@@ -10037,9 +10037,19 @@ async function pushAllToCloudInterno() {
 
     const eliminateAltrove = [];
     for (const ll of localSnap) {
-      // Aveva un id cloud che non esiste piu: eliminata da un altro
-      // dispositivo. Re-inserirla per nome la farebbe RISORGERE ovunque.
-      if (ll.cloudId && !idsCloud.has(ll.cloudId)) { eliminateAltrove.push(ll.id); continue; }
+      // Id cloud che non esiste piu nel cloud DI QUESTO utente. Due casi
+      // opposti con lo stesso sintomo:
+      // - il cloud ha altre leghe → questa e stata eliminata da un altro
+      //   dispositivo: re-inserirla la farebbe risorgere ovunque. Via.
+      // - il cloud e VUOTO → quasi certamente e un ALTRO account sullo
+      //   stesso browser (l'id apparteneva al precedente): la lega e
+      //   legittima e va adottata come nuova, non cancellata. Senza questa
+      //   distinzione, il primo login di un secondo account si mangiava la
+      //   lega locale in silenzio.
+      if (ll.cloudId && !idsCloud.has(ll.cloudId)) {
+        if (idsCloud.size > 0) { eliminateAltrove.push(ll.id); continue; }
+        ll.cloudId = null; // account diverso: si riparte pulito e si adotta
+      }
       let cloudId = (ll.cloudId && idsCloud.has(ll.cloudId)) ? ll.cloudId : null;
       // Lega che non ha ancora un id cloud (registro vecchio, o creata qui e
       // mai spinta). Se nel cloud c'e UNA sola riga con questo nome la
