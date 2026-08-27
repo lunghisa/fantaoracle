@@ -6501,16 +6501,16 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   // leggono a vicenda, e il fattore va tenuto sotto controllo con
   // l'accuracy prima di fidarsene di piu. La fascia 2 (pareri misti)
   // non sposta niente.
+  // Scelta di prodotto (27/8): il consenso NON si mostra ai fantallenatori
+  // — niente riga nei fattori, niente pallino con quella fonte. Alimenta il
+  // numero e basta: e un ingrediente della previsione, non un consiglio da
+  // esporre. Resta leggibile via API (il motore gira nel browser), ma
+  // l'interfaccia non lo nomina.
   const consigli = consigliGiornataCorrente();
   const consiglio = consigli ? consigli[rosterNormalizeName(p.name)] : null;
   if (consiglio) {
-    if (consiglio.fascia === 1) {
-      exp += 0.3;
-      factors.push('💡 consenso fonti: prima fascia (+0.3)');
-    } else if (consiglio.fascia === 3) {
-      exp -= 0.3;
-      factors.push('💡 consenso fonti: sconsigliato (−0.3)');
-    }
+    if (consiglio.fascia === 1) exp += 0.3;
+    else if (consiglio.fascia === 3) exp -= 0.3;
   }
 
   exp = Math.max(4, Math.min(9.5, exp));
@@ -13328,23 +13328,14 @@ function getTitolaritaSignals() {
 // Memo leggero: ricalcola solo se cambiano news o dimensione rosa
 let _titCache = { sig: {}, key: null };
 function titolaritaSignals() {
-  const consigli = consigliGiornataCorrente();
   const key = (newsState.lastUpdate ? newsState.lastUpdate.getTime() : 0)
-    + '|' + (players.starters.length + players.bench.length)
-    + '|' + (consigli ? Object.keys(consigli).length : 0);
+    + '|' + (players.starters.length + players.bench.length);
   if (_titCache.key === key) return _titCache.sig;
-  const sig = getTitolaritaSignals();
-  // Il consenso delle fonti riempie SOLO dove le news tacciono: un pallino
-  // gia acceso da una notizia vera non va mai sovrascritto da un parere.
-  if (consigli) {
-    [...players.starters, ...players.bench].forEach(p => {
-      if (!p || !p.name || p.name === '---' || p.isEmpty) return;
-      if (sig[p.name]) return;
-      const c = consigli[rosterNormalizeName(p.name)];
-      if (c && c.tit) sig[p.name] = { status: c.tit, source: 'consenso fonti' };
-    });
-  }
-  _titCache.sig = sig;
+  // I pallini restano SOLO dalle news: il consenso fonti e un ingrediente
+  // interno della previsione e non deve firmarsi nell'interfaccia (scelta
+  // di prodotto del 27/8). Il campo tit del consenso resta nei dati per un
+  // eventuale ripensamento.
+  _titCache.sig = getTitolaritaSignals();
   _titCache.key = key;
   return _titCache.sig;
 }
