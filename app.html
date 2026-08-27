@@ -8423,13 +8423,14 @@ function parseFeed(xmlText, sourceName, sourceColor) {
       const pubDate = getXmlText(item, 'pubDate');
       let description = getXmlText(item, 'description') || getXmlText(item, 'content\\:encoded');
       const image = extractImage(item, description);
+      const cats = Array.from(item.querySelectorAll('category')).map(c => cleanText(c.textContent || ''));
       if (title && link) {
         items.push({
           title: cleanText(title), link: link.trim(),
           date: pubDate ? new Date(pubDate) : new Date(),
           description: cleanText(stripHtml(description)).substring(0, 200),
           image, source: sourceName, sourceColor,
-          category: categorizeNews(title, description),
+          category: categorizeNews(title, description, cats),
         });
       }
     });
@@ -8446,7 +8447,9 @@ function parseFeed(xmlText, sourceName, sourceColor) {
           description: cleanText(stripHtml(description)).substring(0, 200),
           image: extractImage(entry, description),
           source: sourceName, sourceColor,
-          category: categorizeNews(title, description),
+          // Atom: la categoria sta nell'attributo term, non nel testo
+          category: categorizeNews(title, description,
+            Array.from(entry.querySelectorAll('category')).map(c => c.getAttribute('term') || c.textContent || '')),
         });
       });
     }
@@ -8478,9 +8481,33 @@ function extractImage(item, descHtml) {
   if (descHtml) { const m = descHtml.match(/<img[^>]+src=["']([^"']+)["']/); if (m) return m[1]; }
   return null;
 }
-function categorizeNews(title, description) {
+// Prima le categorie NATIVE del feed, poi le parole chiave. Le fonti
+// fantacalcistiche taggano bene i loro articoli (SOS Fanta: Mercato,
+// Infortunati, Consigli...; FantaMaster: Calciomercato, Infortunati,
+// Squalificati, Probabili Formazioni...) e indovinare dal testo quando la
+// risposta e gia nel feed produce svarioni: "i dettagli dell'operazione"
+// (di mercato) finiva sotto INFORTUNI per colpa di /operaz/.
+function categoriaDaFeed(cats) {
+  // Un articolo porta piu tag insieme (es. "Ultime dai campi" + "Infortunati"):
+  // decide la PRIORITA nostra, non l'ordine dei tag nel feed. Gli infortuni
+  // vincono su tutto perche sono l'informazione che cambia una formazione.
+  const puliti = (cats || []).map(c => (c || '').toLowerCase().trim()).filter(Boolean);
+  const uno = re => puliti.some(c => re.test(c));
+  if (uno(/^(infortunati|infortuni|squalificati)$/)) return 'infortuni';
+  if (uno(/probabili formazioni|formazioni|ultime dai campi|chi schierare/)) return 'formazioni';
+  // "Top" NON c'e: su FantaMaster e un generico "in evidenza" appiccicato a
+  // meta degli articoli, mercato compreso — non vuol dire consigli.
+  if (uno(/^consigli|consigli fantacalcio|guida asta|^asta$/)) return 'consigli';
+  if (uno(/^calciomercato|^mercato$/)) return 'mercato';
+  return null;
+}
+function categorizeNews(title, description, cats) {
+  const nativa = categoriaDaFeed(cats);
+  if (nativa) return nativa;
   const text = ((title||'')+' '+(description||'')).toLowerCase();
-  if (/infortun|ko\b|salt(a|er)|out\b|stop\b|operaz|risent|lesion|stira|frattur|squalif/.test(text)) return 'infortuni';
+  // "operazione" da sola e quasi sempre mercato: per gli infortuni contano
+  // solo le forme chirurgiche esplicite (operato, operarsi, intervento).
+  if (/infortun|ko\b|salt(a|er)|out\b|stop\b|operat[oa]\b|operarsi|intervento chirurgic|risent|lesion|stira|frattur|squalif/.test(text)) return 'infortuni';
   if (/formazion|probabil|schierar|titolar|panchin|chi gioca|chi schierare/.test(text)) return 'formazioni';
   if (/consigl|top\s|flop\s|chi prend|chi scarta|trappolon|scommessa|sleeper|cap[io] dell|asta/.test(text)) return 'consigli';
   if (/mercato|trasferiment|acquist|cession|firma|rinnov|ufficial|colpo/.test(text)) return 'mercato';
