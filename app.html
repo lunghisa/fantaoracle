@@ -5427,6 +5427,11 @@ function saveRosterToStorage() {
   if (typeof scheduleCloudSync === 'function') scheduleCloudSync();
 }
 function loadRosterFromStorage() {
+  // Una rosa esiste solo dentro una lega. Senza lega attiva, nsKey ricade
+  // sulla chiave piatta di prima generazione — dove su qualche browser
+  // giace ancora la vecchia rosa demo salvata mesi fa: il codice l'aveva
+  // tolta, il salvataggio la resuscitava (visto sull'account admin).
+  if (!activeLeagueId) return false;
   try {
     const raw = localStorage.getItem(nsKey(ROSTER_STORAGE_KEY));
     if (!raw) return false;
@@ -9125,7 +9130,19 @@ async function loadUserProfile(authUser) {
     // L'admin non deve MAI avere una lega attiva: la regola sta in
     // loadLeaguesRegistry, ma quella gira all'avvio quando is_admin puo non
     // essere ancora noto. Si riapplica qui, a profilo caricato.
-    if (currentUser.is_admin) activeLeagueId = null;
+    if (currentUser.is_admin) {
+      activeLeagueId = null;
+      // Il boot puo aver caricato una rosa dalla chiave piatta prima che
+      // sapessimo di essere admin: si svuota e si ridisegna.
+      players.starters = []; players.bench = [];
+      try { renderField(); renderLists(); } catch (e) {}
+      // E le due chiavi orfane (piatta e admin_empty) si bonificano: non
+      // esiste piu nessun percorso legittimo che le scriva o le legga.
+      try {
+        localStorage.removeItem(ROSTER_STORAGE_KEY);
+        localStorage.removeItem(ROSTER_STORAGE_KEY + '__admin_empty');
+      } catch (e) {}
+    }
     if (typeof renderDashboardManage === 'function') renderDashboardManage();
     
     // Se il profilo non esiste ancora (primo login Google), lo crea ora
