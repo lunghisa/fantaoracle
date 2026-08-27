@@ -6413,7 +6413,9 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
       else if (oppAdj <= -0.12) factors.push('avversario ostico: ' + ctx.opponent);
     }
     homeAdj = ctx.home ? 0.15 : -0.15;
-    factors.push(ctx.home ? 'gioca in casa' : 'gioca in trasferta');
+    // L'avversario va SEMPRE nominato, non solo quando l'aggiustamento
+    // pesa: "contro chi gioca" e la prima cosa che un fantallenatore cerca.
+    factors.push((ctx.home ? '🏠 in casa vs ' : '✈️ in trasferta vs ') + ctx.opponent);
   } else {
     conf -= 5;
     factors.push('partita non trovata nel calendario');
@@ -13501,7 +13503,12 @@ function renderField() {
       token.dataset.starterIdx = currentFlatIdx;
       // Il ruolo non e piu scritto nel cerchio, quindi vive qui: chi passa
       // sopra o usa un lettore di schermo lo trova comunque.
-      token.title = `${roleLabel(role)} · fantamedia prevista ${score.toFixed(1)} — click per sostituire`;
+      let vsTok = '';
+      try {
+        const ctxTok = oracleMatchContext(p);
+        if (ctxTok) vsTok = (ctxTok.home ? ' · vs ' : ' · @ ') + ctxTok.opponent;
+      } catch (e) {}
+      token.title = `${roleLabel(role)} · fantamedia prevista ${score.toFixed(1)}${vsTok} — click per sostituire`;
       token.addEventListener('click', (ev) => {
         ev.stopPropagation();
         showPlayerDetail(p);
@@ -13940,6 +13947,15 @@ function showPlayerDetail(p) {
     doubt: '<span style="color:var(--gold);font-weight:600">ballottaggio</span>',
     out: '<span style="color:var(--red);font-weight:600">verso la panchina</span>',
   }[tsig.status] || '';
+  // La partita di giornata: sempre visibile sotto il nome, in piccolo.
+  let vsTxt = '';
+  try {
+    const ctx = oracleMatchContext(p);
+    if (ctx) {
+      vsTxt = '<span style="color:var(--oracle);font-weight:600">'
+        + (ctx.home ? 'vs ' : '@ ') + escapeHtml(ctx.opponent) + '</span>';
+    }
+  } catch (e) {}
   const stats = [];
   if (p.score) stats.push({ v: p.score.toFixed(1), l: 'FM', c: 'var(--gold)' });
   if (p.mv && p.mv > 0) stats.push({ v: p.mv.toFixed(1), l: 'MV', c: 'var(--text)' });
@@ -13956,7 +13972,7 @@ function showPlayerDetail(p) {
   }
   body.innerHTML = `
     <div class="pd-name">${escapeHtml(p.name)}</div>
-    <div class="pd-sub">${roleLabel(p.role)}${p.team ? ' · ' + escapeHtml(p.team) : ''}${titTxt ? ' · ' + titTxt : ''}</div>
+    <div class="pd-sub">${roleLabel(p.role)}${p.team ? ' · ' + escapeHtml(p.team) : ''}${vsTxt ? ' · ' + vsTxt : ''}${titTxt ? ' · ' + titTxt : ''}</div>
     ${stats.length ? `<div class="pd-stats">${stats.map(s => `<div class="pd-stat"><div class="v" style="color:${s.c}">${s.v}</div><div class="l">${s.l}</div></div>`).join('')}</div>` : ''}
     ${oracleHtml}
   `;
