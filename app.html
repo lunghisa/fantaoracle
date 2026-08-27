@@ -5243,10 +5243,10 @@ async function eliminaLegaDalCloud(lg) {
 }
 
 async function deleteLeague(leagueId) {
-  if (leagues.length <= 1) {
-    showToast('⚠️ Non puoi eliminare l\'unica lega');
-    return;
-  }
+  // Si puo eliminare anche l'ULTIMA lega: con l'onboarding a rosa vuota,
+  // restare senza leghe e uno stato legittimo (si torna all'inizio). Il
+  // vecchio divieto intrappolava chi aveva una sola lega sbagliata — la
+  // "La mia lega" fantasma senza cestino, vista sul secondo account.
   const lg = leagues.find(l => l.id === leagueId);
   if (!lg) return;
   if (!confirm(`Eliminare la lega "${lg.name}"? Verrà persa la rosa associata. (Il calendario resta.)`)) return;
@@ -5271,9 +5271,9 @@ async function deleteLeague(leagueId) {
    '_competizioni_v1', '_comp_attiva'].forEach(suffix => {
     try { localStorage.removeItem('fantaoracle' + suffix + '__' + leagueId); } catch(e) {}
   });
-  // Se era attiva, passa alla prima rimasta
+  // Se era attiva: passa alla prima rimasta, o a nessuna (onboarding)
   if (activeLeagueId === leagueId) {
-    activeLeagueId = leagues[0].id;
+    activeLeagueId = leagues.length > 0 ? leagues[0].id : null;
     saveActiveLeague();
     listone = { source:'builtin', uploadedName:null, uploadedDate:null, players:[], leagueDetected:false, leagueTeams:[], fuoriListaCount:0 };
     players.starters = []; players.bench = [];
@@ -5336,7 +5336,7 @@ function renderLeagueSwitcher() {
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(l.name)}</span>
         </button>
         <button onclick="renameLeague('${l.id}');event.stopPropagation()" title="Rinomina" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;font-size:11px">✎</button>
-        ${leagues.length > 1 ? `<button onclick="deleteLeague('${l.id}');event.stopPropagation()" title="Elimina" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;font-size:11px">×</button>` : ''}
+        <button onclick="deleteLeague('${l.id}');event.stopPropagation()" title="Elimina" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;font-size:11px">×</button>
       </div>
     `;
   }).join('');
@@ -13876,7 +13876,7 @@ function renderDashLeagues() {
           ${l.id === activeLeagueId ? '<span class="tag">ATTIVA</span>' : ''}
         </button>
         <button class="fo-btn fo-btn--icona" onclick="renameLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Rinomina la lega">✏️</button>
-        ${leagues.length > 1 ? `<button class="fo-btn fo-btn--icona" onclick="deleteLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Elimina la lega">🗑</button>` : ''}
+        <button class="fo-btn fo-btn--icona" onclick="deleteLeague('${escapeAttr(l.id)}');event.stopPropagation()" title="Elimina la lega">🗑</button>
       </div>
       ${rami}
     </div>`;
