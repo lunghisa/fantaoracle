@@ -4745,6 +4745,10 @@
          quella scheda all'admin non si mostra piu. -->
     <div class="admin-tools">
       <div class="admin-tools-title">STRUMENTI</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:10px">
+        Versione dell'app: <span id="buildStamp">—</span> ·
+        se piu vecchia dell'ultima modifica attesa, ricarica con ?v=<em>qualcosa</em>
+      </div>
       <button class="fo-btn fo-btn--fantasma" onclick="diagnosiLeghe()">confronta leghe locale e cloud</button>
       <div class="admin-tools-note">Mette in fila le leghe registrate in questo browser e quelle salvate nel cloud, con gli id veri. Serve se ricompaiono leghe che erano state eliminate.</div>
     </div>
@@ -10465,6 +10469,14 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') controllaVersioneApp();
 });
 controllaVersioneApp(); // memorizza l'etag di partenza
+// Data di pubblicazione di QUESTO file, dal server: risponde alla domanda
+// "che versione sto guardando?" senza aprire la console.
+try {
+  const bs = document.getElementById('buildStamp');
+  if (bs && document.lastModified) {
+    bs.textContent = new Date(document.lastModified).toLocaleString('it-CH');
+  }
+} catch (e) {}
 
 // L'app che va in secondo piano con una spinta in attesa: il debounce da
 // 1.5s non scatta piu se il telefono sospende la pagina, e le ultime
@@ -11151,6 +11163,10 @@ async function refreshAdminVoti() {
     if (error) throw error;
     renderAdminVotiHistory(data || []);
     try { await refreshAdminConsigli(); } catch (e) {}
+    // Il listone e appena arrivato: se l'admin ha gia scritto nelle caselle,
+    // i conteggi vanno rifatti — altrimenti restano a zero fino al prossimo
+    // tasto premuto, e sembrano rotti.
+    try { aggiornaAdminVotiCount(); aggiornaAdminConsigliCount(); } catch (e) {}
     const badge = document.getElementById('adminVotiBadge');
     if (badge) badge.textContent = (data || []).length || '—';
     // Giornata proposta: la prima non ancora pubblicata
