@@ -8487,27 +8487,35 @@ function extractImage(item, descHtml) {
 // Squalificati, Probabili Formazioni...) e indovinare dal testo quando la
 // risposta e gia nel feed produce svarioni: "i dettagli dell'operazione"
 // (di mercato) finiva sotto INFORTUNI per colpa di /operaz/.
-function categoriaDaFeed(cats) {
+// Parole che segnalano un infortunio/indisponibilita. "operazione" da sola
+// NON c'e: e quasi sempre mercato — contano solo le forme chirurgiche
+// esplicite (operato, operarsi, intervento) e i sintomi veri.
+const RE_KW_INFORTUNI = /infortun|indisponibil|squalif|ko\b|salt(a|er)|out\b|stop\b|operat[oa]\b|operarsi|intervento chirurgic|risent|lesion|stira|frattur|tempi di recupero|ai box|forfait|si ferma/;
+function categoriaDaFeed(cats, title) {
   // Un articolo porta piu tag insieme (es. "Ultime dai campi" + "Infortunati"):
-  // decide la PRIORITA nostra, non l'ordine dei tag nel feed. Gli infortuni
-  // vincono su tutto perche sono l'informazione che cambia una formazione.
+  // decide la PRIORITA nostra, non l'ordine dei tag nel feed.
   const puliti = (cats || []).map(c => (c || '').toLowerCase().trim()).filter(Boolean);
   const uno = re => puliti.some(c => re.test(c));
-  if (uno(/^(infortunati|infortuni|squalificati)$/)) return 'infortuni';
+  const tagInfortuni = uno(/^(infortunati|infortuni|squalificati)$|indisponibili/);
+  // SOS Fanta mette "Infortunati" anche sui pezzi-contenitore (giro dai
+  // campi, riassunti di mercato che citano un acciaccato di passaggio): il
+  // tag vince subito solo se il TITOLO parla davvero di infortuni.
+  // Altrimenti decidono gli altri tag, e il tag infortuni resta buono solo
+  // come ultima parola quando non c'e nient'altro.
+  if (tagInfortuni && RE_KW_INFORTUNI.test((title || '').toLowerCase())) return 'infortuni';
   if (uno(/probabili formazioni|formazioni|ultime dai campi|chi schierare/)) return 'formazioni';
   // "Top" NON c'e: su FantaMaster e un generico "in evidenza" appiccicato a
   // meta degli articoli, mercato compreso — non vuol dire consigli.
   if (uno(/^consigli|consigli fantacalcio|guida asta|^asta$/)) return 'consigli';
   if (uno(/^calciomercato|^mercato$/)) return 'mercato';
+  if (tagInfortuni) return 'infortuni';
   return null;
 }
 function categorizeNews(title, description, cats) {
-  const nativa = categoriaDaFeed(cats);
+  const nativa = categoriaDaFeed(cats, title);
   if (nativa) return nativa;
   const text = ((title||'')+' '+(description||'')).toLowerCase();
-  // "operazione" da sola e quasi sempre mercato: per gli infortuni contano
-  // solo le forme chirurgiche esplicite (operato, operarsi, intervento).
-  if (/infortun|ko\b|salt(a|er)|out\b|stop\b|operat[oa]\b|operarsi|intervento chirurgic|risent|lesion|stira|frattur|squalif/.test(text)) return 'infortuni';
+  if (RE_KW_INFORTUNI.test(text)) return 'infortuni';
   if (/formazion|probabil|schierar|titolar|panchin|chi gioca|chi schierare/.test(text)) return 'formazioni';
   if (/consigl|top\s|flop\s|chi prend|chi scarta|trappolon|scommessa|sleeper|cap[io] dell|asta/.test(text)) return 'consigli';
   if (/mercato|trasferiment|acquist|cession|firma|rinnov|ufficial|colpo/.test(text)) return 'mercato';
