@@ -8850,6 +8850,10 @@ function enterApp(ev) {
     sp.style.display = 'none';
     document.getElementById('app').classList.add('show');
     document.body.classList.add('app-ready');
+    // Solo ORA nav e barre hanno un'altezza misurabile: prima l'app era
+    // display:none e la misura veniva 0 (filtri news incollati a quota zero,
+    // nascosti dietro le barre).
+    if (typeof aggiornaAltezzaNav === 'function') aggiornaAltezzaNav();
     const ft = document.getElementById('app-footer'); if (ft) ft.style.display = 'block';
     loadLeaguesRegistry();
     loadListinoFromStorage();
@@ -10625,9 +10629,12 @@ function aggiornaAltezzaNav() {
   try {
     const nav = document.querySelector('nav');
     const barra = document.querySelector('.page-title-bar');
-    let h = nav ? Math.ceil(nav.getBoundingClientRect().height) : 60;
+    let h = nav ? Math.ceil(nav.getBoundingClientRect().height) : 0;
     if (barra) h += Math.ceil(barra.getBoundingClientRect().height);
-    document.documentElement.style.setProperty('--nav-h', h + 'px');
+    // App ancora nascosta (splash/login): le barre misurano 0. Non scrivere
+    // niente e lasciare il fallback CSS, altrimenti i filtri si incollano a
+    // quota zero dietro le barre.
+    if (h >= 30) document.documentElement.style.setProperty('--nav-h', h + 'px');
   } catch (e) {}
 }
 window.addEventListener('resize', aggiornaAltezzaNav);
