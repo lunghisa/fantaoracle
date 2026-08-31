@@ -2819,8 +2819,9 @@
   .news-filters {
     display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
     /* Resta in vista scendendo la pagina (collaudo utente 31/8): si aggancia
-       sotto la barra di navigazione, che e sticky a sua volta ed e alta 60px. */
-    position: sticky; top: calc(60px + env(safe-area-inset-top, 0px)); z-index: 50;
+       sotto la barra di navigazione. --nav-h e l'altezza VERA della nav,
+       misurata in JS: col valore fisso i filtri finivano mezzi nascosti. */
+    position: sticky; top: var(--nav-h, 60px); z-index: 50;
     background: rgba(10,7,20,0.92);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     padding: 10px 0;
@@ -10613,6 +10614,19 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') controllaVersioneApp();
 });
 controllaVersioneApp(); // memorizza l'etag di partenza
+
+// Altezza REALE della barra di navigazione → variabile CSS --nav-h, usata
+// dagli elementi sticky che si agganciano sotto di lei (filtri news). Il
+// valore fisso 60px non bastava: tra bordo e safe-area la nav e piu alta e
+// i filtri finivano mezzi nascosti dietro.
+function aggiornaAltezzaNav() {
+  try {
+    const nav = document.querySelector('nav');
+    if (nav) document.documentElement.style.setProperty('--nav-h', Math.ceil(nav.getBoundingClientRect().height) + 'px');
+  } catch (e) {}
+}
+window.addEventListener('resize', aggiornaAltezzaNav);
+aggiornaAltezzaNav();
 
 // ============ INSTALLAZIONE SU IPHONE ============
 // Su iOS la "versione app" e la PWA, ma il gesto Condividi → Aggiungi alla
