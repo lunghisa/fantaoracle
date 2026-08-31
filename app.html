@@ -2819,9 +2819,10 @@
   .news-filters {
     display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
     /* Resta in vista scendendo la pagina (collaudo utente 31/8): si aggancia
-       sotto la barra di navigazione. --nav-h e l'altezza VERA della nav,
-       misurata in JS: col valore fisso i filtri finivano mezzi nascosti. */
-    position: sticky; top: var(--nav-h, 60px); z-index: 50;
+       sotto le DUE barre sticky in alto (nav + barra titolo di pagina).
+       --nav-h e la loro altezza complessiva vera, misurata in JS. z-index
+       appena sotto la barra titolo (99), sopra le card. */
+    position: sticky; top: var(--nav-h, 96px); z-index: 98;
     background: rgba(10,7,20,0.92);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     padding: 10px 0;
@@ -10615,14 +10616,18 @@ document.addEventListener('visibilitychange', () => {
 });
 controllaVersioneApp(); // memorizza l'etag di partenza
 
-// Altezza REALE della barra di navigazione → variabile CSS --nav-h, usata
-// dagli elementi sticky che si agganciano sotto di lei (filtri news). Il
-// valore fisso 60px non bastava: tra bordo e safe-area la nav e piu alta e
-// i filtri finivano mezzi nascosti dietro.
+// Quota di aggancio per gli elementi sticky di pagina (filtri news):
+// l'altezza REALE di nav + page-title-bar, misurate sugli elementi veri.
+// In alto ci sono DUE barre sticky impilate — la nav e la barra sottile col
+// titolo di pagina — e i filtri devono agganciarsi sotto la seconda: il
+// valore fisso li faceva scivolare dietro.
 function aggiornaAltezzaNav() {
   try {
     const nav = document.querySelector('nav');
-    if (nav) document.documentElement.style.setProperty('--nav-h', Math.ceil(nav.getBoundingClientRect().height) + 'px');
+    const barra = document.querySelector('.page-title-bar');
+    let h = nav ? Math.ceil(nav.getBoundingClientRect().height) : 60;
+    if (barra) h += Math.ceil(barra.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--nav-h', h + 'px');
   } catch (e) {}
 }
 window.addEventListener('resize', aggiornaAltezzaNav);
