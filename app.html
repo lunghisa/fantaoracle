@@ -85,7 +85,13 @@
     background: radial-gradient(ellipse at 20% -10%, #1d1140, var(--bg) 60%) var(--bg);
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
-    min-height: 100vh; overflow-x: hidden;
+    min-height: 100vh;
+    /* clip e non hidden: taglia lo sbordo orizzontale uguale, ma NON
+       trasforma il body in contenitore di scroll — con hidden, in certi
+       browser, tutti i position:sticky della pagina smettevano di
+       funzionare (barre nav/filtri/admin che sparivano allo scroll).
+       La riga hidden resta come ripiego per i browser senza clip. */
+    overflow-x: hidden; overflow-x: clip;
     -webkit-text-size-adjust: 100%;
   }
   /* Quando attiva la bottom nav (mobile), aggiunge padding per non coprire contenuto */
@@ -1020,11 +1026,9 @@
     padding: 0;
     box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 100px rgba(245,197,66,0.05);
     display: flex; flex-direction: column;
-    /* Tutta la scheda deve stare SOTTO la testata (nav 60px + barra titolo):
-       se sfora, a scorrere e la pagina intera e le linguette spariscono.
-       Con questa altezza scorre solo il corpo, e linguette e intestazione
-       restano sempre in vista — richiesto da Sacha. */
-    max-height: calc(100vh - 132px);
+    /* Niente piu scroll interno con max-height: era fragile (dipendeva da
+       un'altezza stimata delle barre) e le linguette sparivano comunque.
+       Ora scorre la PAGINA e le linguette sono sticky, come i filtri news. */
   }
   .admin-header {
     padding: 22px 28px 18px;
@@ -1052,7 +1056,13 @@
     overflow-x: auto;
     border-bottom: 1px solid var(--border);
     -webkit-overflow-scrolling: touch;
-    flex-shrink: 0; /* mai schiacciati dal body (flex column con max-height) */
+    flex-shrink: 0;
+    /* Sempre in vista scendendo la pagina, come i filtri news: aggancio
+       sotto le due barre fisse (quota misurata in --nav-h). Sfondo pieno
+       nel tono della scheda, senno il contenuto si vede scorrere sotto. */
+    position: sticky; top: var(--nav-h, 96px); z-index: 60;
+    background: rgba(18,11,36,0.96);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
   /* Bottone che ha gia eseguito: opaco finche non cambia qualcosa nei
      form. E la certezza visiva del "l'ho gia caricato" — richiesta di
@@ -1097,9 +1107,7 @@
 
   .admin-body {
     padding: 24px 28px 28px;
-    overflow-y: auto;
-    flex: 1;
-    min-height: 0; /* permette lo scroll interno invece di gonfiare la card */
+    /* niente overflow interno: scorre la pagina, le linguette sono sticky */
   }
   .admin-section {
     display: none;
