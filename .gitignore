@@ -2,3 +2,7 @@
 node_modules
 .DS_Store
 *.log
+
+# Mai file di credenziali nel repo (è PUBBLICO)
+dati/Password*
+*.docx
