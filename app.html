@@ -11593,6 +11593,38 @@ async function publishGlobalVoti() {
     if (btn) { btn.disabled = false; btn.textContent = '🚀 PUBBLICA VOTI GIORNATA'; }
     return;
   }
+  // Guardia contro la pubblicazione monca. L'upsert qui sotto SOSTITUISCE
+  // l'intero blocco della giornata, non lo integra: chi scrive due righe
+  // manuali per correggere due voti e pubblica senza aver ricaricato l'xlsx
+  // manda in cloud una giornata da 2 voti al posto di 318, e gli altri 316
+  // spariscono per tutti. Non si vieta — un calo vero e possibile — ma si
+  // mette davanti il confronto coi voti gia pubblicati.
+  try {
+    const { data: giaPubblicati } = await client
+      .from('global_voti')
+      .select('players_count')
+      .eq('giornata', num)
+      .maybeSingle();
+    const prima = (giaPubblicati && giaPubblicati.players_count) || 0;
+    if (prima > 0 && count < prima * 0.9) {
+      const ok = confirm(
+        'Giornata ' + num + ': stai per pubblicare ' + count + ' voti al posto dei ' + prima + ' gia pubblicati.\n\n' +
+        'La pubblicazione SOSTITUISCE la giornata: ' + (prima - count) + ' voti verrebbero persi per tutti gli utenti.\n\n' +
+        'Se volevi correggere qualche voto, annulla: ricarica il file xlsx della giornata e aggiungi sopra le righe manuali, ' +
+        'che vincono sul file.\n\nPubblicare lo stesso?'
+      );
+      if (!ok) {
+        showAdminFeedback('Voti', 'Pubblicazione annullata: la giornata ' + num + ' resta con ' + prima + ' voti.', 'info');
+        if (btn) { btn.disabled = false; btn.textContent = '🚀 PUBBLICA VOTI GIORNATA'; }
+        return;
+      }
+    }
+  } catch (e) {
+    // La guardia e un aiuto, non un prerequisito: se la lettura non riesce
+    // (rete, permessi) si prosegue invece di bloccare una pubblicazione buona.
+    console.warn('[Admin] guardia conteggio voti non eseguita:', e);
+  }
+
   try {
     // upsert sulla giornata: ripubblicare corregge, non duplica
     const { error } = await client.from('global_voti').upsert({
