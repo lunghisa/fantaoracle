@@ -10972,6 +10972,12 @@ function parseListinoRows(lines, sep) {
   // Presenze (partite a voto): serve a pesare quanto è affidabile la
   // fantamedia — stessi criteri di colonna dell'upload personale di lega.
   const idxPgv = header.findIndex(h => h === 'pgv' || h === 'pg' || h.includes('partit') || h.includes('presenze'));
+  // Codice ufficiale Fantacalcio.it: colonna "Id" nel listone, "Cod." nel file
+  // voti. E lo stesso numero, quindi l'import dei voti puo abbinare per codice
+  // invece che per nome. Questo e il parser del pannello Admin, ed e quello che
+  // conta: il listone pubblicato per tutti passa DA QUI, non da
+  // parseListinoWithSheetJS (che serve l'upload personale di lega).
+  const idxCod = header.findIndex(h => h === 'id' || h === 'cod' || h === 'cod.' || h === 'codice');
   if (idxName === -1) throw new Error('Colonna "Nome" non trovata');
   const players = [];
   for (let i = headerRowIdx + 1; i < lines.length; i++) {
@@ -10981,6 +10987,7 @@ function parseListinoRows(lines, sep) {
     const r = idxRole >= 0 ? (cols[idxRole] || '').trim().toUpperCase().charAt(0) : 'C';
     players.push({
       name: nm.toUpperCase(),
+      codFanta: idxCod >= 0 ? (cols[idxCod] || '').trim() : '',
       role: ['P','D','C','A','T'].includes(r) ? r : 'C',
       team: idxTeam >= 0 ? (cols[idxTeam] || '').trim() : '',
       quotazione: idxQuot >= 0 ? parseFloat((cols[idxQuot]||'').toString().replace(',', '.')) || 0 : 0,
