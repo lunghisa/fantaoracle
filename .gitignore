@@ -6,3 +6,9 @@ node_modules
 # Mai file di credenziali nel repo (è PUBBLICO)
 dati/Password*
 *.docx
+
+# Mai export di rose di leghe reali nel repo (è PUBBLICO).
+# Per i test usa dati/esempio_rose_lega.xlsx, che è anonimo.
+dati/*rosters*.xlsx
+dati/*rose*.xlsx
+!dati/esempio_rose_lega.xlsx
