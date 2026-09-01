@@ -5981,6 +5981,14 @@ function parseListinoWithSheetJS(data, fileName, opts) {
     h => h.includes('giocator'),
     h => h.includes('player'),
   ]);
+  // Codice ufficiale Fantacalcio.it (colonna "Id" del listone, "Cod." nel file
+  // voti). E lo stesso numero nei due file: abbinare i voti su questo invece
+  // che sul nome elimina gli omonimi e i "(ambiguo)" scartati. Opzionale: i
+  // listoni gia pubblicati non ce l'hanno e l'abbinamento ricade sul nome.
+  const codIdx = findCol2([
+    h => h === 'id',
+    h => h === 'cod' || h === 'codice',
+  ]);
   // Preferisce ruolo Classic; fallback Mantra
   const roleIdx = findCol2([
     h => h === 'r',
@@ -6108,6 +6116,9 @@ function parseListinoWithSheetJS(data, fileName, opts) {
     
     parsed.push({
       id: 'u_' + i,
+      // NB: `id` sopra e un indice interno, non il codice Fantacalcio.
+      // Quello ufficiale sta in codFanta e serve ad abbinare i voti.
+      codFanta: codIdx >= 0 ? String(cells[codIdx] || '').trim() : '',
       name: name,
       role: role,
       team: team,
@@ -7321,8 +7332,10 @@ function oracleAccuracy() {
 function estraiVotiDaWorkbook(wb, giocatori) {
   const perChiave = {};
   const perCognome = {};
+  const perCodice = {};
   giocatori.forEach(g => {
     perChiave[g.key] = g;
+    if (g.cod) perCodice[g.cod] = g;
     const parti = (g.name || '').trim().split(/\s+/).filter(w => w.length > 2);
     const cognome = rosterNormalizeName(parti.length ? parti[parti.length - 1] : g.name);
     if (cognome.length >= 4) (perCognome[cognome] = perCognome[cognome] || []).push(g);
@@ -7345,6 +7358,8 @@ function estraiVotiDaWorkbook(wb, giocatori) {
       if (iNome < 0) continue;
       cols = {
         start: ri + 1, name: iNome,
+        cod: h.findIndex(c => c === 'cod.' || c === 'cod' || c === 'id' || c === 'codice'),
+        ruolo: h.findIndex(c => c === 'ruolo' || c === 'r'),
         fv: h.findIndex(c => c === 'fv' || c === 'fantavoto' || c === 'f.voto'),
         voto: h.findIndex(c => c === 'voto' || c === 'v'),
         gf: h.findIndex(c => c === 'gf' || c === 'g'), gs: h.findIndex(c => c === 'gs'),
@@ -7356,10 +7371,15 @@ function estraiVotiDaWorkbook(wb, giocatori) {
     }
 
     rows.forEach((row, ri) => {
-      let nameCell, fv = null;
+      let nameCell, fv = null, codCell = '';
       if (cols && ri >= cols.start) {
         nameCell = String(row[cols.name] || '').trim();
         if (!nameCell) return;
+        // Gli allenatori (Ruolo "ALL") hanno un voto ma non stanno nel listone:
+        // senza questo filtro sono 20 per foglio, 60 sui tre fogli del file
+        // ufficiale, e sommergono i non abbinati veri nell'elenco troncato.
+        if (cols.ruolo >= 0 && String(row[cols.ruolo] || '').trim().toUpperCase() === 'ALL') return;
+        if (cols.cod >= 0) codCell = String(row[cols.cod] || '').trim();
         if (cols.fv >= 0) {
           fv = num(row[cols.fv]);
         } else {
@@ -7386,7 +7406,11 @@ function estraiVotiDaWorkbook(wb, giocatori) {
       }
       if (!nameCell || fv == null || fv < 1 || fv > 20) return;
       const norm = rosterNormalizeName(nameCell);
-      let g = perChiave[norm] || null;                      // 1. nome esatto
+      // 0. codice ufficiale: esatto, niente omonimi. Funziona solo se il listone
+      //    attivo e stato importato con la colonna Id; altrimenti si scende ai
+      //    livelli per nome, che restano il comportamento di prima.
+      let g = (codCell && perCodice[codCell]) || null;
+      if (!g) g = perChiave[norm] || null;                  // 1. nome esatto
       if (!g) {
         const candidati = [];
         Object.keys(perCognome).forEach(c => {
@@ -7401,7 +7425,10 @@ function estraiVotiDaWorkbook(wb, giocatori) {
       }
     });
   });
-  return { trovati, nonAbbinati };
+  // Lo stesso giocatore compare sui tre fogli del file ufficiale
+  // (Fantacalcio/Statistico/Italia): senza dedup l'elenco dei non abbinati
+  // mostra tre volte lo stesso nome e satura il troncamento a 12.
+  return { trovati, nonAbbinati: Array.from(new Set(nonAbbinati)) };
 }
 // ============================================================
 // ORACLE DASHBOARD — render con dati reali dell'engine
@@ -11419,7 +11446,12 @@ function giocatoriListoneAdmin() {
   const players = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
   return players
     .filter(p => p && p.name)
-    .map(p => ({ key: rosterNormalizeName(p.name), name: p.name, team: p.team || '' }));
+    .map(p => ({
+      key: rosterNormalizeName(p.name),
+      cod: String(p.codFanta || '').trim(),
+      name: p.name,
+      team: p.team || '',
+    }));
 }
 
 async function refreshAdminVoti() {
