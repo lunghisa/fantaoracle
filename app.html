@@ -6500,9 +6500,16 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
     factors.push('ricalibrazione ' + (bias > 0 ? '+' : '') + bias.toFixed(1) + ' appresa da ' + oracleState.calib.samples + ' voti reali');
   }
 
-  // 4. ALLERTA INFORTUNIO dalle news real-time
+  // 4. INDISPONIBILITÀ: prima la fonte ufficiale (infermeria
+  // Fantacalcio.it), poi le news real-time come rete residua.
   let risk = null;
-  if (alerted.has(p.name)) {
+  const infermeria = infermeriaDi(p.name);
+  if (infermeria) {
+    exp -= infermeria.stato === 'squalificato' ? 2.0 : 1.5;
+    conf = Math.min(conf, 25);
+    risk = 'news infortunio'; // stessa corsia dei rischi gia gestiti a valle
+    factors.unshift('🚑 ' + infermeria.stato + ' (infermeria Fantacalcio.it)' + (infermeria.nota ? ' — ' + infermeria.nota.slice(0, 90) : ''));
+  } else if (alerted.has(p.name)) {
     exp -= 1.5;
     conf = Math.min(conf, 30);
     risk = 'news infortunio';
@@ -8889,6 +8896,12 @@ function enterApp(ev) {
     // display:none e la misura veniva 0 (filtri news incollati a quota zero,
     // nascosti dietro le barre).
     if (typeof aggiornaAltezzaNav === 'function') aggiornaAltezzaNav();
+    // Infermeria ufficiale in sottofondo; quando arriva, campo e liste si
+    // ridisegnano cosi le icone 🚑 compaiono senza aspettare un'azione.
+    caricaInfermeria().then(ok => {
+      if (!ok) return;
+      try { renderField(); renderLists(); } catch (e) {}
+    });
     const ft = document.getElementById('app-footer'); if (ft) ft.style.display = 'block';
     loadLeaguesRegistry();
     loadListinoFromStorage();
@@ -10651,7 +10664,14 @@ async function controllaVersioneApp() {
   } catch (e) {}
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') controllaVersioneApp();
+  if (document.visibilityState === 'visible') {
+    controllaVersioneApp();
+    // infermeria: il TTL interno evita richieste inutili; se torna roba
+    // fresca, le icone si aggiornano da sole.
+    if (typeof caricaInfermeria === 'function') caricaInfermeria().then(ok => {
+      if (ok) { try { renderField(); renderLists(); } catch (e) {} }
+    });
+  }
 });
 controllaVersioneApp(); // memorizza l'etag di partenza
 
@@ -13455,6 +13475,93 @@ function rosterNormalizeName(s) {
     .replace(/[^a-z0-9]/g, '');
 }
 
+// ============================================================
+// INFERMERIA UFFICIALE — indisponibili da Fantacalcio.it
+// ============================================================
+// Le news da sole non bastano: un utente aveva infortunati in rosa che
+// nessuna news recente citava, e l'app li dava per sani. La pagina
+// /indisponibili-serie-a di Fantacalcio.it e la fonte ufficiale: card per
+// squadra, colonne Infortunati e Squalificati, e — decisivo — gli STESSI
+// nomi brevi del listone ("Rovella", "Konè I."), quindi l'abbinamento e
+// esatto, senza euristiche sui cognomi.
+// Se il caricamento fallisce si degrada in silenzio: resta il
+// riconoscimento dalle news, com'era prima.
+const INFERMERIA_URL = 'https://www.fantacalcio.it/indisponibili-serie-a';
+const INFERMERIA_CACHE_KEY = 'fantaoracle_infermeria_v1';
+const INFERMERIA_TTL_MIN = 30;
+let infermeriaState = { map: {}, ts: 0, fonte: null };
+
+async function caricaInfermeria(forza) {
+  // cache di sessione: la pagina cambia poche volte al giorno
+  if (!forza) {
+    try {
+      const raw = sessionStorage.getItem(INFERMERIA_CACHE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if ((Date.now() - p.ts) / 60000 < INFERMERIA_TTL_MIN && p.map) {
+          infermeriaState = p; return true;
+        }
+      }
+    } catch (e) {}
+  }
+  let html = null;
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    try {
+      const resp = await fetchWithTimeout(CORS_PROXIES[i](INFERMERIA_URL), NEWS_FETCH_TIMEOUT_MS);
+      if (!resp.ok) continue;
+      const t = await resp.text();
+      if (t && t.includes('item-name') && t.includes('team-name')) { html = t; break; }
+    } catch (e) { continue; }
+  }
+  if (!html) return false;
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const map = {};
+    doc.querySelectorAll('.team-card').forEach(card => {
+      const teamEl = card.querySelector('.team-name');
+      const team = teamEl ? teamEl.textContent.trim() : '';
+      card.querySelectorAll('.col').forEach(col => {
+        const head = col.querySelector('header');
+        const etichetta = (head ? head.textContent : '').toLowerCase();
+        // i diffidati non sono indisponibili: si ignorano
+        const stato = /infortunat/.test(etichetta) ? 'infortunato'
+                    : /squalificat/.test(etichetta) ? 'squalificato' : null;
+        if (!stato) return;
+        col.querySelectorAll('li').forEach(li => {
+          const nomeEl = li.querySelector('.item-name');
+          if (!nomeEl) return;
+          const nome = nomeEl.textContent.trim();
+          const descEl = li.querySelector('.item-description');
+          const nota = descEl ? descEl.textContent.replace(/\s+/g, ' ').trim().slice(0, 220) : '';
+          const chiave = rosterNormalizeName(nome);
+          if (chiave) map[chiave] = { nome, team, stato, nota };
+        });
+      });
+    });
+    // Una pagina vera ha decine di indisponibili: 0 abbinati = markup
+    // cambiato, meglio tenere la cache vecchia che svuotare il segnale.
+    if (Object.keys(map).length < 5) return false;
+    infermeriaState = { map, ts: Date.now(), fonte: 'Fantacalcio.it' };
+    try { sessionStorage.setItem(INFERMERIA_CACHE_KEY, JSON.stringify(infermeriaState)); } catch (e) {}
+    console.log('[FantaOracle] infermeria: ' + Object.keys(map).length + ' indisponibili da Fantacalcio.it');
+    return true;
+  } catch (e) { return false; }
+}
+
+// Stato infermeria di un giocatore della rosa (o null). Match esatto sul
+// nome normalizzato: listone e infermeria usano la stessa forma breve.
+function infermeriaDi(nomeGiocatore) {
+  const k = rosterNormalizeName(nomeGiocatore);
+  return (k && infermeriaState.map && infermeriaState.map[k]) || null;
+}
+
+// Titolo per l'icona 🚑: la nota ufficiale se c'e, altrimenti il generico.
+function motivoIndisponibile(nomeGiocatore) {
+  const inf = infermeriaDi(nomeGiocatore);
+  if (inf) return (inf.stato === 'squalificato' ? 'Squalificato — ' : 'Infortunato — ') + (inf.nota || 'fonte Fantacalcio.it');
+  return 'Menzionato in news infortunio';
+}
+
 // Restituisce array di {newsItem, mentionedPlayers, isAlert}
 // dove mentionedPlayers è la lista di giocatori della rosa citati nella news
 function findRosterMentions() {
@@ -13645,6 +13752,11 @@ function getAlertedPlayerNames() {
   const alerted = new Set();
   matches.forEach(m => {
     if (m.isAlert) m.players.forEach(p => alerted.add(p.name));
+  });
+  // Infermeria ufficiale: si somma alle news. E la fonte piu affidabile —
+  // copre anche chi e ai box da settimane e non fa piu notizia.
+  [...players.starters, ...players.bench].forEach(p => {
+    if (p && p.name && p.name !== '---' && infermeriaDi(p.name)) alerted.add(p.name);
   });
   return alerted;
 }
@@ -13917,7 +14029,7 @@ function renderField() {
           ${score.toFixed(1)}
           ${currentMode === 'oracle' ? '<div class="token-flag token-flag--oracle pulse">⚡</div>' : ''}
           ${titDot}
-          ${isAlerted ? '<div class="token-flag token-flag--inj" title="Menzionato in news infortunio">🚑</div>' : ''}
+          ${isAlerted ? `<div class="token-flag token-flag--inj" title="${escapeAttr(motivoIndisponibile(p.name))}">🚑</div>` : ''}
           ${p.rigorista ? '<div class="token-rig" title="Rigorista designato">RIG</div>' : ''}
         </div>
         <div class="token-name" style="${isAlerted?'color:#ff8a8a;font-weight:700':''}">${escapeHtml(p.name)}</div>
