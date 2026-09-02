@@ -11289,7 +11289,11 @@ function renderRigoristiEditor() {
   const el = document.getElementById('adminRigoristiInput');
   if (!el) return;
   const players = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
-  const lines = players.filter(p => p.rigorista).map(p => (p.team || '') + ': ' + (p.name || ''));
+  // Ordine alfabetico per squadra (richiesta di Sacha): a colpo d'occhio si
+  // vede quale squadra manca — l'ordine del listone lo nascondeva.
+  const lines = players.filter(p => p.rigorista)
+    .sort((a, b) => (a.team || '').localeCompare(b.team || '', 'it') || (a.name || '').localeCompare(b.name || '', 'it'))
+    .map(p => (p.team || '') + ': ' + (p.name || ''));
   el.value = lines.join('\n');
   // Il testo appena scritto E lo stato del cloud: e il riferimento per
   // capire se c'e qualcosa da salvare. Bottone spento finche combaciano —
