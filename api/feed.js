@@ -19,6 +19,8 @@ const ALLOWED_HOSTS = [
   // Fantacalcistiche
   'fantamaster.it', 'www.fantamaster.it',
   'sosfanta.com', 'www.sosfanta.com',
+  // Lista infermeria (indisponibili-serie-a): stessi nomi brevi del listone
+  'fantacalcio.it', 'www.fantacalcio.it',
   // Generaliste
   'gazzetta.it', 'www.gazzetta.it',
   'calciomercato.it', 'www.calciomercato.it',
