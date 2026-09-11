@@ -117,8 +117,27 @@
       for(let i=at;i<=items.length-(n-picks.length);i++)walk(i+1,picks.concat(items[i]));}
     walk(0,[]);return out;
   }
+  // Copertura panchina: quante assenze ATTESE per ruolo (somma delle
+  // probabilita di forfait dei titolari) restano senza un cambio sano.
+  // Un buco atteso costa come uno slot vuoto: giocare in 10 azzera il voto.
+  // Nato da un caso vero (set 2026): 8 C di cui 4 infortunati, il 3-4-3
+  // schierava i 4 sani lasciando in panchina solo infortunati — bastava un
+  // forfait per restare in 10, e il confronto moduli non lo vedeva.
+  function copertura(picks,by,riskOf) {
+    if(typeof riskOf!=='function')return null;
+    const perRuolo={};let penalita=0;
+    ['P','D','C','A'].forEach(r=>{
+      const rischio=x=>Math.max(0,Math.min(1,riskOf(x)||0));
+      const attese=picks.filter(x=>x.role===r).reduce((s,x)=>s+rischio(x),0);
+      const sani=by[r].filter(x=>!picks.includes(x)&&rischio(x)<0.5).length;
+      const scoperte=Math.max(0,attese-sani);
+      perRuolo[r]={sani,attese,scoperte};
+      penalita+=scoperte*6;
+    });
+    return {perRuolo,penalita};
+  }
   // Solo P e D interagiscono col modificatore: esploriamo le loro combinazioni.
-  function best(roster,formations,rules,scoreOf,voteOf) {
+  function best(roster,formations,rules,scoreOf,voteOf,riskOf) {
     const by={P:[],D:[],C:[],A:[]};roster.forEach(p=>{if(by[p.role])by[p.role].push(p);});
     Object.values(by).forEach(a=>a.sort((x,y)=>scoreOf(y)-scoreOf(x)));
     let result=null;
@@ -134,8 +153,9 @@
         const formTotal=picks.reduce((s,x)=>s+scoreOf(x),0);
         // Preferenza limitata a 0.9 sull'intera formazione, separata dalla forma.
         const leagueAdjustment=Math.min(0.9,modifier.bonus*0.15);
-        const total=formTotal-(needed-filled)*6+leagueAdjustment;
-        if(!result||total>result.total)result={modulo,total,formTotal,leagueAdjustment,filled,needed,picks,modifier};
+        const cov=copertura(picks,by,riskOf);
+        const total=formTotal-(needed-filled)*6+leagueAdjustment-(cov?cov.penalita:0);
+        if(!result||total>result.total)result={modulo,total,formTotal,leagueAdjustment,filled,needed,picks,modifier,copertura:cov};
       }
     }
     return result;

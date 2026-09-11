@@ -6980,9 +6980,20 @@ function oracleBestFormation() {
   if (!all.length) return null;
   const alerted = getAlertedPlayerNames();
   const unavailable = p => alerted.has(p.name) || infermeriaDi(p.name) || (p._oracleInfo && p._oracleInfo.titStatus === 'out');
+  // Probabilita di forfait, per la copertura panchina del confronto moduli:
+  // infortunati/squalificati sono fuori quasi certi, per gli altri decide la
+  // percentuale delle probabili ufficiali; le news come ripiego.
+  const riskOf = p => {
+    if (infermeriaDi(p.name) || alerted.has(p.name)) return 1;
+    const prob = (typeof probabiliDi === 'function') ? probabiliDi(p.name) : null;
+    if (prob) return Math.max(0.05, (100 - prob.perc) / 100);
+    const t = p._oracleInfo && p._oracleInfo.titStatus;
+    return t === 'out' ? 0.7 : t === 'doubt' ? 0.35 : 0.12;
+  };
   return FantaLeagueRules.best(all, formations, activeLeagueRules(),
     p => (p.oracle || p.score || 0) * (unavailable(p) ? 0.5 : 1),
-    p => unavailable(p) ? null : leagueExpectedVote(p));
+    p => unavailable(p) ? null : leagueExpectedVote(p),
+    riskOf);
 }
 
 // ============================================================
@@ -7916,6 +7927,22 @@ function renderOracleRisky() {
   }).join('');
 }
 
+// Riga sulla copertura panchina del modulo scelto. Anche il modulo MIGLIORE
+// puo restare scoperto (quando la rosa non offre alternative): in quel caso
+// l'avviso dice al fantallenatore dove rischia di giocare in 10.
+const NOMI_RUOLO_LUNGHI = { P: 'in porta', D: 'in difesa', C: 'a centrocampo', A: 'in attacco' };
+function coperturaPanchinaHtml(best) {
+  if (!best || !best.copertura || !best.copertura.perRuolo) return '';
+  const scoperti = Object.entries(best.copertura.perRuolo)
+    .filter(([r, c]) => c.scoperte >= 0.25)
+    .map(([r, c]) => (NOMI_RUOLO_LUNGHI[r] || r) + (c.sani === 0 ? ' (nessun cambio sano)' : ''));
+  if (scoperti.length === 0) {
+    return '<div style="font-size:11px;color:var(--muted);margin-top:6px">🛡 Panchina considerata nel confronto moduli: cambi sani in ogni ruolo</div>';
+  }
+  return '<div style="font-size:12px;color:var(--orange);margin-top:8px;line-height:1.5">⚠️ Copertura corta ' + scoperti.join(', ')
+    + ': con un forfait rischi di restare in 10.<br><span style="font-size:11px;opacity:.85">Oracle lo ha già pesato scegliendo il modulo — questa è la migliore delle opzioni possibili con la rosa attuale.</span></div>';
+}
+
 function renderModuloChoice(best) {
   const manual = !!oracleState.manualModulo;
   const same = manual && currentModulo === best.modulo;
@@ -7950,6 +7977,7 @@ function renderOracleModulo() {
     + '<div class="modulo-status" style="justify-content:center">' + choiceStatus + '</div>'
     + '<div style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--oracle);margin-top:10px">' + (best.formTotal / Math.max(1,best.filled)).toFixed(1) + '/10 · indice medio orientativo</div>'
     + (rules ? '<div style="font-size:12px;color:var(--gold);margin-top:8px">Difesa secondo le medie storiche: ' + (best.modifier.available ? '+' + best.modifier.bonus : 'non disponibile: mancano voti base') + '</div>' : '')
+    + coperturaPanchinaHtml(best)
     + (missing > 0 ? '<div style="font-size:11px;color:var(--orange);margin-top:6px">⚠️ Mancano ' + missing + ' giocatori per completarlo</div>' : '')
     + '<button class="oracle-cta gold" style="margin-top:16px;width:100%" onclick="applyOracleFormation()">APPLICA AL CAMPO →</button>'
     + '<div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">Oracle confronta gli indici dei giocatori e considera il modificatore come preferenza contenuta nella scelta del modulo. Non è una previsione di fantapunti.</div>'

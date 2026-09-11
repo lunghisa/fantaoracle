@@ -167,3 +167,26 @@ test('Il render aggiorna campo e liste dopo il ricalcolo; snapshot dopo allineam
  assert(fn('setModulo').includes('oracleState.manualModulo = m'));
  assert(fn('oracleLoadState').includes('saved.manualModulo'));
 });
+
+test('Copertura panchina: 4 C sani su 8 non devono finire tutti titolari',()=>{
+ // Caso vero (Fagioli, set 2026): 8 C di cui 4 infortunati. Senza copertura
+ // il 3-4-3 schiera i 4 C sani e in panchina restano solo infortunati:
+ // un forfait = in 10. Il confronto moduli deve preferire un modulo a 3 C
+ // che lascia un cambio sano, a parita quasi totale di indici.
+ const mk=(role,s,inj)=>({role,s,inj:!!inj});
+ const roster=[mk('P',6),mk('P',6),
+  ...Array.from({length:8},()=>mk('D',6)),
+  ...Array.from({length:4},()=>mk('C',7)),      // sani
+  ...Array.from({length:4},()=>mk('C',3.5,1)),  // infortunati
+  ...Array.from({length:6},()=>mk('A',6.5))];
+ const scoreOf=p=>p.s, voteOf=()=>null, riskOf=p=>p.inj?1:0.12;
+ const senza=R.best(roster,formations,rules,scoreOf,voteOf);
+ assert.equal(senza.modulo,'3-4-3');            // ieri: vinceva la somma pura
+ const con=R.best(roster,formations,rules,scoreOf,voteOf,riskOf);
+ assert.equal(con.modulo,'4-3-3');              // oggi: un C sano resta in panchina
+ assert.ok(con.copertura.perRuolo.C.sani>=1);
+ // E l'avviso ha i dati per dire DOVE si rischia: nel 3-4-3 il C e scoperto.
+ const forzato=R.best(roster,{'3-4-3':formations['3-4-3']},{...rules,modules:['3-4-3']},scoreOf,voteOf,riskOf);
+ assert.ok(forzato.copertura.perRuolo.C.scoperte>0.25);
+ assert.equal(forzato.copertura.perRuolo.C.sani,0);
+});
