@@ -56,7 +56,7 @@
     --orange: #ff8c42;
     --purple: #c77dff;
     --text: #efe9ff;
-    --muted: #8b7bb5;
+    --muted: #aa9bc9;
     /* Colori dei ruoli: erano ripetuti a mano in 10 punti del codice, e in
      uno divergevano (#3d9bff/#e63946 invece di #4dabf7/#ee4444), quindi lo
      stesso giocatore cambiava sfumatura a seconda di dove arrivavano i dati. */
@@ -2170,7 +2170,7 @@
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.95);
     display: flex; align-items: center; justify-content: center;
-    /* Dentro il cerchio c'e la fantamedia prevista, non la lettera del
+    /* Dentro il cerchio c'e la indice Oracle orientativo, non la lettera del
        ruolo: il ruolo lo dicono gia il colore e la riga in cui sta il
        giocatore, mentre il numero e quello per cui si guarda il campo. */
     font-family: 'DM Mono', monospace;
@@ -3688,6 +3688,211 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+
+  /* Revisione leggibilità: identità viola/oro, superfici e controlli coerenti. */
+  :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 4px;
+  }
+  .nav-tab { min-height: 44px; font-size: 14px; }
+  .card, .stat-card {
+    background: linear-gradient(150deg, #1c1435, var(--surface));
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  }
+  .stat-card .label { font-size: 12px; line-height: 1.5; }
+  .stat-card .sub { font-size: 13px; line-height: 1.5; }
+  .import-box p { font-size: 14px; line-height: 1.6; }
+  .toast { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; pointer-events: none; }
+  .toast.success { background: #112a24; color: #80e4a6; }
+  .toast.error { background: #321727; color: #ff9caa; }
+  .toast.warning { background: #30231c; color: #ffd18a; }
+  @media (max-width: 699px) {
+    input, select, textarea { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  .token-fixture {
+    display: flex; flex-direction: column; align-items: center;
+    width: 100%; margin-top: 4px; padding: 3px 2px;
+    border-radius: 5px; background: rgba(5, 9, 18, .82);
+    color: #e7e9f2; font-size: 12px; line-height: 1.35; text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .token-fixture strong { color: #fff; font-weight: 800; }
+  .fixture-team { display: inline-flex; align-items: baseline; max-width: 100%; vertical-align: bottom; white-space: nowrap; }
+  .fixture-team strong, .fixture-team-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .fixture-home { flex-shrink: 0; }
+  .fixture-opponent { display: inline-flex; align-items: baseline; gap: 3px; max-width: 100%; white-space: nowrap; overflow-wrap: normal; }
+  .fixture-opponent .fixture-team { min-width: 0; }
+  .pli-info { flex: 1; min-width: 0; }
+  .pli-info .pli-name { font-size: 14px; }
+  .player-list-item.bench { opacity: 1; }
+  @media (max-width: 699px) {
+    .field-sidebar { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+  }
+  .pli-fixture { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 3px; overflow-wrap: anywhere; }
+  .pli-fixture strong { color: var(--text); font-weight: 800; }
+  .field { min-height: 650px; }
+  @media (max-width: 560px) {
+    .player-row { padding-inline: 2%; gap: 3px; }
+    .player-token:hover { transform: translateY(var(--sposta, 0px)); }
+    .player-row[data-affollata] .token-name { font-size: 12px; --nome-largo: 100%; }
+  }
+
+</style>
+<style>
+#fieldWrap .modulo-btn.oracle-choice { color:var(--oracle); border-color:var(--oracle); background:rgba(167,139,250,.12); }
+#fieldWrap .modulo-btn.manual-choice { color:var(--gold); border-color:var(--gold); background:rgba(233,201,120,.12); }
+.modulo-status { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 14px; font-size:12px; line-height:1.5; }
+.modulo-tag { display:inline-block; padding:5px 9px; border:1px solid currentColor; border-radius:8px; overflow-wrap:anywhere; }
+.modulo-tag.oracle-tag { color:var(--oracle); background:rgba(167,139,250,.08); }
+.modulo-tag.manual-tag { color:var(--gold); background:rgba(233,201,120,.08); }
+</style>
+
+<style>
+/* Oracle Pro — shared palette and tactical workspace. */
+:root {
+  --bg:#09090f; --surface:#13111e; --surface2:#1b1729;
+  --border:rgba(194,181,229,.14); --oracle:#b697ef;
+  --gold:#e9c978; --gold2:#d4ac50; --text:#f3f0f9; --muted:#aaa2bc;
+}
+body { background:radial-gradient(ellipse at 85% 0%,#24173a 0,transparent 42%) var(--bg); }
+body::before { opacity:.2; }
+.page { max-width:1240px; padding:30px 32px; }
+.card,.stat-card { background:linear-gradient(145deg,#181422,#121019); border-color:var(--border); box-shadow:0 8px 28px #0002; border-radius:18px; }
+.card-title { color:var(--text); letter-spacing:1px; font-size:22px; }
+.pro-header { display:flex; justify-content:space-between; align-items:center; gap:24px; padding:8px 0 30px; }
+.pro-eyebrow,.pro-small-label,.pro-section-heading>span { font:500 12px 'DM Mono',monospace; letter-spacing:2px; color:var(--muted); }
+.pro-eyebrow { display:flex; align-items:center; gap:10px; }
+.pro-live { width:6px; height:6px; border-radius:50%; background:var(--gold); box-shadow:0 0 12px #e9c97866; }
+.pro-divider { color:#655974; margin-inline:6px; }
+.pro-header h2 { font:400 clamp(42px,5vw,64px)/1.05 'Bebas Neue',sans-serif; letter-spacing:1px; margin:12px 0 8px; }
+.pro-header h2 span { color:var(--gold); }
+.pro-header p { color:var(--muted); font-size:14px; }
+.pro-header p strong { color:var(--text); }
+.pro-actions { display:flex; gap:10px; align-items:center; }
+.oracle-cta { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:48px; border-radius:10px; font:600 14px 'DM Sans',sans-serif; letter-spacing:.1px; padding:12px 20px; }
+.oracle-cta .ico { width:18px; height:18px; }
+.oracle-cta.gold { background:linear-gradient(115deg,#f1d897,#dfbb65); color:#211908; box-shadow:0 5px 20px #dfbb6515,inset 0 1px #fff5; }
+.oracle-cta.gold>span { font-size:23px; margin-left:15px; }
+.oracle-cta.ghost { color:var(--text); background:#181420; border-color:var(--border); }
+.field-container { gap:22px; align-items:flex-start; margin-bottom:30px; }
+.field-wrap { max-width:none; min-width:0; flex:1.7 1 0; padding:22px; background:linear-gradient(145deg,#1f1830,#110e1b); border:1px solid #bb9fe22d; border-radius:22px; box-shadow:0 20px 60px #0003; }
+.field-header { padding:0 0 18px; border:0; align-items:center; }
+.field-header-title { color:var(--text); font:400 32px 'Bebas Neue',sans-serif; letter-spacing:1px; }
+.pro-small-label { display:block; font-size:11px; letter-spacing:1.5px; margin-bottom:6px; color:#9585ad; }
+.field-modulo-tag { color:var(--gold); border:1px solid #e9c97840; background:#e9c97808; padding:8px 14px; font:500 17px 'DM Mono',monospace; border-radius:8px; }
+.mode-explain { border:0!important; background:transparent!important; padding:0 0 14px; color:var(--muted); font-size:12px; line-height:1.6; }
+.modulo-bar { background:#0a08124d; border:1px solid var(--border); border-radius:10px; padding:9px; margin-bottom:16px; gap:8px; }
+.modulo-bar-label { display:none; }
+.modulo-selector { display:flex; gap:4px; flex-wrap:wrap; width:100%; }
+.modulo-btn { flex:1; min-width:48px; min-height:36px; padding:6px; font:500 12px 'DM Mono',monospace; letter-spacing:0; border:1px solid transparent; border-radius:6px; }
+.modulo-btn.active { color:var(--gold); border-color:#e9c97845; background:#e9c97812; }
+.field,.oracle-active .field { padding-top:0; height:650px; min-height:650px; border-radius:12px; background:repeating-linear-gradient(0deg,transparent 0,transparent 80px,#ffffff02 80px,#ffffff02 160px),radial-gradient(ellipse at 50% 50%,#2b1d40,#171121 76%); box-shadow:inset 0 0 70px #0004; border:1px solid #b697ef26; animation:none; --arco:18px; }
+.oracle-active .field::before { display:none; }
+.field-line,.oracle-active .field-line { background:#bfa4e438; box-shadow:none; animation:none; }
+.field-line.circle,.oracle-active .field-line.circle { border-color:#bfa4e438; background:transparent; box-shadow:none; }
+.field-line.center-dot,.oracle-active .field-line.center-dot { background:#bfa4e450; box-shadow:none; }
+.player-row { padding-inline:3%; gap:5px; }
+.token-circle,.oracle-active .token-circle { border-radius:16px; border:1px solid #fff2; border-top:3px solid var(--player-accent,var(--oracle)); background:linear-gradient(150deg,#332740,#16101f); color:var(--text); text-shadow:none; font-size:calc(var(--token) * .36); box-shadow:0 6px 15px #0005,inset 0 1px #ffffff08; }
+.token-circle.role-P { --player-accent:#e2a25e; }
+.token-circle.role-D { --player-accent:#92c987; }
+.token-circle.role-C { --player-accent:#7cb8e3; }
+.token-circle.role-A { --player-accent:#e28f9b; }
+.token-circle.empty { background:transparent; border:1px dashed #ffffff40; }
+.token-flag--oracle { display:none; }
+.token-rig { font-size:10px; background:var(--gold); box-shadow:none; bottom:-5px; right:-4px; border-radius:4px; }
+.token-name,.oracle-active .token-name { font-size:14px; font-weight:600; letter-spacing:0; text-shadow:0 2px 4px #000a; max-width:100%; margin-top:9px; }
+.token-fixture { border-radius:6px; background:#0d0916a6; padding:5px 2px; color:#bcb3cb; line-height:1.4; }
+.token-fixture strong { color:#f0eaf8; }
+.fixture-home { color:var(--gold); font-size:11px; }
+.player-token:hover { transform:translateY(calc(var(--sposta,0px) - 3px)); }
+.role-legend { border:0; padding:12px 0 0; gap:12px; }
+.role-legend-dot { width:6px; height:6px; box-shadow:none; }
+.field-sidebar { flex:1 1 0; min-width:300px; max-width:380px; position:static; max-height:none; overflow:visible; gap:16px; grid-template-columns:minmax(0,1fr); }
+.field-sidebar>.card { padding:20px 16px; }
+.field-sidebar .card-title { font-size:24px; letter-spacing:1px; padding-bottom:14px; margin-bottom:10px; border-bottom:1px solid var(--border); }
+.pro-title-dot { height:7px; width:7px; border-radius:50%; background:var(--oracle); }
+.player-list-item { padding:11px 8px; margin:0; background:transparent; border:0; border-bottom:1px solid #ffffff09; border-radius:0; gap:9px; }
+.player-list-item.bench,.player-list-item.starter { border-left:0; }
+.player-list-item:hover { background:#b697ef09; border-color:var(--border); }
+.pli-role { width:24px; height:24px; border-radius:6px; font-size:12px; }
+.pli-name { font-size:14px; }
+.pli-score { font-size:16px; }
+.pli-oracle { font-size:12px; }
+.pli-fixture { font-size:12px; }
+.autobench-btn { min-height:42px; margin-top:16px; border-radius:8px; font-size:12px; }
+.pro-analysis { margin-top:34px; }
+.pro-section-heading { display:flex; align-items:baseline; gap:18px; padding:8px 0 22px; }
+.pro-section-heading h3 { font:400 32px 'Bebas Neue',sans-serif; letter-spacing:.5px; color:var(--text); }
+.oracle-picks-grid { gap:12px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+.oracle-pick-card { border-radius:12px; background:linear-gradient(130deg,#241a33,#181220); border-color:#b697ef24; padding:20px; }
+.oracle-pick-rank { font-size:40px; color:#b697ef22; }
+.oracle-pick-name { font-size:30px; margin-block:10px; }
+.oracle-pick-reason { font-size:13px; line-height:1.6; font-style:normal; }
+.oracle-pick-stat-label { font-size:11px; letter-spacing:.6px; }
+.oracle-pick-stat-value { font-size:20px; }
+.pro-details { margin-top:16px; }
+.pro-details summary { font-size:16px; font-weight:600; cursor:pointer; padding:4px 0; }
+.pro-details summary::marker { color:var(--gold); }
+.pro-details summary>span { font-size:13px; color:var(--muted); font-weight:400; margin-left:12px; }
+.pro-details[open] summary { margin-bottom:22px; }
+.pro-method p { font-size:14px; color:var(--muted); line-height:1.7; max-width:780px; margin-top:12px; }
+#oracleHeroStats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-bottom:24px; }
+.oracle-hero-stat { text-align:left; padding-left:16px; border-left:1px solid var(--border); min-width:0; }
+.oracle-hero-stat .ohs-val { font-size:42px; }
+#oracleHeroStats>div:last-child:not(.oracle-hero-stat) { grid-column:1/-1; }
+.bottom-nav { background:#100d19f5; border-top:1px solid #b697ef25; backdrop-filter:blur(20px); }
+.bottom-nav-tab .bn-orb { background:#241930; box-shadow:none; border:1px solid #b697ef40; }
+.bottom-nav-tab.bn-oracle.active .bn-orb { background:var(--gold); color:#231a0c; box-shadow:0 0 16px #e9c97820; }
+@media (min-width:900px) { .field-wrap { flex:1.7 1 0; max-width:none; } .field-sidebar { flex:1 1 0; min-width:300px; } }
+@media (max-width:899px) {
+  .pro-header { align-items:flex-start; } .pro-actions { flex-direction:column-reverse; align-items:stretch; }
+  .field-container { flex-wrap:wrap; } .field-wrap { flex-basis:100%; } .field-sidebar { flex-basis:100%; max-width:none; grid-template-columns:1fr; }
+}
+@media (max-width:699px) {
+  .page { padding:22px 14px; }
+  .pro-header { flex-direction:column; gap:18px; padding-bottom:22px; }
+  .pro-header h2 { font-size:46px; }
+  .pro-actions { flex-direction:row-reverse; width:100%; gap:8px; }
+  .pro-actions .oracle-cta { flex:1; padding:11px 9px; font-size:12px; min-width:0; }
+  .pro-actions .oracle-cta.gold>span { margin-left:2px; }
+  .pro-actions .ico { display:none; }
+  .field-wrap { padding:14px 10px; border-radius:16px; }
+  .field-header { padding:0 5px 14px; }
+  .field-header-title { font-size:28px; }
+  .mode-explain { font-size:12px; padding-inline:5px; }
+  .modulo-bar { padding:6px; }
+  .modulo-selector { gap:3px; }
+  .modulo-btn { min-width:38px; font-size:11px; padding:4px; }
+  .field { --token:46px; --arco:14px; }
+  .player-row { padding-inline:2%; gap:3px; }
+  .token-circle { border-radius:12px; }
+  .token-name,.player-row[data-affollata] .token-name { font-size:12px; }
+  .token-fixture { font-size:12px; }
+  .pro-section-heading { display:block; }
+  .pro-section-heading h3 { margin-top:8px; }
+  .oracle-picks-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .oracle-pick-card { padding:13px 10px; }
+  .oracle-pick-name { font-size:24px; }
+  .oracle-pick-stats { flex-wrap:wrap; }
+  .oracle-pick-stat { min-width:48px; }
+  .oracle-pick-stat-value { font-size:17px; }
+  .pro-details summary>span { display:block; margin:8px 0 0; }
+  #oracleHeroStats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .pro-eyebrow { font-size:11px; }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .oracle-cta,.token-circle { transition:transform .18s ease,box-shadow .18s ease; }
+  .oracle-cta.gold:hover { transform:translateY(-2px); box-shadow:0 8px 25px #e9c97826; }
+}
 </style>
 </head>
 <body class="has-bottom-nav">
@@ -4011,6 +4216,11 @@
   </div>
 
   <div class="page active" id="page-dashboard">
+    <div id="firstLeagueGuide" style="display:none;padding:20px;margin-bottom:20px;border:1px solid var(--oracle);border-radius:14px;background:var(--surface)">
+      <h2 style="margin:0 0 10px">La tua prima formazione, in tre passi</h2>
+      <p>1. Esporta la rosa della lega da Leghe Fantacalcio.<br>2. Carica il file qui sotto e scegli la tua squadra.<br>3. Apri Oracle: valuta il consiglio e riporta la formazione su Leghe Fantacalcio.</p>
+      <p style="font-size:12px;color:var(--muted)">Oracle segnala quali regole della tua lega sono già verificate e quando usa impostazioni standard.</p>
+    </div>
     <!-- GESTIONE: leghe · prova · piani (roadmap punto 2) -->
     <div class="dash-manage-grid">
       <div class="card mng-card mng-card--compatta">
@@ -4081,7 +4291,7 @@
       <div style="text-align:center;padding:8px 0 20px">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,5vw,38px);letter-spacing:3px;background:linear-gradient(90deg,var(--oracle),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1">SCHIERA. TU VINCI.</div>
         <div style="font-size:15px;color:var(--muted);margin-top:8px;line-height:1.6;max-width:560px;margin-left:auto;margin-right:auto">
-          FantaOracle è il copilota che analizza la tua rosa, prevede i punteggi della prossima giornata, segnala titolarità e infortuni in tempo reale e ti dice la strategia giusta contro l'avversario di turno.
+          FantaOracle analizza la tua rosa, l’andamento dei giocatori e il calendario per consigliarti la formazione. Integra le notizie disponibili su titolarità e infortuni: l’indice Oracle esprime una valutazione, non un punteggio garantito.
         </div>
       </div>
       <div class="oracle-soon-features" style="margin-bottom:0">
@@ -4178,7 +4388,7 @@
         <span style="font-size:11px;color:var(--muted);letter-spacing:0.5px">.xlsx · .xls · .csv</span>
         <input type="file" id="listinoUploadInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleListinoUpload(event)">
         <input type="file" id="calendarioUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCalendarioUpload(event)">
-        <input type="file" id="competizioneUploadInput" accept=".xlsx,.xls" style="display:none" onchange="handleCompetizioneUpload(event)">
+        <input type="file" id="competizioneUploadInput" accept=".xlsx,.xls" multiple style="display:none" onchange="handleCompetizioneUpload(event)">
       </div>
       <!-- Una riga per lega, coi suoi calendari a fianco e il bottone per
            aggiungerne: il caricamento dei calendari e per-lega, quindi il
@@ -4213,68 +4423,25 @@
   </div>
 
   <div class="page" id="page-ai">
-    <!-- ORACLE ENGINE v1 — dashboard reale -->
-    <div class="oracle-dash-hero">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:18px;position:relative">
-        <div style="flex:1;min-width:240px">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-            <div class="oracle-soon-tag">⚡ ATTIVO · ENGINE V1</div>
-            <div class="oracle-soon-tag" title="L'Oracle ragiona con le regole del fantacalcio Classic. Il supporto Mantra arriverà più avanti.">⚽ MODALITÀ CLASSIC</div>
-          </div>
-          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,6vw,52px);letter-spacing:5px;background:linear-gradient(90deg,var(--oracle),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin:0">ORACLE ENGINE</h2>
-          <p style="color:var(--muted);font-size:13px;margin-top:8px;line-height:1.6">
-            Previsioni per la <strong style="color:var(--oracle)">giornata <span id="oracleGiornata">—</span></strong> ·
-            fantamedia reale + forma + forza avversario + casa/trasferta.
-            Regole <strong style="color:var(--text)">Classic</strong> (il Mantra arriverà più avanti).
-            Si <strong style="color:var(--gold)">auto-corregge</strong> da solo: dopo ogni giornata riceve i voti ufficiali e ricalibra le previsioni.
-          </p>
-          <p style="color:var(--muted);font-size:13px;margin-top:10px;line-height:1.55;opacity:.85;border-left:2px solid var(--border);padding-left:10px">
-            Sono <strong>stime statistiche, non garanzie</strong>. Nessun modello prevede
-            una partita di calcio: l'Oracle sbaglia, e continuerà a sbagliare.
-            La formazione la scegli tu, e la responsabilità della scelta resta tua.
-          </p>
-        </div>
-        <div style="display:flex;gap:18px;flex-wrap:wrap" id="oracleHeroStats"></div>
+    <header class="pro-header">
+      <div>
+        <div class="pro-eyebrow"><span class="pro-live"></span> FANTAORACLE <span class="pro-divider">/</span> CLASSIC</div>
+        <h2>La tua <span>formazione.</span></h2>
+        <p>Giornata <strong id="oracleGiornata">—</strong> <span class="pro-divider">/</span> Ogni scelta conta.</p>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;position:relative">
-        <button class="oracle-cta" onclick="oracleRunAndRender()">⚡ CALCOLA PREVISIONI</button>
-        <button class="oracle-cta gold" onclick="applyOracleFormation()">🔮 SCHIERA ORACLE</button>
+      <div class="pro-actions">
+        <button class="oracle-cta ghost" onclick="oracleRunAndRender()"><svg class="ico"><use href="#ico-orb"/></svg> Aggiorna previsioni</button>
+        <button class="oracle-cta gold" onclick="applyOracleFormation()">Schiera Oracle <span aria-hidden="true">↗</span></button>
       </div>
-    </div>
+    </header>
+
+    <div id="oracleRulesPanel" style="margin-bottom:18px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:13px;line-height:1.6"></div>
 
     <!-- Stato vuoto: rosa mancante -->
     <div id="oracleEmptyState" style="display:none;text-align:center;padding:48px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:12px;color:var(--muted)">
       <div style="font-size:42px;margin-bottom:10px">🔮</div>
       <div style="font-size:15px;line-height:1.7">L'Oracolo ha bisogno della tua rosa per vedere il futuro.<br>
       <span style="font-size:13px">Vai in <strong style="color:var(--gold)">Dashboard</strong> e carica il file della tua lega.</span></div>
-    </div>
-
-    <div id="oracleBody">
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-title">🏆 TOP PICKS — CHI SCHIERARE</div>
-        <div class="oracle-picks-grid" id="oraclePicksGrid"></div>
-      </div>
-
-      <div class="two-col" style="margin-bottom:16px">
-        <div class="card">
-          <div class="card-title">⚠️ SLOT RISCHIOSI</div>
-          <div class="oracle-risky-list" id="oracleRiskyList"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">📐 MODULO CONSIGLIATO</div>
-          <div id="oracleModuloBox"></div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-title">⚔️ SCONTRO DIRETTO — STRATEGIA</div>
-        <div id="oracleH2HBox"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">📈 AUTO-CORREZIONE & ACCURACY</div>
-        <div id="oracleHistoryBox"></div>
-      </div>
     </div>
 
     <!-- ============ IL CAMPO — dentro Oracle ============
@@ -4300,7 +4467,7 @@
     <div class="field-container">
       <div class="field-wrap" id="fieldWrap">
         <div class="field-header">
-          <div class="field-header-title">SCHIERAMENTO</div>
+          <div class="field-header-title"><span class="pro-small-label">01 / CAMPO</span>Il tuo undici</div>
           <div class="field-modulo-tag" id="moduloLabel">4-3-3</div>
         </div>
 
@@ -4320,9 +4487,11 @@
             <button class="modulo-btn" onclick="setModulo('3-4-3', this)">3-4-3</button>
             <button class="modulo-btn" onclick="setModulo('5-3-2', this)">5-3-2</button>
             <button class="modulo-btn" onclick="setModulo('5-4-1', this)">5-4-1</button>
+            <button id="premierModulo523" class="modulo-btn" style="display:none" onclick="setModulo('5-2-3',this)">5-2-3</button>
           </div>
         </div>
 
+        <div id="moduloChoiceStatus" class="modulo-status" aria-live="polite"></div>
         <div class="field" id="campo">
           <!-- bordi -->
           <div class="field-line h" style="top:0"></div>
@@ -4364,7 +4533,7 @@
       </div>
       <div class="field-sidebar">
         <div class="card">
-          <div class="card-title">PANCHINA</div>
+          <div class="card-title"><span class="pro-title-dot"></span> Panchina</div>
           <div id="benchList"></div>
           <button class="autobench-btn" id="autoBenchBtn" onclick="autoBenchInjured()" title="Sposta in panchina i titolari infortunati o dati verso la panchina dalle news">
             <svg class="ico"><use href="#ico-medic"/></svg> PANCHINA AUTO RISCHI
@@ -4398,6 +4567,42 @@
         </div>
       </div>
     </div>
+
+    <div id="oracleBody" class="pro-analysis">
+      <div class="pro-section-heading"><span>02 / ANALISI</span><h3>Le scelte, spiegate.</h3></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Giocatori da seguire</div>
+        <div class="oracle-picks-grid" id="oraclePicksGrid"></div>
+      </div>
+
+      <div class="two-col" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-title">Da valutare</div>
+          <div class="oracle-risky-list" id="oracleRiskyList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Il modulo consigliato</div>
+          <div id="oracleModuloBox"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Il tuo prossimo avversario</div>
+        <div id="oracleH2HBox"></div>
+      </div>
+
+      <details class="card pro-details">
+        <summary>Storico admin <span>La base dell’andamento</span></summary>
+        <div id="oracleHeroStats"></div>
+        <div id="oracleHistoryBox"></div>
+      </details>
+      <details class="card pro-details pro-method">
+        <summary>Come leggere le previsioni</summary>
+        <p>Gli indici combinano andamento, avversario e fattore casa/trasferta. I voti Fantacalcio caricati dall’admin aggiornano la stessa base per tutte le leghe. Non sono punteggi futuri.</p>
+        <p>Il motore usa le regole Classic; Mantra non è ancora supportato. Le previsioni sono stime statistiche, non garanzie: la scelta finale resta tua.</p>
+      </details>
+    </div>
+
 
     <!-- Tutta la rosa, non solo gli undici e la panchina sparsi in due
          posti: qui si vede quello che si ha, reparto per reparto. -->
@@ -4560,7 +4765,7 @@
         <div class="admin-feedback" id="adminVotiFeedback"></div>
         <p class="section-desc">
           I fantavoti della giornata, caricati una volta e pubblicati per tutti: ogni utente
-          li riceve al prossimo caricamento e l'Oracle si ricalibra da solo sui suoi giocatori.
+          li riceve al prossimo caricamento e l’Oracle aggiorna l’andamento dei suoi giocatori.
           Lo storico resta qui sotto — e nell'app di ogni utente alimenta forma e accuracy.
         </p>
         <div class="admin-field">
@@ -4793,16 +4998,17 @@
 
 <!-- ROSTER EDITOR (legacy) -->
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <footer id="app-footer" style="display:none;text-align:center;padding:24px 16px 32px;color:var(--muted);font-size:11px;letter-spacing:1.5px;font-family:'DM Mono',monospace;border-top:1px solid var(--border);margin-top:40px">
-  FANTAORACLE · v0.7 BETA · MADE BY <span style="color:var(--gold)">SCHLNGH</span> · © 2026
+  FANTAORACLE · v0.8 BETA · MADE BY <span style="color:var(--gold)">SCHLNGH</span> · © 2026
   <div style="margin-top:10px;letter-spacing:0.3px;font-size:11px;line-height:1.6;opacity:.75;text-transform:none;font-family:'DM Sans',sans-serif;max-width:620px;margin-left:auto;margin-right:auto">
     Le previsioni dell'Oracle sono stime statistiche, non garanzie di risultato.
     Le decisioni sulla formazione e le loro conseguenze restano di chi le prende.
   </div>
 </footer>
 
+<script src="/assets/league-rules.js"></script>
 <script>
 // ============================================================
 // Colori dei ruoli — UNICA FONTE.
@@ -5420,6 +5626,7 @@ const formations = {
   '3-4-3':   { requirements: { P:1, D:3, C:4, A:3 }, rows: [['P'], ['D','D','D'], ['C','C','C','C'], ['A','A','A']] },
   '5-3-2':   { requirements: { P:1, D:5, C:3, A:2 }, rows: [['P'], ['D','D','D','D','D'], ['C','C','C'], ['A','A']] },
   '5-4-1':   { requirements: { P:1, D:5, C:4, A:1 }, rows: [['P'], ['D','D','D','D','D'], ['C','C','C','C'], ['A']] },
+  '5-2-3': { requirements: { P:1,D:5,C:2,A:3 }, rows: [['P'],['D','D','D','D','D'],['C','C'],['A','A','A']] },
 };
 
 let currentMode = 'standard';
@@ -6307,6 +6514,8 @@ function oracleLoadState() {
       oracleState.snapshots = saved.snapshots && typeof saved.snapshots === 'object' ? saved.snapshots : {};
       if (saved.calib && saved.calib.biasByRole) oracleState.calib = saved.calib;
       oracleState.lastRun = saved.lastRun || null;
+      oracleState.rulesProfileId = saved.rulesProfileId || null;
+      oracleState.manualModulo = formations[saved.manualModulo] ? saved.manualModulo : null;
     }
   } catch(e) { console.warn('[Oracle] load state', e); }
 }
@@ -6325,6 +6534,71 @@ function oracleSaveState() {
     localStorage.setItem(nsKey(ORACLE_STATE_KEY), JSON.stringify(oracleState));
   } catch(e) { console.warn('[Oracle] save state', e); }
   if (typeof scheduleCloudSync === 'function') scheduleCloudSync();
+}
+
+// Profilo per lega: il riferimento viene conservato nello stato Oracle già sincronizzato.
+function activeLeagueRules() {
+  const league = leagues.find(l => l.id === activeLeagueId);
+  if (!league) return null;
+  return FantaLeagueRules.resolve(league.name, oracleState.rulesProfileId);
+}
+function leaguePlayerSamples(p, requireComplete = false) {
+  const rules = activeLeagueRules();
+  if (!rules || !Array.isArray(votiGlobaliInMemoria)) return [];
+  const key = rosterNormalizeName(p.name);
+  return votiGlobaliInMemoria.slice().sort((a,b) => b.giornata-a.giornata).flatMap(r => {
+    const record = (r.votes || {})[key];
+    if (!record || (record.team && p.team && normTeamName(record.team) !== normTeamName(p.team))) return [];
+    const events = FantaLeagueRules.eventsForRecord(record,rules);
+    const score = FantaLeagueRules.score(events, p.role, rules);
+    if (score !== null) return [{score, vote:events.vote, adjusted:true}];
+    // I fantavoti admin già pubblicati restano utilizzabili anche senza eventi.
+    if (!requireComplete && typeof record.v === 'number' && Number.isFinite(record.v)) return [{score:record.v,vote:null,adjusted:false}];
+    return [];
+  });
+}
+function leagueExpectedVote(p) {
+  const rules = activeLeagueRules();
+  if (rules && Array.isArray(votiGlobaliInMemoria)) {
+    const key = rosterNormalizeName(p.name);
+    const votes = votiGlobaliInMemoria.slice().sort((a,b) => b.giornata-a.giornata).flatMap(r => {
+      const record = (r.votes || {})[key];
+      if (!record || (record.team && p.team && normTeamName(record.team)!==normTeamName(p.team))) return [];
+      const e = FantaLeagueRules.eventsForRecord(record,rules);
+      return e && typeof e.vote === 'number' && e.vote>=1 && e.vote<=10 ? [e.vote] : [];
+    }).slice(0,5);
+    if (votes.length) return votes.reduce((s,v) => s+v,0)/votes.length;
+  }
+  // Fallback alla media voto del listone admin; mai al fantavoto, che include i bonus.
+  const mv = p.mv || p.media_voto;
+  return typeof mv === 'number' && mv > 0 ? mv : null;
+}
+function renderLeagueRules() {
+  const rules = activeLeagueRules();
+  const extraModule = document.getElementById('premierModulo523');
+  if (extraModule) extraModule.style.display = rules && rules.modules.includes('5-2-3') ? '' : 'none';
+  const box = document.getElementById('oracleRulesPanel');
+  if (!box) return;
+  if (!rules) {
+    box.innerHTML = '<strong>Regolamento della lega non verificato</strong><br>Oracle usa le impostazioni standard. Le regole personalizzate non sono ancora collegate a questa lega.';
+    return;
+  }
+  const all = [...players.starters,...players.bench].filter(p => p && p.name && !p.isEmpty && p.name !== '---');
+  const covered = all.filter(p => leaguePlayerSamples(p,true).length > 0).length;
+  const defenseCovered = all.filter(p => ['P','D'].includes(p.role) && leagueExpectedVote(p)!==null).length;
+  const num = v => String(v).replace('.',',');
+  box.innerHTML = '<strong style="color:var(--gold)">' + escapeHtml(rules.name) + ' · regole collegate</strong>'
+    + '<div>Fonte Oracle: <strong>Fantacalcio · caricamento admin</strong>, unica per tutte le leghe. Oracle confronta i ' + rules.modules.length + ' moduli consentiti e usa i voti base o le medie voto disponibili per stimare il modificatore difesa.</div>'
+    + (rules.voteSource !== 'Fantacalcio' ? '<div style="margin-top:6px;color:var(--muted)">Il regolamento indica ' + rules.voteSource + ': per le previsioni usiamo Fantacalcio come approssimazione. I punteggi ufficiali della lega possono differire.</div>' : '')
+    + '<div style="margin-top:8px;color:var(--muted)">Eventi sportivi disponibili per ' + covered + '/' + all.length + ' giocatori. Per gli altri Oracle usa i fantavoti admin disponibili; come indicatore approssimativo di andamento, senza applicare bonus di lega alla forma. Voti base utilizzabili per portieri/difensori: ' + defenseCovered + '.</div>'
+    + '<details style="margin-top:8px"><summary style="cursor:pointer">Regole e copertura</summary>'
+    + '<p>Moduli: ' + rules.modules.join(', ') + '.</p>'
+    + '<p>File admin standard: la colonna Ass è valutata a +1 per assist. Se la lega distingue soft e gold, questa è un’approssimazione. Porta inviolata stimata dal voto valido e da zero gol subiti; il file non specifica i minuti giocati.</p>'
+    + '<p>Gol: ' + ['P','D','C','A'].map(r => r + ' +' + num(rules.goals[r])).join(' · ') + '. Rigori segnati +' + rules.penalties + '. Assist soft +' + num(rules.assists.soft) + ', normale +' + num(rules.assists.normal) + ', gold +' + num(rules.assists.gold) + '. Porta inviolata P +' + rules.cleanSheet + '.</p>'
+    + '<p>Difesa: almeno 4 difensori con voto; media dei migliori 3 e del portiere. Fasce: ' + rules.defenseBands.map(b => num(b[0]) + ' → +' + num(b[1])).join(' / ') + '. La stima usa le medie voto, non garantisce il bonus della prossima giornata.</p>'
+    + '<p>' + rules.substitutions + ' sostituzioni ' + rules.substitutionMode + '; Switch: ' + rules.switchMode + '. Panchina: ' + (rules.benchLimit === null ? 'senza limite' : 'massimo ' + rules.benchLimit) + '. Ammonito senza voto: ' + (rules.yellowWithoutVote ? '5,5 d’ufficio' : 'opzione disattivata') + '. Sostituzioni e Switch vanno gestiti su Leghe Fantacalcio: Oracle non li esegue a partita iniziata.</p>'
+    + '<p>Lo scontro diretto confronta indici orientativi: non prevede un risultato esatto. I pesi degli eventi sono euristici e uguali per tutte le leghe, non probabilità validate.</p>'
+    + '<a href="' + rules.source + '" target="_blank" rel="noopener noreferrer">Consulta le opzioni della lega</a></details>';
 }
 
 // ---- RATING SQUADRE SERIE A (derivato dal listone) ----
@@ -6388,6 +6662,22 @@ function oracleMatchContext(p) {
   return null;
 }
 
+// La stessa partita del motore, indipendente dalla giornata sfogliata in Dashboard.
+function playerFixtureHtml(p, compact = false) {
+  const team = p.team || 'Squadra non disponibile';
+  const ctx = oracleMatchContext(p);
+  const own = '<strong>' + escapeHtml(team) + '</strong>';
+  if (!ctx) return own + '<span>' + (compact ? 'Avversaria n.d.' : ' · Avversaria non disponibile') + '</span>';
+  // Il nome e il segno casa sono un unico elemento: niente (c) sulla riga sotto.
+  const label = (name, home, bold) => '<span class="fixture-team" title="' + escapeHtml(name + (home ? ' (c)' : '')) + '">'
+    + (bold ? '<strong>' : '<span class="fixture-team-name">') + escapeHtml(name)
+    + (bold ? '</strong>' : '</span>')
+    + (home ? '<span class="fixture-home">&nbsp;(c)</span>' : '') + '</span>';
+  const ownLabel = label(team, ctx.home, true);
+  const opponentLabel = '<span class="fixture-opponent">vs ' + label(ctx.opponent, !ctx.home, false) + '</span>';
+  return compact ? ownLabel + opponentLabel : ownLabel + ' ' + opponentLabel;
+}
+
 // ---- FORMA: ultimi voti reali registrati per un giocatore ----
 function oracleRecentVotes(key, maxN) {
   const out = [];
@@ -6400,8 +6690,28 @@ function oracleRecentVotes(key, maxN) {
 }
 
 // ---- PREDIZIONE singolo giocatore ----
+// Indice euristico: eventi sportivi, mai bonus monetari del regolamento.
+function oracleFormSamples(p) {
+  if (!Array.isArray(votiGlobaliInMemoria)) return [];
+  const key = rosterNormalizeName(p.name);
+  return votiGlobaliInMemoria.slice().sort((a,b) => b.giornata-a.giornata).flatMap(day => {
+    const record = (day.votes || {})[key];
+    if (!record || (record.team && p.team && normTeamName(record.team)!==normTeamName(p.team))) return [];
+    const signal = FantaLeagueRules.formSignal(record);
+    return signal ? [signal] : [];
+  });
+}
 function oraclePredictPlayer(p, ratings, alerted, titSig) {
   const factors = [];
+  const samples = oracleFormSamples(p);
+  if (samples.length) {
+    const average = samples.reduce((sum,v) => sum+v.score,0)/samples.length;
+    p = Object.assign({},p,{fmReal:average,score:average,pgv:samples.length});
+    factors.push('andamento da ' + samples.length + ' giornate Fantacalcio admin, uguale per tutte le leghe');
+    if (samples.some(v => v.proxy)) factors.push('eventi dettagliati mancanti: fantavoto admin usato come indicatore approssimativo');
+  } else {
+    factors.push('storico admin assente: indicatore provvisorio dai dati disponibili');
+  }
   const key = rosterNormalizeName(p.name);
 
   // BASE con shrinkage per piccoli campioni (cold-start).
@@ -6427,7 +6737,7 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
 
   // 1. FORMA dai voti reali registrati (il loop di auto-correzione la alimenta)
   let exp = base;
-  const recent = oracleRecentVotes(key, 3);
+  const recent = samples.slice(0,3).map(v => v.score);
   if (recent.length >= 2) {
     const formAvg = recent.reduce((a,b) => a+b, 0) / recent.length;
     exp = base * 0.65 + formAvg * 0.35;
@@ -6494,7 +6804,7 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   }
 
   // 3. BIAS APPRESO per ruolo (auto-correzione)
-  const bias = (oracleState.calib.biasByRole && oracleState.calib.biasByRole[p.role]) || 0;
+  const bias = 0; // Un indice non si calibra sottraendo fantapunti reali.
   exp += bias;
   if (Math.abs(bias) >= 0.1) {
     factors.push('ricalibrazione ' + (bias > 0 ? '+' : '') + bias.toFixed(1) + ' appresa da ' + oracleState.calib.samples + ' voti reali');
@@ -6521,26 +6831,30 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   const tsig = titSig && titSig[p.name];
   if (tsig) {
     titStatus = tsig.status;
+    // Con la % delle probabili ufficiali il fattore dice il numero, non la
+    // frase interpretata: "panchina probabile (25%)" pesa diversamente da
+    // "una news lo dava fuori".
+    const pctxt = (tsig.perc != null) ? ' (' + tsig.perc + '% nelle probabili ufficiali)' : '';
     if (tsig.status === 'out') {
       exp -= 1.0;
       conf = Math.min(conf, 35);
       if (!risk) risk = 'verso la panchina';
-      factors.unshift('🔴 dato verso la panchina');
+      factors.unshift('🔴 ' + (pctxt ? 'panchina probabile' + pctxt : 'dato verso la panchina'));
     } else if (tsig.status === 'doubt') {
       exp -= 0.4;
       conf -= 12;
       if (!risk) risk = 'in ballottaggio';
-      factors.unshift('🟡 ballottaggio / titolarità in dubbio');
+      factors.unshift('🟡 ' + (pctxt ? 'ballottaggio' + pctxt : 'ballottaggio / titolarità in dubbio'));
     } else if (tsig.status === 'in') {
       conf += 8;
-      factors.unshift('🟢 dato verso la titolarità');
+      factors.unshift('🟢 ' + (pctxt ? 'titolare' + pctxt : 'dato verso la titolarità'));
     }
   }
 
-  // 5. POCO IMPIEGO: titolarità incerta
+  // 5. Campione ridotto: qualità dei dati, non notizia di mancata titolarità.
   if ((p.pgv || 0) > 0 && p.pgv < 5) {
     conf -= 10;
-    if (!risk) risk = 'titolarità incerta';
+    if (!risk) risk = 'campione ridotto';
     factors.push('solo ' + p.pgv + ' presenze valide');
   }
 
@@ -6577,7 +6891,7 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
 
   exp = Math.max(4, Math.min(9.5, exp));
   conf = Math.max(5, Math.min(95, Math.round(conf)));
-  return { expected: parseFloat(exp.toFixed(2)), confidence: conf, factors, risk, titStatus, bonusProp, ctx, oppAdj, csAdj, base };
+  return { expected: parseFloat(exp.toFixed(2)), model: 'form-v2', confidence: conf, factors, risk, titStatus, bonusProp, ctx, oppAdj, csAdj, base };
 }
 
 // ---- ARRICCHIMENTO: ripristina i metadati ricchi dal listone ----
@@ -6602,7 +6916,6 @@ function enrichRosterFromListone() {
     // qui sotto, altrimenti i titolari con storico voti non lo riceverebbero mai.
     p.rigorista = !!(lp && lp.rigorista);
     p.formaPreseason = (lp && typeof lp.formaPreseason === 'number') ? lp.formaPreseason : 0;
-    if ((p.fmReal && p.fmReal > 0) && (p.pgv && p.pgv > 0)) return; // già ricco
     if (!lp) return;
     // lp può venire dal listone globale admin (campi italiani: fanta_media,
     // media_voto, quotazione) o da un upload personale di lega (campi
@@ -6623,6 +6936,11 @@ function runOracleEngine(silent) {
     if (!silent) showToast('⚠️ Carica prima la tua rosa per attivare l\'Oracolo');
     return false;
   }
+  const leagueRules = activeLeagueRules();
+  if (leagueRules) {
+    oracleState.rulesProfileId = leagueRules.id;
+    if (!leagueRules.modules.includes(currentModulo)) setModulo('4-3-3',null);
+  }
   enrichRosterFromListone();
   const ratings = computeTeamRatings();
   const alerted = getAlertedPlayerNames();
@@ -6632,13 +6950,14 @@ function runOracleEngine(silent) {
     const r = oraclePredictPlayer(p, ratings, alerted, titSig);
     p.oracle = parseFloat(r.expected.toFixed(1));
     p._oracleInfo = r;
-    predictions[rosterNormalizeName(p.name)] = { exp: r.expected, role: p.role, name: p.name };
+    predictions[rosterNormalizeName(p.name)] = { exp: r.expected, role: p.role, name: p.name, model: 'form-v2' };
   });
-  oracleState.lastRun = Date.now();
+  alignOracleFormation();
+  if (!silent) oracleState.lastRun = Date.now();
   // Snapshot previsioni + formazione schierata, legato alla giornata corrente.
   // Serve all'auto-correzione e al post-partita "punti lasciati in panchina".
   const idxSnap = findCurrentGiornataIdx();
-  if (calendario.giornate.length && idxSnap >= 0) {
+  if (!silent && calendario.giornate.length && idxSnap >= 0) {
     const gNum = calendario.giornate[idxSnap].num;
     const lineup = players.starters
       .filter(p => p && p.name && p.name !== '---' && !p.isEmpty)
@@ -6651,43 +6970,19 @@ function runOracleEngine(silent) {
       modulo: currentModulo,
     };
   }
-  oracleSaveState();
-  saveRosterToStorage();
+  if (!silent) { oracleSaveState(); saveRosterToStorage(); }
   return true;
 }
 
 // ---- MODULO OTTIMALE secondo l'Oracolo ----
 function oracleBestFormation() {
-  const all = [...players.starters, ...players.bench]
-    .filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
-  if (all.length === 0) return null;
+  const all = [...players.starters,...players.bench].filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
+  if (!all.length) return null;
   const alerted = getAlertedPlayerNames();
-  const byRole = { P:[], D:[], C:[], A:[] };
-  all.forEach(p => { if (byRole[p.role]) byRole[p.role].push(p); });
-  ['P','D','C','A'].forEach(r => byRole[r].sort((a,b) => {
-    const aA = alerted.has(a.name) ? 1 : 0, bA = alerted.has(b.name) ? 1 : 0;
-    if (aA !== bA) return aA - bA;
-    return (b.oracle || b.score || 0) - (a.oracle || a.score || 0);
-  }));
-  let best = null;
-  Object.keys(formations).forEach(mName => {
-    const need = formations[mName].requirements;
-    let total = 0, filled = 0, needed = 0;
-    const picks = [];
-    ['P','D','C','A'].forEach(r => {
-      needed += need[r] || 0;
-      const sel = byRole[r].slice(0, need[r] || 0);
-      filled += sel.length;
-      sel.forEach(p => {
-        const v = (p.oracle || p.score || 0);
-        total += alerted.has(p.name) ? v * 0.5 : v;
-        picks.push(p);
-      });
-    });
-    if (filled < needed) total -= (needed - filled) * 6; // penalità slot vuoti
-    if (!best || total > best.total) best = { modulo: mName, total, filled, needed, picks };
-  });
-  return best;
+  const unavailable = p => alerted.has(p.name) || infermeriaDi(p.name) || (p._oracleInfo && p._oracleInfo.titStatus === 'out');
+  return FantaLeagueRules.best(all, formations, activeLeagueRules(),
+    p => (p.oracle || p.score || 0) * (unavailable(p) ? 0.5 : 1),
+    p => unavailable(p) ? null : leagueExpectedVote(p));
 }
 
 // ============================================================
@@ -6712,16 +7007,23 @@ function getRivalTeams() {
 // ============================================================
 const COMPETIZIONI_STORAGE_KEY = 'fantaoracle_competizioni_v1';
 
-function loadCompetizioni() {
+function loadCompetizioni(leagueId = activeLeagueId) {
   try {
-    const raw = localStorage.getItem(nsKey(COMPETIZIONI_STORAGE_KEY));
+    const raw = localStorage.getItem(leagueId ? COMPETIZIONI_STORAGE_KEY + '__' + leagueId : nsKey(COMPETIZIONI_STORAGE_KEY));
     const v = raw ? JSON.parse(raw) : null;
     return Array.isArray(v) ? v : [];
   } catch (e) { return []; }
 }
-function saveCompetizioni(lista) {
-  try { localStorage.setItem(nsKey(COMPETIZIONI_STORAGE_KEY), JSON.stringify(lista || [])); } catch (e) {}
+function saveCompetizioni(lista, leagueId = activeLeagueId) {
+  try {
+    const key = leagueId ? COMPETIZIONI_STORAGE_KEY + '__' + leagueId : nsKey(COMPETIZIONI_STORAGE_KEY);
+    localStorage.setItem(key, JSON.stringify(lista || []));
+  } catch (e) {
+    showToast('❌ Spazio del browser esaurito: calendari non salvati.');
+    return false;
+  }
   if (typeof scheduleCloudSync === 'function') scheduleCloudSync();
+  return true;
 }
 
 // Legge il calendario esportato da Leghe Fantacalcio.
@@ -6810,41 +7112,58 @@ function onH2HOpponentChange(sel) {
   renderHeadToHead();
 }
 
-// Import di un calendario competizione (file .xlsx di Leghe Fantacalcio)
-function handleCompetizioneUpload(ev) {
-  const file = ev.target.files && ev.target.files[0];
+// Import di uno o più calendari competizione (file Excel di Leghe Fantacalcio)
+async function handleCompetizioneUpload(ev) {
+  const files = Array.from(ev.target.files || []);
+  const leagueId = activeLeagueId; // resta quella scelta, anche cambiando lega durante la lettura
   ev.target.value = '';
-  if (!file) return;
+  if (!files.length) return;
+  if (!leagueId || !leagues.some(l => l.id === leagueId)) {
+    showToast('⚠️ Seleziona prima la lega a cui aggiungere i calendari.');
+    return;
+  }
   if (typeof XLSX === 'undefined') {
     showToast('❌ Libreria Excel non caricata. Verifica la connessione.');
     return;
   }
-  const reader = new FileReader();
-  reader.onload = e => {
+  let caricati = 0, saltati = 0;
+  const errori = [];
+  for (const file of files) {
     try {
-      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(new Uint8Array(data), { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
       const partite = leggiCalendarioLega(rows);
-      if (partite.length === 0) {
-        showToast('❌ Nessuna partita riconosciuta. È il calendario esportato dalla tua lega?');
-        return;
+      if (!partite.length) throw new Error('nessuna partita riconosciuta');
+      if (!leagues.some(l => l.id === leagueId)) throw new Error('la lega è stata rimossa');
+      let nome = nomeCompetizioneDaFoglio(rows, file.name);
+      let lista = loadCompetizioni(leagueId);
+      if (lista.some(c => c.nome === nome)) {
+        const sostituire = confirm('Esiste già un calendario chiamato "' + nome + '".\n\nOK: aggiorna quello esistente.\nAnnulla: aggiungi una competizione distinta con un altro nome.');
+        if (!sostituire) {
+          const nuovoNome = prompt('Nome della nuova competizione:', nome + ' — nuova');
+          if (nuovoNome === null || !nuovoNome.trim()) { saltati++; continue; }
+          nome = nuovoNome.trim();
+          if (lista.some(c => c.nome === nome)) throw new Error('nome già in uso: scegli un nome diverso');
+        }
       }
-      const nome = nomeCompetizioneDaFoglio(rows, file.name);
-      const lista = loadCompetizioni().filter(c => c.nome !== nome); // sostituisce se gia presente
-      lista.push({ nome: nome, partite: partite, importatoIl: new Date().toISOString() });
-      saveCompetizioni(lista);
-      const giornate = new Set(partite.map(p => p.giornataLega)).size;
-      showToast('✅ ' + nome + ': ' + partite.length + ' partite su ' + giornate + ' giornate');
-      if (typeof renderCompSwitcher === 'function') renderCompSwitcher();
-      if (typeof renderHeadToHead === 'function') renderHeadToHead();
+      lista = lista.filter(c => c.nome !== nome);
+      lista.push({ nome, partite, importatoIl: new Date().toISOString() });
+      if (!saveCompetizioni(lista, leagueId)) { errori.push(file.name + ': salvataggio non riuscito'); break; }
+      caricati++;
     } catch (err) {
       console.error('[FantaOracle] calendario competizione:', err);
-      showToast('❌ Impossibile leggere il file: ' + err.message);
+      errori.push(file.name + ': ' + err.message);
     }
-  };
-  reader.onerror = () => showToast('❌ Errore nella lettura del file.');
-  reader.readAsArrayBuffer(file);
+  }
+  renderCompSwitcher();
+  if (activeLeagueId === leagueId && typeof renderHeadToHead === 'function') renderHeadToHead();
+  const totale = loadCompetizioni(leagueId).length;
+  let messaggio = caricati + ' calendari caricati · ' + totale + ' nella lega';
+  if (saltati) messaggio += ' · ' + saltati + ' saltati';
+  if (errori.length) messaggio += ' · ' + errori.join('; ');
+  showToast(messaggio, errori.length ? 'warning' : caricati ? 'success' : 'info');
 }
 
 // Competizione attualmente selezionata nella scheda scontro diretto
@@ -6926,7 +7245,7 @@ function renderCalendariCaricati() {
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1">' + chip + '</div>'
       + '<button class="fo-btn ' + (daFare ? 'fo-btn--oro' : 'fo-btn--fantasma') + '" onclick="caricaCalendarioPerLega(\'' + escapeAttr(l.id) + '\')" '
       + 'title="Aggiungi un calendario a ' + escapeAttr(nomeLegaVisibile(l)) + '">'
-      + '📅 ' + (daFare ? 'CARICA I CALENDARI' : 'Calendari') + '</button>'
+      + '📅 ' + (daFare ? 'CARICA I CALENDARI' : 'Aggiungi calendari') + '</button>'
       + '</div>';
   }).join('');
 }
@@ -6979,29 +7298,13 @@ function buildTeamRoster(teamName) {
 // avversario+casa/trasferta+cold-start); il livello news titolarità/infortuni
 // è agganciato alla TUA rosa, quindi qui resta neutro per una stima equa.
 function projectBestXI(roster, ratings) {
-  const noAlert = new Set();
-  const noTit = {};
   const enriched = roster.map(p => {
-    const info = oraclePredictPlayer(p, ratings, noAlert, noTit);
-    return Object.assign({}, p, { _exp: info.expected, _info: info });
+    const info = oraclePredictPlayer(p,ratings,new Set(),{});
+    return Object.assign({},p,{_exp:info.expected,_info:info});
   });
-  const byRole = { P:[], D:[], C:[], A:[] };
-  enriched.forEach(p => { if (byRole[p.role]) byRole[p.role].push(p); });
-  ['P','D','C','A'].forEach(r => byRole[r].sort((a,b) => b._exp - a._exp));
-  let best = null;
-  Object.keys(formations).forEach(mName => {
-    const need = formations[mName].requirements;
-    let total = 0, filled = 0, needed = 0;
-    const picks = [];
-    ['P','D','C','A'].forEach(r => {
-      needed += need[r] || 0;
-      const sel = byRole[r].slice(0, need[r] || 0);
-      filled += sel.length;
-      sel.forEach(p => { total += p._exp; picks.push(p); });
-    });
-    if (filled < needed) total -= (needed - filled) * 6;
-    if (!best || total > best.total) best = { modulo: mName, total, filled, needed, picks, enriched };
-  });
+  const best = FantaLeagueRules.best(enriched,formations,activeLeagueRules(),p => p._exp,
+    p => infermeriaDi(p.name) ? null : leagueExpectedVote(p));
+  if (best) best.enriched = enriched;
   return best;
 }
 
@@ -7149,19 +7452,20 @@ function renderHeadToHead() {
   html += '<div style="display:flex;align-items:stretch;gap:12px;margin-bottom:16px;flex-wrap:wrap">'
     + '<div style="flex:1;min-width:120px;text-align:center;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid ' + (gap >= 0 ? 'rgba(29,185,84,0.3)' : 'var(--border)') + '">'
     + '<div style="font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Tu</div>'
-    + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:36px;line-height:1;color:' + (gap >= 0 ? 'var(--green)' : 'var(--text)') + '">' + myTotal.toFixed(1) + '</div>'
-    + '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + myProj.modulo + ' proiettato</div></div>'
+    + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:36px;line-height:1;color:' + (gap >= 0 ? 'var(--green)' : 'var(--text)') + '">' + (myProj.formTotal / Math.max(1,myProj.filled)).toFixed(1) + '/10' + '</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + myProj.modulo + ' · indice medio orientativo</div></div>'
     + '<div style="display:flex;align-items:center;font-family:\'Bebas Neue\',sans-serif;font-size:20px;color:var(--muted)">VS</div>'
     + '<div style="flex:1;min-width:120px;text-align:center;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid ' + (gap < 0 ? 'rgba(255,76,76,0.3)' : 'var(--border)') + '">'
     + '<div style="font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">' + escapeHtml(opponent) + '</div>'
-    + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:36px;line-height:1;color:' + (gap < 0 ? 'var(--red)' : 'var(--text)') + '">' + oppTotal.toFixed(1) + '</div>'
-    + '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + oppProj.modulo + ' proiettato</div></div>'
+    + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:36px;line-height:1;color:' + (gap < 0 ? 'var(--red)' : 'var(--text)') + '">' + (oppProj.formTotal / Math.max(1,oppProj.filled)).toFixed(1) + '/10' + '</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + oppProj.modulo + ' · indice medio orientativo</div></div>'
     + '</div>';
+
 
   html += '<div style="padding:14px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);margin-bottom:14px">'
     + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
     + '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;letter-spacing:1px;color:' + strat.color + '">' + strat.verdict + '</span>'
-    + '<span style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--muted)">divario ' + (gap >= 0 ? '+' : '') + gap.toFixed(1) + '</span></div>'
+    + '<span style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--muted)">confronto orientativo ' + '' + '</span></div>'
     + '<div style="font-size:13px;color:var(--text);line-height:1.6">' + strat.advice + '</div>';
 
   if (strat.suggestions.length > 0) {
@@ -7194,7 +7498,32 @@ function renderHeadToHead() {
   box.innerHTML = html;
 }
 
+// Ogni ricalcolo aggiorna il campo, salvo un modulo scelto esplicitamente.
+function alignOracleFormation() {
+  const rules = activeLeagueRules();
+  const manual = oracleState.manualModulo;
+  if (manual && formations[manual] && (!rules || rules.modules.includes(manual))) {
+    if (currentModulo !== manual) setModulo(manual,null);
+    return;
+  }
+  oracleState.manualModulo = null;
+  const best = oracleBestFormation();
+  if (best) installOracleFormation(best);
+}
+function installOracleFormation(best) {
+  const allPlayers = [...players.starters,...players.bench];
+  const chosen = new Set(best.picks);
+  currentModulo = best.modulo;
+  players.starters = best.picks.slice();
+  players._lineupByRole = Object.fromEntries(['P','D','C','A'].map(r => [r,best.picks.filter(p => p.role === r)]));
+  players.bench = allPlayers.filter(p => !chosen.has(p) && p && !p.isEmpty && p.name !== '---');
+  const label = document.getElementById('moduloLabel');
+  if (label) label.textContent = currentModulo;
+  document.querySelectorAll('.modulo-btn').forEach(b => b.classList.toggle('active',b.textContent.trim() === currentModulo));
+}
+
 function applyOracleFormation() {
+  oracleState.manualModulo = null;
   if (currentMode !== 'oracle') {
     setMode('oracle');
     if (currentMode !== 'oracle') return; // rosa vuota
@@ -7203,7 +7532,9 @@ function applyOracleFormation() {
   }
   const best = oracleBestFormation();
   if (!best) { showToast('⚠️ Carica prima la tua rosa'); return; }
-  setModulo(best.modulo, null);
+  installOracleFormation(best);
+  oracleSaveState();
+  saveRosterToStorage();
   showPage('ai', document.getElementById('tab-ai'));
   // La barra col passo successivo compare solo arrivando da qui, non ogni
   // volta che si guarda il campo.
@@ -7215,7 +7546,7 @@ function applyOracleFormation() {
     const f = document.getElementById('fieldWrap');
     if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 120);
-  showToast('🔮 Oracle ha schierato il ' + best.modulo + ' · ' + best.total.toFixed(1) + ' punti attesi');
+  showToast('🔮 Oracle ha schierato il ' + best.modulo + ' · formazione consigliata');
 }
 
 // ---- POST-PARTITA: quanti punti hai lasciato in panchina ----
@@ -7304,7 +7635,7 @@ function recalibrateOracle() {
     if (!rec.predictions || !rec.votes) return;
     Object.keys(rec.votes).forEach(k => {
       const pred = rec.predictions[k];
-      if (!pred) return;
+      if (!pred || pred.model === 'form-v2') return;
       const err = rec.votes[k] - pred.exp; // positivo = Oracolo troppo pessimista
       samples++;
       if (Math.abs(err) <= 1.0) hits++;
@@ -7355,7 +7686,8 @@ function estraiVotiDaWorkbook(wb, giocatori) {
     return isNaN(n) ? null : n;
   };
 
-  wb.SheetNames.forEach(sn => {
+  const voteSheets = wb.SheetNames.slice().sort((a,b) => Number(/^fantacalcio$/i.test(b.trim())) - Number(/^fantacalcio$/i.test(a.trim())));
+  voteSheets.forEach(sn => {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '', raw: false });
     // Cerca un header con colonne note (voti ufficiali: Nome|Voto|Gf|Gs|Rp|Rs|Au|Amm|Esp|Ass — o FV diretta)
     let cols = null;
@@ -7364,13 +7696,13 @@ function estraiVotiDaWorkbook(wb, giocatori) {
       const iNome = h.findIndex(c => c === 'nome' || c === 'giocatore' || c === 'calciatore');
       if (iNome < 0) continue;
       cols = {
-        start: ri + 1, name: iNome,
+        start: ri + 1, name: iNome, headers: rows[ri],
         cod: h.findIndex(c => c === 'cod.' || c === 'cod' || c === 'id' || c === 'codice'),
         ruolo: h.findIndex(c => c === 'ruolo' || c === 'r'),
         fv: h.findIndex(c => c === 'fv' || c === 'fantavoto' || c === 'f.voto'),
         voto: h.findIndex(c => c === 'voto' || c === 'v'),
         gf: h.findIndex(c => c === 'gf' || c === 'g'), gs: h.findIndex(c => c === 'gs'),
-        rp: h.findIndex(c => c === 'rp'), rs: h.findIndex(c => c === 'rs'),
+        rp: h.findIndex(c => c === 'rp'), rs: h.findIndex(c => c === 'rs'), rf: h.findIndex(c => c === 'rf'),
         au: h.findIndex(c => c === 'au' || c === 'ag'), amm: h.findIndex(c => c === 'amm'),
         esp: h.findIndex(c => c === 'esp'), ass: h.findIndex(c => c === 'ass'),
       };
@@ -7395,7 +7727,7 @@ function estraiVotiDaWorkbook(wb, giocatori) {
           const g = i => (cols[i] >= 0 ? (num(row[cols[i]]) || 0) : 0);
           // Fantavoto classic: +3 gol, +1 assist, +3 rig.parato, -3 rig.sbagliato,
           // -2 autogol, -0.5 ammonizione, -1 espulsione, -1 gol subito
-          fv = voto + 3*g('gf') + g('ass') + 3*g('rp') - 3*g('rs') - 2*g('au') - 0.5*g('amm') - g('esp') - g('gs');
+          fv = voto + 3*g('gf') + 3*g('rf') + g('ass') + 3*g('rp') - 3*g('rs') - 2*g('au') - 0.5*g('amm') - g('esp') - g('gs');
         }
       } else if (!cols) {
         // Fallback senza header: prima cella testuale = nome, primo numero 1-12 dopo = voto
@@ -7416,6 +7748,7 @@ function estraiVotiDaWorkbook(wb, giocatori) {
       // 0. codice ufficiale: esatto, niente omonimi. Funziona solo se il listone
       //    attivo e stato importato con la colonna Id; altrimenti si scende ai
       //    livelli per nome, che restano il comportamento di prima.
+      if (codCell && Object.keys(perCodice).length && !perCodice[codCell]) { nonAbbinati.push(nameCell); return; }
       let g = (codCell && perCodice[codCell]) || null;
       if (!g) g = perChiave[norm] || null;                  // 1. nome esatto
       if (!g) {
@@ -7429,6 +7762,13 @@ function estraiVotiDaWorkbook(wb, giocatori) {
       if (!g) { nonAbbinati.push(nameCell); return; }
       if (trovati[g.key] == null) {
         trovati[g.key] = { v: Math.round(fv * 2) / 2, name: g.name, team: g.team || '' };
+        if (cols && /^fantacalcio$/i.test(sn.trim())) trovati[g.key].events = FantaLeagueRules.readEvents(row, cols.headers);
+      }
+      if (cols && /^(fantacalcio|italia)$/i.test(sn.trim())) {
+        const source = /^italia$/i.test(sn.trim()) ? 'Italia' : 'Fantacalcio';
+        const target = trovati[g.key];
+        if (!target.sources) target.sources = {};
+        if (!target.sources[source]) target.sources[source] = { events: FantaLeagueRules.readEvents(row,cols.headers) };
       }
     });
   });
@@ -7442,6 +7782,7 @@ function estraiVotiDaWorkbook(wb, giocatori) {
 // ============================================================
 function renderOraclePage() {
   renderOracleGiornata();
+  renderLeagueRules();
   const all = [...players.starters, ...players.bench]
     .filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
   const empty = document.getElementById('oracleEmptyState');
@@ -7454,7 +7795,8 @@ function renderOraclePage() {
   }
   if (empty) empty.style.display = 'none';
   if (body) body.style.display = 'block';
-  runOracleEngine(true); // ricalcolo sempre: economico e sempre fresco
+  runOracleEngine(true); // ricalcolo prima di mostrare campo e consiglio
+  renderField(); renderLists();
   renderOracleHeroStats();
   renderOraclePicks();
   renderOracleRisky();
@@ -7484,23 +7826,9 @@ function renderOracleGiornata() {
 function renderOracleHeroStats() {
   const el = document.getElementById('oracleHeroStats');
   if (!el) return;
-  const acc = oracleAccuracy();
-  const giornate = oracleState.history.length;
-  const samples = oracleState.calib.samples || 0;
-  const benchLost = oracleState.history.reduce((s, r) => s + ((r.bench && r.bench.gap) || 0), 0);
-  const benchHtml = (giornate > 0)
-    ? '<div class="oracle-hero-stat"><div class="ohs-val" style="color:' + (benchLost > 0 ? 'var(--orange)' : 'var(--green)') + '">' + benchLost.toFixed(0) + '</div><div class="ohs-label">Punti persi in panca</div></div>'
-    : '';
-  el.innerHTML = ''
-    + '<div class="oracle-hero-stat"><div class="ohs-val" style="color:' + (acc == null ? 'var(--muted)' : acc >= 60 ? 'var(--green)' : 'var(--gold)') + '">' + (acc == null ? '—' : acc + '%') + '</div><div class="ohs-label">Accuracy ±1pt</div></div>'
-    + '<div class="oracle-hero-stat"><div class="ohs-val" style="color:var(--gold)">' + giornate + '</div><div class="ohs-label">Giornate registrate</div></div>'
-    + '<div class="oracle-hero-stat"><div class="ohs-val">' + samples + '</div><div class="ohs-label">Voti analizzati</div></div>'
-    + benchHtml
-    // Con una o due giornate l'accuracy oscilla per natura: va detto li,
-    // non lasciato indovinare.
-    + (giornate > 0 && giornate < 3
-        ? '<div style="flex-basis:100%;font-size:11px;color:var(--muted);line-height:1.5">Con ' + (giornate === 1 ? 'una sola giornata' : 'due giornate') + ' l\'accuracy è ancora ballerina: il dato diventa affidabile dalla 3ª-4ª in poi.</div>'
-        : '');
+  const days = Array.isArray(votiGlobaliInMemoria) ? votiGlobaliInMemoria.length : 0;
+  el.innerHTML = '<div class="oracle-hero-stat"><div class="ohs-val">' + days + '</div><div class="ohs-label">Giornate admin disponibili</div></div>'
+    + '<div style="font-size:12px;color:var(--muted)">Indice orientativo /10 per scegliere chi schierare. Qualità dei dati /100: non è una probabilità di successo.</div>';
 }
 
 function renderOraclePicks() {
@@ -7522,7 +7850,7 @@ function renderOraclePicks() {
   grid.innerHTML = ranked.map((p, i) => {
     const info = p._oracleInfo;
     const rc = roleHex[p.role] || '#888';
-    const boost = info.expected - (p.score || 0);
+    const boost = info.expected - info.base;
     const boostSign = boost >= 0 ? '+' : '';
     const reason = info.factors.slice(0, 2).join(' · ') || 'previsione su fantamedia';
     const confColor = info.confidence >= 65 ? 'var(--green)' : info.confidence >= 45 ? 'var(--gold)' : 'var(--orange)';
@@ -7531,9 +7859,9 @@ function renderOraclePicks() {
       + '<div class="oracle-pick-role" style="background:' + rc + '22;color:' + rc + '">' + p.role + ' · ' + escapeHtml(p.team || '—') + '</div>'
       + '<div class="oracle-pick-name">' + escapeHtml(p.name) + '</div>'
       + '<div class="oracle-pick-stats">'
-      + '<div class="oracle-pick-stat expected"><div class="oracle-pick-stat-label">Atteso</div><div class="oracle-pick-stat-value">' + info.expected.toFixed(1) + '</div></div>'
-      + '<div class="oracle-pick-stat boost"><div class="oracle-pick-stat-label">vs FM</div><div class="oracle-pick-stat-value" style="color:' + (boost >= 0 ? 'var(--green)' : 'var(--red)') + '">' + boostSign + boost.toFixed(1) + '</div></div>'
-      + '<div class="oracle-pick-stat"><div class="oracle-pick-stat-label">Fiducia</div><div class="oracle-pick-stat-value" style="color:' + confColor + '">' + info.confidence + '%</div></div>'
+      + '<div class="oracle-pick-stat expected"><div class="oracle-pick-stat-label">Indice /10</div><div class="oracle-pick-stat-value">' + info.expected.toFixed(1) + '</div></div>'
+      + '<div class="oracle-pick-stat boost"><div class="oracle-pick-stat-label">Contesto</div><div class="oracle-pick-stat-value" style="color:' + (boost >= 0 ? 'var(--green)' : 'var(--red)') + '">' + boostSign + boost.toFixed(1) + '</div></div>'
+      + '<div class="oracle-pick-stat"><div class="oracle-pick-stat-label">Dati /100</div><div class="oracle-pick-stat-value" style="color:' + confColor + '">' + info.confidence + '</div></div>'
       + '</div>'
       + '<div class="oracle-pick-reason">💡 ' + escapeHtml(reason) + '</div>'
       + '</div>';
@@ -7562,8 +7890,8 @@ function renderOracleRisky() {
       risky.push({ p, reason: '🟡 In ballottaggio / titolarità in dubbio', impact: '-0.4', prio: 2 });
     } else if (info.oppAdj <= -0.25) {
       risky.push({ p, reason: 'Avversario molto ostico' + (info.ctx ? ': ' + info.ctx.opponent : ''), impact: info.oppAdj.toFixed(1), prio: 3 });
-    } else if (info.risk === 'titolarità incerta') {
-      risky.push({ p, reason: 'Poco impiegato: titolarità incerta', impact: '?', prio: 4 });
+    } else if (info.risk === 'campione ridotto') {
+      risky.push({ p, reason: 'Poche giornate disponibili: andamento ancora provvisorio', impact: '?', prio: 4 });
     } else if (info.confidence < 40) {
       risky.push({ p, reason: 'Pochi dati: previsione poco affidabile', impact: '~', prio: 5 });
     }
@@ -7588,110 +7916,52 @@ function renderOracleRisky() {
   }).join('');
 }
 
+function renderModuloChoice(best) {
+  const manual = !!oracleState.manualModulo;
+  const same = manual && currentModulo === best.modulo;
+  const recommended = escapeHtml(best.modulo);
+  const selected = escapeHtml(currentModulo);
+  const status = same
+    ? '<span class="modulo-tag oracle-tag">' + selected + ' · La tua scelta coincide con Oracle</span>'
+    : '<span class="modulo-tag oracle-tag">' + recommended + ' · Consigliato da Oracle</span>'
+      + (manual ? '<span class="modulo-tag manual-tag">' + selected + ' · Scelta tua</span>' : '');
+  const legend = document.getElementById('moduloChoiceStatus');
+  if (legend) legend.innerHTML = status;
+  document.querySelectorAll('.modulo-btn').forEach(b => {
+    const m = b.textContent.trim();
+    b.classList.toggle('oracle-choice',m === best.modulo);
+    b.classList.toggle('manual-choice',manual && !same && m === currentModulo);
+    b.setAttribute('aria-pressed',String(m === currentModulo));
+    b.title = m === best.modulo ? (same ? 'La tua scelta coincide con Oracle' : 'Consigliato da Oracle') : manual && m === currentModulo ? 'Scelta tua' : 'Scegli il modulo ' + m;
+  });
+  return status;
+}
+
 function renderOracleModulo() {
   const box = document.getElementById('oracleModuloBox');
   if (!box) return;
   const best = oracleBestFormation();
-  if (!best) { box.innerHTML = ''; return; }
+  if (!best) { box.innerHTML = ''; const legend = document.getElementById('moduloChoiceStatus'); if (legend) legend.innerHTML = ''; return; }
+  const choiceStatus = renderModuloChoice(best);
   const missing = best.needed - best.filled;
+  const rules = activeLeagueRules();
   box.innerHTML = '<div style="text-align:center;padding:8px 0 4px">'
     + '<div class="oracle-modulo-big">' + best.modulo + '</div>'
-    + '<div style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--oracle);margin-top:10px">' + best.total.toFixed(1) + ' punti attesi totali</div>'
+    + '<div class="modulo-status" style="justify-content:center">' + choiceStatus + '</div>'
+    + '<div style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--oracle);margin-top:10px">' + (best.formTotal / Math.max(1,best.filled)).toFixed(1) + '/10 · indice medio orientativo</div>'
+    + (rules ? '<div style="font-size:12px;color:var(--gold);margin-top:8px">Difesa secondo le medie storiche: ' + (best.modifier.available ? '+' + best.modifier.bonus : 'non disponibile: mancano voti base') + '</div>' : '')
     + (missing > 0 ? '<div style="font-size:11px;color:var(--orange);margin-top:6px">⚠️ Mancano ' + missing + ' giocatori per completarlo</div>' : '')
     + '<button class="oracle-cta gold" style="margin-top:16px;width:100%" onclick="applyOracleFormation()">APPLICA AL CAMPO →</button>'
-    + '<div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">L\'Oracolo sceglie il modulo che massimizza la somma dei punteggi attesi,<br>escludendo gli infortunati segnalati dalle news.</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">Oracle confronta gli indici dei giocatori e considera il modificatore come preferenza contenuta nella scelta del modulo. Non è una previsione di fantapunti.</div>'
     + '</div>';
 }
 
 function renderOracleHistory() {
   const box = document.getElementById('oracleHistoryBox');
   if (!box) return;
-
-  if (oracleState.history.length === 0) {
-    box.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;line-height:1.8">'
-      + 'Il loop di auto-correzione parte da qui.<br>'
-      + '<strong style="color:var(--text)">1.</strong> Prima della giornata: premi <strong style="color:var(--oracle)">Calcola previsioni</strong> (l\'Oracolo salva uno snapshot)<br>'
-      + '<strong style="color:var(--text)">2.</strong> Dopo la giornata: i <strong style="color:var(--oracle)">voti ufficiali</strong> arrivano da soli<br>'
-      + '<strong style="color:var(--text)">3.</strong> L\'Oracolo misura l\'errore, si ricalibra per ruolo e migliora giornata dopo giornata.'
-      + '</div>';
-    return;
-  }
-
-  const sorted = oracleState.history.slice().sort((a,b) => b.num - a.num);
-  const rows = sorted.slice(0, 8).map(rec => {
-    const nVotes = Object.keys(rec.votes || {}).length;
-    let accHtml = '<span style="color:var(--muted);font-size:11px">solo forma (nessuno snapshot)</span>';
-    if (rec.predictions) {
-      let errSum = 0, n = 0, hits = 0;
-      Object.keys(rec.votes).forEach(k => {
-        const pred = rec.predictions[k];
-        if (!pred) return;
-        const err = rec.votes[k] - pred.exp;
-        errSum += Math.abs(err); n++;
-        if (Math.abs(err) <= 1) hits++;
-      });
-      if (n > 0) {
-        const mae = errSum / n;
-        const pct = Math.round((hits / n) * 100);
-        const col = pct >= 60 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--red)';
-        accHtml = '<span class="ohr-acc" style="color:' + col + '">' + pct + '% ±1pt</span>'
-          + ' <span style="font-size:11px;color:var(--muted)">err. medio ' + mae.toFixed(2) + '</span>';
-      }
-    }
-    let benchHtml = '';
-    if (rec.bench) {
-      if (rec.bench.gap > 0.5) {
-        const outNames = rec.bench.leftOut.map(o => o.name + ' (' + o.vote.toFixed(1) + ')').slice(0, 2).join(', ');
-        benchHtml = '<div style="width:100%;font-size:11px;color:var(--orange);margin-top:4px">'
-          + '🪑 <strong>' + rec.bench.gap.toFixed(1) + ' punti lasciati in panchina</strong>'
-          + ' — schierati ' + rec.bench.fielded.toFixed(1) + ' vs ottimale ' + rec.bench.optimal.toFixed(1)
-          + (outNames ? ' · dovevi schierare: ' + escapeHtml(outNames) : '')
-          + '</div>';
-      } else {
-        benchHtml = '<div style="width:100%;font-size:11px;color:var(--green);margin-top:4px">✅ Formazione ottimale: nessun punto lasciato in panchina</div>';
-      }
-    }
-    return '<div class="oracle-hist-row">'
-      + '<div class="ohr-g">GIORNATA ' + rec.num + '</div>'
-      + '<div class="ohr-meta">' + nVotes + ' voti registrati</div>'
-      + '<div>' + accHtml + '</div>'
-      + benchHtml
-      + '</div>';
-  }).join('');
-
-  // Bias appresi per ruolo. Uno zero puo voler dire due cose opposte —
-  // "mancano dati" oppure "previsioni centrate, niente da correggere" —
-  // e mostrarle uguali faceva sembrare rotta la calibrazione (segnalato da
-  // Sacha alla 1ª giornata: accuracy 75% e correzioni tutte a 0).
-  const b = oracleState.calib.biasByRole || {};
-  const campioniRuolo = { P:0, D:0, C:0, A:0 };
-  oracleState.history.forEach(rec => {
-    if (!rec.predictions || !rec.votes) return;
-    Object.keys(rec.votes).forEach(k => {
-      const pred = rec.predictions[k];
-      if (pred && campioniRuolo[pred.role] !== undefined) campioniRuolo[pred.role]++;
-    });
-  });
-  const biasChips = ['P','D','C','A'].map(r => {
-    const v = b[r] || 0;
-    const n = campioniRuolo[r];
-    if (n < 3) {
-      return '<span class="oracle-conf-pill" style="background:rgba(255,255,255,0.04);color:var(--muted);border:1px dashed var(--border)" '
-        + 'title="Servono almeno 3 voti con previsione per imparare una correzione: finora ' + n + '">'
-        + roleLabel(r) + ' — <span style="opacity:.6">(' + n + '/3 voti)</span></span>';
-    }
-    const centrato = Math.abs(v) < 0.05;
-    const col = centrato ? 'var(--muted)' : v > 0 ? 'var(--green)' : 'var(--red)';
-    return '<span class="oracle-conf-pill" style="background:rgba(255,255,255,0.04);color:' + col + ';border:1px solid var(--border)" '
-      + 'title="' + (centrato ? 'Previsioni centrate su ' + n + ' voti: nessuna correzione necessaria' : 'Correzione appresa da ' + n + ' voti') + '">'
-      + roleLabel(r) + ' ' + (centrato ? '✓ centrato' : (v > 0 ? '+' : '') + v.toFixed(2)) + '</span>';
-  }).join(' ');
-
-  box.innerHTML = rows
-    + '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border)">'
-    + '<div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Correzioni apprese per ruolo</div>'
-    + '<div style="display:flex;gap:6px;flex-wrap:wrap">' + biasChips + '</div>'
-    + '</div>';
+  const days = (Array.isArray(votiGlobaliInMemoria) ? votiGlobaliInMemoria : []).slice().sort((a,b)=>b.giornata-a.giornata);
+  box.innerHTML = '<p style="font-size:12px;color:var(--muted)">I caricamenti admin aggiornano l’andamento per tutte le leghe. Non confrontiamo l’indice con i fantapunti per dichiarare una precisione inesistente.</p>'
+    + (days.length ? days.slice(0,8).map(day => '<div class="oracle-history-row">Giornata ' + Number(day.giornata) + ' · ' + Object.keys(day.votes || {}).length + ' giocatori nel file admin</div>').join('') : '<p>Nessuna giornata admin disponibile.</p>');
 }
 
 
@@ -8896,10 +9166,11 @@ function enterApp(ev) {
     // display:none e la misura veniva 0 (filtri news incollati a quota zero,
     // nascosti dietro le barre).
     if (typeof aggiornaAltezzaNav === 'function') aggiornaAltezzaNav();
-    // Infermeria ufficiale in sottofondo; quando arriva, campo e liste si
-    // ridisegnano cosi le icone 🚑 compaiono senza aspettare un'azione.
-    caricaInfermeria().then(ok => {
-      if (!ok) return;
+    // Infermeria e probabili ufficiali in sottofondo; quando arrivano,
+    // campo e liste si ridisegnano cosi icone 🚑 e pallini compaiono senza
+    // aspettare un'azione.
+    Promise.all([caricaInfermeria(), caricaProbabili()]).then(esiti => {
+      if (!esiti.some(Boolean)) return;
       try { renderField(); renderLists(); } catch (e) {}
     });
     const ft = document.getElementById('app-footer'); if (ft) ft.style.display = 'block';
@@ -8944,6 +9215,15 @@ function enterApp(ev) {
 // ============================================================
 // ============ SUPABASE AUTH & DATA LAYER ====================
 // ============================================================
+// Errori tecnici anonimi nei log del sito, senza testo dell'errore o dati utente.
+let lastDiagnosticAt = 0;
+function reportClientIssue(code) {
+  if (Date.now()-lastDiagnosticAt < 60000) return;
+  lastDiagnosticAt = Date.now();
+  fetch('/api/client-error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code}),keepalive:true}).catch(()=>{});
+}
+window.addEventListener('error',()=>reportClientIssue('runtime'));
+window.addEventListener('unhandledrejection',()=>reportClientIssue('promise'));
 const SUPABASE_URL = 'https://fhxaxhfiulaqutidabfs.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_a6RZlv3_t15Y_NEYO2NRhQ_mEswaFv9';
 let supabaseClient = null;
@@ -9849,7 +10129,7 @@ async function doSignup() {
   try {
     const { data, error } = await client.auth.signUp({
       email, password,
-      options: { data: { username: name } }
+      options: { data: { username: name }, emailRedirectTo: window.location.origin + '/app' }
     });
     if (error) {
       showAuthError(translateAuthError(error.message));
@@ -10178,6 +10458,31 @@ async function pushAllToCloud() {
   }
 }
 
+// No-op per una rosa invariata; gli ID esistenti restano stabili.
+async function syncRosterSafely(client,leagueId,rows) {
+  const {data:old,error:readError}=await client.from('roster_players').select('*').eq('league_id',leagueId);
+  if(readError) throw readError;
+  const key=p=>JSON.stringify([p.player_name,p.role,p.team || '']);
+  const available=new Map();
+  for(const p of old || []) { const k=key(p); if(!available.has(k)) available.set(k,[]); available.get(k).push(p); }
+  const retained=new Set();
+  const changed=[];
+  for(const row of rows) {
+    const previous=available.get(key(row))?.shift();
+    if(previous) retained.add(previous.id);
+    if(!previous || Object.keys(row).some(k=>row[k]!==previous[k])) changed.push({...row,id:previous?.id || crypto.randomUUID()});
+  }
+  if(changed.length) {
+    const {error}=await client.from('roster_players').upsert(changed,{onConflict:'id'});
+    if(error) throw error;
+  }
+  const stale=(old || []).filter(p=>!retained.has(p.id)).map(p=>p.id);
+  if(stale.length) {
+    const {error}=await client.from('roster_players').delete().eq('league_id',leagueId).in('id',stale);
+    if(error) throw error;
+  }
+}
+
 async function pushAllToCloudInterno() {
   cloudSyncState.status = 'syncing';
   updateCloudIndicator();
@@ -10195,10 +10500,11 @@ async function pushAllToCloudInterno() {
     // riconciliati — finivano sulla stessa riga cloud: la seconda
     // sovrascriveva la prima, rosa compresa. La chiave e l'id cloud, che
     // teniamo nel registro locale come _cloudId.
-    const { data: existing } = await supabaseClient
+    const { data: existing, error: existingError } = await supabaseClient
       .from('leagues')
       .select('id, league_name')
       .eq('user_id', currentUser.id);
+    if (existingError) throw existingError;
     const idsCloud = new Set((existing || []).map(l => l.id));
     const perNome = {};
     (existing || []).forEach(l => { (perNome[l.league_name] = perNome[l.league_name] || []).push(l.id); });
@@ -10273,37 +10579,24 @@ async function pushAllToCloudInterno() {
       try { localStorage.setItem(LEAGUES_REGISTRY_KEY, JSON.stringify(leagues)); } catch(e) {}
     }
 
-    // 2. Upsert roster: strategia semplice = delete + reinsert per ogni lega
+    // La rosa viene aggiornata in un'unica upsert; nessuna cancellazione preventiva.
     for (const ll of localSnap) {
       const cloudId = idMap[ll.id];
       if (!cloudId || ll.roster.length === 0) continue;
-      // Delete vecchi giocatori della lega. L'errore va controllato: una
-      // delete rifiutata in silenzio seguita dall'insert DUPLICA la rosa a
-      // ogni push, e al pull sull'altro dispositivo la rosa viene rifiutata.
-      const { error: delErr } = await supabaseClient.from('roster_players').delete().eq('league_id', cloudId);
-      if (delErr) throw delErr;
-      // Insert nuovi
       const rows = ll.roster.map(p => ({
-        league_id: cloudId,
-        user_id: currentUser.id,
-        player_name: (p.name || p.player_name || '').substring(0, 100),
-        role: (p.role || 'C').substring(0, 4),
-        team: (p.team || '').substring(0, 50),
-        fanta_media: clampNum(p.score || p.fanta_media, 0, 12),
-        oracle_score: clampNum(p.oracle || p.oracle_score, 0, 12),
-        position: typeof p._pos === 'number' ? p._pos : null,
-        is_starter: !!p._starter,
+        league_id: cloudId, user_id: currentUser.id,
+        player_name: (p.name || p.player_name || '').substring(0,100),
+        role: (p.role || 'C').substring(0,4), team: (p.team || '').substring(0,50),
+        fanta_media: clampNum(p.score || p.fanta_media,0,12),
+        oracle_score: clampNum(p.oracle || p.oracle_score,0,12),
+        position: typeof p._pos === 'number' ? p._pos : null, is_starter: !!p._starter,
       }));
-      if (rows.length > 0) {
-        await supabaseClient.from('roster_players').insert(rows);
-      }
+      await syncRosterSafely(supabaseClient,cloudId,rows);
     }
 
     // 2b. Calendari delle competizioni.
-    // In un blocco a parte con il suo try/catch: finche le colonne non
-    // esistono su Supabase questo fallisce, e non deve trascinarsi dietro
-    // leghe e rose che sopra sono gia state salvate. Stessa lezione di
-    // oracle_states.
+    // Un errore deve essere visibile: i dati restano locali e lo stato
+    // della sincronizzazione non può essere segnato come completato.
     try {
       for (const ll of localSnap) {
         const cloudId = idMap[ll.id];
@@ -10312,10 +10605,12 @@ async function pushAllToCloudInterno() {
           .from('leagues')
           .update({ competizioni: ll.competizioni, comp_attiva: ll.compAttiva || null })
           .eq('id', cloudId);
-        if (cErr) { console.warn('[Cloud] competizioni non sincronizzate (colonne mancanti? esegui competizioni_cloud.sql):', cErr.message); break; }
+        if (cErr) throw cErr;
       }
     } catch (e) {
-      console.warn('[Cloud] sync competizioni saltato:', e.message);
+      console.warn('[Cloud] sync competizioni fallito:', e.message);
+      showToast('⚠️ Calendari salvati sul dispositivo, ma non sincronizzati nel cloud. Riprova la sincronizzazione.', 'warning');
+      throw e;
     }
 
     // 2c. Il file di lega. Blocco a parte dai calendari: e una colonna
@@ -10338,11 +10633,11 @@ async function pushAllToCloudInterno() {
           .from('leagues')
           .update({ listino: ll.listinoPersonale })
           .eq('id', cloudId);
-        if (lErr) { console.warn('[Cloud] listone di lega non sincronizzato (colonna mancante? esegui listino_cloud.sql):', lErr.message); break; }
+        if (lErr) throw lErr;
         listinoSpedito[cloudId] = firma;
       }
     } catch (e) {
-      console.warn('[Cloud] sync listone saltato:', e.message);
+      console.warn('[Cloud] sync listone fallito:', e.message); throw e;
     }
 
     // 3. Sync stato Oracle (storico voti reali + calibrazione) su tabella separata.
@@ -10360,10 +10655,10 @@ async function pushAllToCloudInterno() {
             state: ll.oracleState,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'league_id' });
-        if (oErr) { console.warn('[Cloud] oracle_states non sincronizzato (tabella mancante?):', oErr.message); break; }
+        if (oErr) throw oErr;
       }
     } catch(e) {
-      console.warn('[Cloud] oracle_states sync saltato:', e.message);
+      console.warn('[Cloud] oracle_states sync fallito:', e.message); throw e;
     }
 
     cloudSyncState.lastSyncAt = Date.now();
@@ -10372,6 +10667,7 @@ async function pushAllToCloudInterno() {
     return true;
   } catch(e) {
     console.warn('[Cloud] pushAllToCloud error:', e);
+    reportClientIssue('cloud_sync');
     cloudSyncState.status = 'error';
     updateCloudIndicator();
     return false;
@@ -10666,11 +10962,13 @@ async function controllaVersioneApp() {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     controllaVersioneApp();
-    // infermeria: il TTL interno evita richieste inutili; se torna roba
-    // fresca, le icone si aggiornano da sole.
-    if (typeof caricaInfermeria === 'function') caricaInfermeria().then(ok => {
-      if (ok) { try { renderField(); renderLists(); } catch (e) {} }
-    });
+    // infermeria e probabili: il TTL interno evita richieste inutili; se
+    // torna roba fresca, icone e pallini si aggiornano da soli.
+    if (typeof caricaInfermeria === 'function') {
+      Promise.all([caricaInfermeria(), caricaProbabili()]).then(esiti => {
+        if (esiti.some(Boolean)) { try { renderField(); renderLists(); } catch (e) {} }
+      });
+    }
   }
 });
 controllaVersioneApp(); // memorizza l'etag di partenza
@@ -10782,7 +11080,7 @@ let adminState = {
 
 function switchAdminTab(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  ['listino','calendar','voti','stats','users','asta'].forEach(t => {
+  ['listino','calendar','voti','stats','users','asta','notices'].forEach(t => {
     const el = document.getElementById('adminSec' + t.charAt(0).toUpperCase() + t.slice(1));
     if (el) el.classList.toggle('active', t === tab);
   });
@@ -13167,7 +13465,7 @@ async function applyGlobalListinoAndCalendar() {
       const applicate = applicaVotiGlobali(votiData);
       if (applicate.length > 0) {
         try { renderOraclePage(); renderField(); renderLists(); } catch (e) {}
-        showToast('📊 Voti ufficiali applicati: giornata ' + applicate.join(', ') + ' — Oracolo ricalibrato');
+        showToast('📊 Voti ufficiali applicati: giornata ' + applicate.join(', ') + ' — andamento Oracle aggiornato');
       }
     }
   } catch(e) {
@@ -13300,6 +13598,8 @@ function showPage(id, btn) {
   // La scheda Campo non esiste piu: il campo vive dentro Oracle. Ogni
   // chiamata rimasta (o link vecchio) atterra li.
   if (id === 'campo') { id = 'ai'; btn = document.getElementById('tab-ai'); }
+  const targetPage = document.getElementById('page-' + id);
+  if (!targetPage) { showToast('Sezione non disponibile', 'warning'); return; }
   // La barra "formazione applicata" appartiene al viaggio che arriva da
   // SCHIERA ORACLE: uscendo dalla pagina perde senso e va spenta.
   if (id !== 'ai') {
@@ -13313,11 +13613,21 @@ function showPage(id, btn) {
   // Fine prova: Oracle in pausa finché non c'è un piano attivo
   if (trialGateBlocks(id)) { openTrialGate(); return; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  if (btn) btn.classList.add('active');
+  targetPage.classList.add('active');
+  // La destinazione determina la selezione anche arrivando da un link interno.
+  document.querySelectorAll('.nav-tab').forEach(b => {
+    const active = b.id === 'tab-' + id;
+    b.classList.toggle('active', active);
+    if (active) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
   // sincronizza la bottom nav mobile
-  document.querySelectorAll('.bottom-nav-tab').forEach(b => b.classList.toggle('active', b.dataset.page === id));
+  document.querySelectorAll('.bottom-nav-tab').forEach(b => {
+    const active = b.dataset.page === id;
+    b.classList.toggle('active', active);
+    if (active) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
   // Aggiorna titolo pagina (punto 10 UX)
   const pageTitleEl = document.getElementById('pageTitle');
   if (pageTitleEl) {
@@ -13344,11 +13654,13 @@ function showPage(id, btn) {
     refreshAdminCalendar();
     switchAdminTab('listino');
   }
+  // Ogni sezione riparte dall'inizio, anche dalla navigazione mobile.
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 }
 function setMode(mode) {
   // ORACLE ENGINE v1 — la modalità Oracle è ora attiva: calcola previsioni reali.
   if (mode === 'oracle') {
-    const ok = runOracleEngine(false);
+    const ok = runOracleEngine(true);
     if (!ok) return; // rosa vuota: resta in standard
   }
   currentMode = mode;
@@ -13363,19 +13675,25 @@ function setMode(mode) {
   if (ex) {
     if (isOracle) {
       ex.className = 'mode-explain oracle';
-      const gNum = (calendario.giornate.length && calendario.currentIdx >= 0) ? calendario.giornate[calendario.currentIdx].num : null;
-      ex.innerHTML = '<span><strong>🔮 ORACLE:</strong> punteggi attesi per la ' + (gNum ? 'giornata ' + gNum : 'prossima giornata') + ' — fantamedia + forma + avversario + casa/trasferta. Si ricalibra coi voti reali.</span>';
+      const idxOracle = findCurrentGiornataIdx();
+      const gNum = idxOracle >= 0 ? calendario.giornate[idxOracle].num : null;
+      ex.innerHTML = '<span><strong>🔮 ORACLE:</strong> indici orientativi per la ' + (gNum ? 'giornata ' + gNum : 'prossima giornata') + ' — andamento + avversario + casa/trasferta. Non sono fantapunti previsti.</span>';
     } else {
       ex.className = 'mode-explain';
       ex.innerHTML = '<span>Carica la tua rosa dalla Dashboard: appena c\'è, il campo mostra le previsioni dell\'Oracle.</span>';
     }
   }
   renderField(); renderLists();
-  if (isOracle) showToast('🔮 Oracle attivo: punteggi attesi per la prossima giornata');
+  if (isOracle) showToast('🔮 Oracle attivo: indici orientativi per la prossima giornata');
 }
 function setModulo(m, btn) {
   const formation = formations[m];
   if (!formation) return;
+  if (m === '5-2-3' && !(activeLeagueRules() && activeLeagueRules().modules.includes(m))) { showToast('Modulo non previsto dal regolamento di questa lega'); return; }
+  if (btn) {
+    oracleState.manualModulo = m;
+    oracleSaveState();
+  }
   currentModulo = m;
   document.querySelectorAll('.modulo-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
@@ -13390,6 +13708,7 @@ function setModulo(m, btn) {
   renderField();
   renderLists();
   saveRosterToStorage();
+  if (btn) renderOracleModulo();
   showToast('Modulo ' + m);
 }
 
@@ -13552,6 +13871,79 @@ async function caricaInfermeria(forza) {
   } catch (e) { return false; }
 }
 
+// ============================================================
+// PROBABILI FORMAZIONI UFFICIALI — % titolarità da Fantacalcio.it
+// ============================================================
+// Il fattore che decide un fantavoto piu di ogni altro e se il giocatore
+// parte titolare. La pagina probabili-formazioni-serie-a espone, per ogni
+// giocatore delle 20 rose, la percentuale di titolarita (barra progress,
+// aria-valuenow) — aggiornata fino al fischio, e coi nomi brevi del
+// listone. Qui vince sulla euristica delle news: una percentuale ufficiale
+// batte una frase interpretata. Fetch fallito = si degrada alle news.
+const PROBABILI_URL = 'https://www.fantacalcio.it/probabili-formazioni-serie-a';
+const PROBABILI_CACHE_KEY = 'fantaoracle_probabili_v1';
+const PROBABILI_TTL_MIN = 20;
+let probabiliState = { map: {}, ts: 0 };
+
+async function caricaProbabili(forza) {
+  if (!forza) {
+    try {
+      const raw = sessionStorage.getItem(PROBABILI_CACHE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if ((Date.now() - p.ts) / 60000 < PROBABILI_TTL_MIN && p.map) {
+          probabiliState = p; return true;
+        }
+      }
+    } catch (e) {}
+  }
+  let html = null;
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    try {
+      const resp = await fetchWithTimeout(CORS_PROXIES[i](PROBABILI_URL), NEWS_FETCH_TIMEOUT_MS);
+      if (!resp.ok) continue;
+      const t = await resp.text();
+      if (t && t.includes('progress-starter') && t.includes('team-card')) { html = t; break; }
+    } catch (e) { continue; }
+  }
+  if (!html) return false;
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const map = {};
+    doc.querySelectorAll('.team-card').forEach(card => {
+      const teamEl = card.querySelector('.team-name');
+      const team = teamEl ? teamEl.textContent.trim() : '';
+      card.querySelectorAll('li.player-item').forEach(li => {
+        const nomeEl = li.querySelector('.player-name span') || li.querySelector('.player-name');
+        const barEl = li.querySelector('.progress-bar[aria-valuenow]');
+        if (!nomeEl || !barEl) return;
+        const nome = nomeEl.textContent.trim();
+        const perc = parseInt(barEl.getAttribute('aria-valuenow'), 10);
+        if (!nome || isNaN(perc)) return;
+        const chiave = rosterNormalizeName(nome);
+        // Lo stesso giocatore puo comparire due volte (undici + ballottaggio):
+        // si tiene la percentuale piu alta, che e quella della sua candidatura.
+        if (chiave && (!map[chiave] || perc > map[chiave].perc)) {
+          map[chiave] = { nome, team, perc };
+        }
+      });
+    });
+    // Una pagina vera copre 20 rose: poche decine = markup cambiato,
+    // meglio tenere l'ultima lettura buona che azzerare il segnale.
+    if (Object.keys(map).length < 100) return false;
+    probabiliState = { map, ts: Date.now() };
+    try { sessionStorage.setItem(PROBABILI_CACHE_KEY, JSON.stringify(probabiliState)); } catch (e) {}
+    console.log('[FantaOracle] probabili: ' + Object.keys(map).length + ' giocatori con % titolarita');
+    return true;
+  } catch (e) { return false; }
+}
+
+// Percentuale ufficiale di titolarita per un giocatore (o null).
+function probabiliDi(nomeGiocatore) {
+  const k = rosterNormalizeName(nomeGiocatore);
+  return (k && probabiliState.map && probabiliState.map[k]) || null;
+}
+
 // Stato infermeria di un giocatore della rosa (o null). Match esatto sul
 // nome normalizzato: listone e infermeria usano la stessa forma breve.
 function infermeriaDi(nomeGiocatore) {
@@ -13622,7 +14014,7 @@ function updateDashboardOnboarding(rosterSize) {
   // o sono sempre visibili (news); qui controllo solo quelle che dipendono dalla rosa.
   if (statsGrid) statsGrid.style.display = isEmpty ? 'none' : '';
   if (buildCta) buildCta.classList.toggle('hero', isEmpty);
-  if (onboarding) onboarding.style.display = isEmpty ? 'block' : 'none';
+  if (onboarding) onboarding.style.display = isEmpty && !currentUser?.is_admin ? 'block' : 'none';
   // calendario lo nascondo quando l'utente non ha ancora nemmeno iniziato
   if (calendarioCard) calendarioCard.style.display = isEmpty ? 'none' : '';
 }
@@ -13845,13 +14237,26 @@ function getTitolaritaSignals() {
 let _titCache = { sig: {}, key: null };
 function titolaritaSignals() {
   const key = (newsState.lastUpdate ? newsState.lastUpdate.getTime() : 0)
-    + '|' + (players.starters.length + players.bench.length);
+    + '|' + (players.starters.length + players.bench.length)
+    + '|' + (probabiliState.ts || 0);
   if (_titCache.key === key) return _titCache.sig;
   // I pallini restano SOLO dalle news: il consenso fonti e un ingrediente
   // interno della previsione e non deve firmarsi nell'interfaccia (scelta
   // di prodotto del 27/8). Il campo tit del consenso resta nei dati per un
   // eventuale ripensamento.
-  _titCache.sig = getTitolaritaSignals();
+  const sig = getTitolaritaSignals();
+  // Le PROBABILI UFFICIALI vincono sulle frasi interpretate: dove c'e una
+  // percentuale, il semaforo la usa (>=70 titolare, 40-69 ballottaggio,
+  // <40 panchina) e la mostra nella fonte. Le news restano per chi non e
+  // ancora nelle probabili.
+  [...players.starters, ...players.bench].forEach(p => {
+    if (!p || !p.name || p.name === '---') return;
+    const prob = probabiliDi(p.name);
+    if (!prob) return;
+    const status = prob.perc >= 70 ? 'in' : prob.perc >= 40 ? 'doubt' : 'out';
+    sig[p.name] = { status, perc: prob.perc, source: 'Probabili Fantacalcio.it · ' + prob.perc + '%' };
+  });
+  _titCache.sig = sig;
   _titCache.key = key;
   return _titCache.sig;
 }
@@ -13950,10 +14355,8 @@ function renderField() {
     // Da quattro in su i nomi vanno stretti: lo dice il CSS, qui si segnala
     // solo il fatto. Tre o meno hanno spazio anche su un telefono piccolo.
     if (rowRoles.length >= 4) row.dataset.affollata = '1';
-    // Fascia 9-87% invece di 10-90%: l'arco spinge la punta centrale piu
-    // in basso del centro della sua riga, e il campo ha overflow hidden —
-    // con la vecchia fascia il suo nome veniva tagliato dal bordo.
-    const yPct = 9 + (ri / (rows.length - 1)) * 78;
+    // Margine sopra e sotto per nome e partita, anche nelle righe curve.
+    const yPct = 12 + (ri / (rows.length - 1)) * 74;
     row.style.top = yPct + '%';
     row.style.transform = 'translateY(-50%)';
     
@@ -14000,7 +14403,7 @@ function renderField() {
         return;
       }
       
-      const score = currentMode === 'oracle' ? p.oracle : p.score;
+      const score = Number((currentMode === 'oracle' ? p.oracle : p.score) ?? p.score) || 0;
       const isAlerted = p.name && alerted.has(p.name);
       const tsig = p.name ? titSig[p.name] : null;
       const role = p.role || expectedRole;
@@ -14015,7 +14418,7 @@ function renderField() {
         const ctxTok = oracleMatchContext(p);
         if (ctxTok) vsTok = (ctxTok.home ? ' · vs ' : ' · @ ') + ctxTok.opponent;
       } catch (e) {}
-      token.title = `${roleLabel(role)} · fantamedia prevista ${score.toFixed(1)}${vsTok} — click per sostituire`;
+      token.title = `${roleLabel(role)} · indice Oracle orientativo ${score.toFixed(1)}${vsTok} — click per sostituire`;
       token.addEventListener('click', (ev) => {
         ev.stopPropagation();
         showPlayerDetail(p);
@@ -14037,6 +14440,7 @@ function renderField() {
           ${p.rigorista ? '<div class="token-rig" title="Rigorista designato">RIG</div>' : ''}
         </div>
         <div class="token-name" style="${isAlerted?'color:#ff8a8a;font-weight:700':''}">${escapeHtml(p.name)}</div>
+        <div class="token-fixture">${playerFixtureHtml(p, true)}</div>
       `;
       row.appendChild(token);
     });
@@ -14176,6 +14580,8 @@ function renderDashboardManage() {
   renderPlanBanner();
 }
 function renderDashLeagues() {
+  const guide = document.getElementById('firstLeagueGuide');
+  if (guide) guide.style.display = leagues.length || currentUser?.is_admin ? 'none' : '';
   const box = document.getElementById('dashLeaguesList');
   if (!box) return;
   // L'admin gestisce l'app, non gioca: non ha una lega e la scheda non gli
@@ -14253,7 +14659,7 @@ function renderDashLeagues() {
       ${rami}
       ${comps.length > 0 ? `<button class="fo-btn fo-btn--fantasma" style="margin:2px 0 0 22px;font-size:11px"
         onclick="caricaCalendarioPerLega('${escapeAttr(l.id)}');event.stopPropagation()"
-        title="Aggiungi un altro calendario (coppa, altre competizioni)">＋ aggiungi calendario</button>` : ''}
+        title="Aggiungi altri calendari: puoi selezionare più file insieme">＋ aggiungi calendari</button>` : ''}
     </div>`;
   }).join('');
 
@@ -14487,11 +14893,11 @@ function showPlayerDetail(p) {
   const info = p._oracleInfo;
   if (info) {
     const factors = (info.factors || []).slice(0, 3);
-    oracleHtml = `<div class="pd-oracle">Oracle prevede <b>${info.expected.toFixed(1)}</b> · fiducia ${info.confidence}%` +
+    oracleHtml = `<div class="pd-oracle">Indice Oracle <b>${info.expected.toFixed(1)}/10</b> · qualità dati ${info.confidence}/100` +
       (factors.length ? `<ul class="pd-factors">${factors.map(f => '<li>' + escapeHtml(f) + '</li>').join('')}</ul>` : '') +
       `</div>`;
   } else {
-    oracleHtml = `<div class="pd-oracle" style="color:var(--muted)">Attiva la modalità <b>Oracle</b> per la previsione di giornata.</div>`;
+    oracleHtml = `<div class="pd-oracle" style="color:var(--muted)">Attiva la modalità <b>Oracle</b> per i consigli di giornata.</div>`;
   }
   body.innerHTML = `
     <div class="pd-name">${escapeHtml(p.name)}</div>
@@ -14559,8 +14965,8 @@ function renderLists() {
     list.forEach((p, pIdx) => {
       if (!p || !p.name || p.name === '---' || p.isEmpty) return;
       renderedAny = true;
-      const score = currentMode === 'oracle' ? p.oracle : p.score;
-      const diff = (p.oracle - p.score).toFixed(1);
+      const score = Number((currentMode === 'oracle' ? p.oracle : p.score) ?? p.score) || 0;
+      const diff = ((Number(p.oracle) || 0) - (Number(p._oracleInfo?.base) || Number(p.oracle) || 0)).toFixed(1);
       const isAlerted = p.name && alerted.has(p.name);
       const tsig = p.name ? titSig[p.name] : null;
       const titMark = (tsig && !isAlerted) ? titEmoji(tsig.status) + ' ' : '';
@@ -14578,7 +14984,7 @@ function renderLists() {
       });
       item.innerHTML = `
         <div class="pli-role" style="background:${rc}22;color:${rc}">${p.role}</div>
-        <div class="pli-name" style="${isAlerted?'color:var(--red);font-weight:600':''}">${isAlerted?'🚑 ':titMark}${escapeHtml(p.name)}</div>
+        <div class="pli-info"><div class="pli-name" style="${isAlerted?'color:var(--red);font-weight:600':''}">${isAlerted?'🚑 ':titMark}${escapeHtml(p.name)}</div><div class="pli-fixture">${playerFixtureHtml(p)}</div></div>
         ${p.rigorista ? '<span class="chip-rig" title="Rigorista designato">RIG</span>' : ''}
         ${currentMode === 'oracle' ? `<div class="pli-oracle">${diff > 0 ? '+' : ''}${diff}</div>` : ''}
         <div class="pli-score" style="color:${score >= 7 ? 'var(--green)' : score >= 6.5 ? 'var(--gold)' : 'var(--muted)'}">${score.toFixed(1)}</div>
@@ -14657,7 +15063,7 @@ function renderRosaCompleta() {
   html += '</div>';
   html += '<div class="rosa-legenda">Il bordo verde a sinistra segna chi e in campo. '
         + '<span class="chip-rig">RIG</span> e il rigorista designato. '
-        + 'Il numero e la fantamedia ' + (currentMode === 'oracle' ? 'prevista dall\'Oracle' : 'di listino') + '. '
+        + (currentMode === 'oracle' ? 'Il numero è un indice orientativo Oracle, non un fantavoto previsto. ' : 'Il numero è la fantamedia di listino. ')
         + 'Tocca un giocatore per aprirne la scheda.</div>';
   box.innerHTML = html;
   // Il nome viaggia in un attributo, non dentro una stringa JS nell'onclick:
@@ -14962,7 +15368,8 @@ function showToast(msg, type) {
   void t.offsetWidth;
   t.classList.add('show');
   clearTimeout(t._hideTimer);
-  t._hideTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  t._hideTimer = setTimeout(() => t.classList.remove('show'),
+    Math.min(12000, Math.max(type === 'error' ? 6000 : 3500, String(msg).length * 55)));
 }
 function togglePill(el) {
   document.querySelectorAll('.team-pill').forEach(p => p.classList.remove('selected'));
@@ -14997,5 +15404,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   </button>
 </div>
 
+<script src="/assets/support-core.js"></script>
+<script src="/assets/support.js"></script>
 </body>
 </html>
