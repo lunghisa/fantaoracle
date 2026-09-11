@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FantaOracle — Il copilota predittivo per il fantacalcio</title>
-<meta name="description" content="FantaOracle analizza la tua rosa, il calendario e le news e ti dice come schierare per giocartela al meglio. Prova gratis 1 mese.">
+<meta name="description" content="FantaOracle analizza la tua rosa, il calendario e le news e ti dice come schierare per giocartela al meglio. Registrati e prova gratis 30 giorni.">
 <!-- Il canonical mancava. Serve a dire a Google qual e l'indirizzo vero di
      questa pagina: senza, un qualsiasi altro dominio che serva lo stesso
      contenuto puo prendersi il posto nei risultati — che e esattamente
@@ -47,7 +47,7 @@
   --oracle:#a86ef5;
   --gold:#f5c542;
   --text:#efe9ff;
-  --muted:#8b7bb5;
+  --muted:#aa9bc9;
   --ok:#1db954;
 
   --font-display:"Bebas Neue",Impact,sans-serif;
@@ -474,18 +474,22 @@ footer{
 
 /* ============ REVEAL ============ */
 [data-reveal]{
-  opacity:0;
-  transform:translateY(22px);
+  opacity:1;
+  transform:none;
   transition:opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1);
   transition-delay:var(--d,0ms);
 }
+.reveal-ready [data-reveal]:not(.in){opacity:0;transform:translateY(22px)}
 [data-reveal].in{opacity:1;transform:none}
 
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
-  [data-reveal]{opacity:1;transform:none}
+  [data-reveal], .reveal-ready [data-reveal]:not(.in){opacity:1;transform:none}
   html{scroll-behavior:auto}
 }
+
+:where(a,button,input,select,textarea):focus-visible{outline:2px solid var(--gold);outline-offset:5px}
+.eyebrow{font-size:12px}
 </style>
 </head>
 <body>
@@ -582,8 +586,7 @@ footer{
     </p>
 
     <div class="cta-row" data-reveal style="--d:260ms">
-      <a class="btn btn-primary" href="/app?signup=1">Prova gratis 1 mese</a>
-      <a class="btn btn-ghost" href="#come-funziona">Scopri come funziona</a>
+      <a class="btn btn-primary" href="/app?signup=1">Registrati e prova gratis 30 giorni</a>
     </div>
 
     <!-- Solo su iPhone: la "versione iOS" e la PWA, ma nessuno la scopre
@@ -794,6 +797,7 @@ footer{
         }
       });
     }, {threshold:0.12, rootMargin:'0px 0px -50px 0px'});
+    document.documentElement.classList.add('reveal-ready');
     els.forEach(function(el){ io.observe(el); });
   }
 

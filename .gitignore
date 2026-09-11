@@ -12,3 +12,8 @@ dati/Password*
 dati/*rosters*.xlsx
 dati/*rose*.xlsx
 !dati/esempio_rose_lega.xlsx
+
+node_modules/
+
+# Appunti di lavoro: restano locali finche Sacha non decide altrimenti
+reports/

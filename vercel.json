@@ -1,13 +1,36 @@
 {
   "rewrites": [
-    { "source": "/app", "destination": "/app.html" }
+    {
+      "source": "/app",
+      "destination": "/app.html"
+    }
   ],
   "redirects": [
     {
       "source": "/:path(.*)",
-      "has": [{ "type": "host", "value": "www.fantaoracle.ch" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "www.fantaoracle.ch"
+        }
+      ],
       "destination": "https://fantaoracle.ch/:path",
       "permanent": true
+    },
+    {
+      "source": "/demo",
+      "destination": "/app?signup=1",
+      "permanent": false
+    },
+    {
+      "source": "/demo.html",
+      "destination": "/app?signup=1",
+      "permanent": false
     }
-  ]
+  ],
+  "functions": {
+    "api/service-mail.js": {
+      "maxDuration": 60
+    }
+  }
 }

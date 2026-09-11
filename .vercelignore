@@ -10,3 +10,9 @@ dati/
 # (architettura, workflow di deploy, cose da fare). Nessun segreto dentro,
 # ma sono appunti di lavoro, non contenuto del sito.
 *.md
+
+# Test di regressione locali
+tests/
+
+# Demo ritirata: accesso tramite registrazione e prova 30 giorni
+demo.html

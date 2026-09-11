@@ -264,3 +264,11 @@ qui, cambialo anche là, altrimenti i clienti scrivono a una casella morta.
 - Il prezzo 9.90 è scritto sia nelle card dell'app sia su Polar: se lo cambi,
   cambialo in entrambi. Chi ha già pagato tiene il suo, il prezzo è congelato
   nella tabella `subscriptions` (vedi `PAGAMENTI.md`).
+
+## Fonte unica Oracle — decisione utente
+
+Oracle deve usare per tutte le leghe i voti Fantacalcio caricati dall'admin, anche quando il regolamento indica Italia o altra fonte. L'utente accetta l'approssimazione nelle previsioni: nessun caricamento aggiuntivo per fonte è richiesto. La fonte ufficiale del regolamento resta registrata come informazione e il pannello dichiara la differenza. Bonus, moduli e modificatori rimangono specifici della lega. Gli eventi completi permettono il ricalcolo dei bonus; in loro assenza si usano i fantavoti admin disponibili, senza spacciare un fantavoto per voto base. Il modificatore può usare i voti base Fantacalcio o la media voto del listone admin.
+
+Oracle andamento (2026-09-08): fonte admin Fantacalcio unica; indice euristico indipendente dal profilo lega. Eventi: voto base + segnale attività limitato (gol 0.6, assist 0.4, tetto 1.5), non bonus regolamentari né previsione in punti. Fantavoti legacy usati come proxy dichiarato. Modificatore separato come preferenza contenuta per formazione (0.15 del bonus storico, massimo 0.9). Rimossi risultati esatti H2H e precisione in fantapunti; snapshot form-v2 esclusi dalla calibrazione legacy. 33 test superati. Occorre ricaricare i file admin esistenti per avere eventi nel cloud; non effettuato automaticamente.
+
+0.8 Beta: dettagli del rilascio e limiti dei controlli in reports/verifica-lancio-0.8.md. Test carico limitato alle pagine pubbliche; 100/100 percorsi riusciti. Contatti di entrambe le leghe mascherati.
