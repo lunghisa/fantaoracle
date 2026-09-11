@@ -4428,6 +4428,7 @@ body::before { opacity:.2; }
         <div class="pro-eyebrow"><span class="pro-live"></span> FANTAORACLE <span class="pro-divider">/</span> CLASSIC</div>
         <h2>La tua <span>formazione.</span></h2>
         <p>Giornata <strong id="oracleGiornata">—</strong> <span class="pro-divider">/</span> Ogni scelta conta.</p>
+        <div id="oracleDeadline" style="display:none;margin-top:8px;font-size:13px;font-weight:600"></div>
       </div>
       <div class="pro-actions">
         <button class="oracle-cta ghost" onclick="oracleRunAndRender()"><svg class="ico"><use href="#ico-orb"/></svg> Aggiorna previsioni</button>
@@ -7965,6 +7966,7 @@ function renderModuloChoice(best) {
 }
 
 function renderOracleModulo() {
+  try { aggiornaDeadlineOracle(); } catch (e) {}
   const box = document.getElementById('oracleModuloBox');
   if (!box) return;
   const best = oracleBestFormation();
@@ -9198,9 +9200,12 @@ function enterApp(ev) {
     // campo e liste si ridisegnano cosi icone 🚑 e pallini compaiono senza
     // aspettare un'azione.
     Promise.all([caricaInfermeria(), caricaProbabili()]).then(esiti => {
+      try { aggiornaDeadlineOracle(); } catch (e) {}
       if (!esiti.some(Boolean)) return;
       try { renderField(); renderLists(); } catch (e) {}
     });
+    // la scritta OGGI/chiuse deve girare anche a pagina ferma
+    setInterval(() => { try { aggiornaDeadlineOracle(); } catch (e) {} }, 60000);
     const ft = document.getElementById('app-footer'); if (ft) ft.style.display = 'block';
     loadLeaguesRegistry();
     loadListinoFromStorage();
@@ -10994,6 +10999,7 @@ document.addEventListener('visibilitychange', () => {
     // torna roba fresca, icone e pallini si aggiornano da soli.
     if (typeof caricaInfermeria === 'function') {
       Promise.all([caricaInfermeria(), caricaProbabili()]).then(esiti => {
+        try { aggiornaDeadlineOracle(); } catch (e) {}
         if (esiti.some(Boolean)) { try { renderField(); renderLists(); } catch (e) {} }
       });
     }
@@ -13956,14 +13962,61 @@ async function caricaProbabili(forza) {
         }
       });
     });
+    // Dalla stessa pagina, gli ORARI VERI delle partite: il primo calcio
+    // d'inizio della giornata determina la deadline delle formazioni
+    // (regola standard Leghe Fantacalcio: 1h prima della prima partita).
+    // Il calendario csv ha solo date nominali, gli anticipi stanno qui.
+    let primoCalcio = null;
+    const MESI = { gennaio:0, febbraio:1, marzo:2, aprile:3, maggio:4, giugno:5,
+                   luglio:6, agosto:7, settembre:8, ottobre:9, novembre:10, dicembre:11 };
+    doc.querySelectorAll('.match-date').forEach(el => {
+      const m = /(\d{1,2})\s+([a-zà]+)[^\d]*(\d{1,2}):(\d{2})/i.exec((el.textContent || '').toLowerCase());
+      if (!m || MESI[m[2]] === undefined) return;
+      const oggi = new Date();
+      let d = new Date(oggi.getFullYear(), MESI[m[2]], parseInt(m[1], 10), parseInt(m[3], 10), parseInt(m[4], 10));
+      // cavallo d'anno: a gennaio la pagina puo ancora dire "dicembre" e viceversa
+      if (d.getTime() < oggi.getTime() - 150 * 86400000) d.setFullYear(d.getFullYear() + 1);
+      if (d.getTime() > oggi.getTime() + 150 * 86400000) d.setFullYear(d.getFullYear() - 1);
+      if (!primoCalcio || d.getTime() < primoCalcio.ts) {
+        primoCalcio = { ts: d.getTime(), label: (el.textContent || '').trim() };
+      }
+    });
     // Una pagina vera copre 20 rose: poche decine = markup cambiato,
     // meglio tenere l'ultima lettura buona che azzerare il segnale.
     if (Object.keys(map).length < 100) return false;
-    probabiliState = { map, ts: Date.now() };
+    probabiliState = { map, ts: Date.now(), primoCalcio };
     try { sessionStorage.setItem(PROBABILI_CACHE_KEY, JSON.stringify(probabiliState)); } catch (e) {}
     console.log('[FantaOracle] probabili: ' + Object.keys(map).length + ' giocatori con % titolarita');
     return true;
   } catch (e) { return false; }
+}
+
+// Deadline formazioni nell'intestazione Oracle: 1h prima del primo calcio
+// d'inizio (regola standard Leghe Fantacalcio). Dopo la deadline il
+// messaggio cambia: inutile suggerire ritocchi a lucchetto chiuso.
+// Nato da un venerdi di anticipo (11/9): meta lega schierava "per domenica"
+// e la deadline era alle 19:45 di quella sera.
+function aggiornaDeadlineOracle() {
+  const el = document.getElementById('oracleDeadline');
+  if (!el) return;
+  const pc = probabiliState && probabiliState.primoCalcio;
+  if (!pc || !pc.ts) { el.style.display = 'none'; return; }
+  const deadline = pc.ts - 3600000;
+  const ore = (deadline - Date.now()) / 3600000;
+  if (ore < -80) { el.style.display = 'none'; return; } // giornata finita, dati vecchi
+  el.style.display = 'block';
+  const quando = new Date(deadline).toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  if (ore <= 0) {
+    el.style.color = 'var(--muted)';
+    el.textContent = '🔒 Formazioni chiuse per questa giornata (primo match: ' + pc.label + ')';
+  } else if (ore <= 24) {
+    el.style.color = 'var(--orange)';
+    el.textContent = '⏰ Formazioni entro le ' + new Date(deadline).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+      + (ore <= 14 ? ' DI OGGI' : ' di domani') + ' — 1h prima dell’anticipo (' + pc.label + ')';
+  } else {
+    el.style.color = 'var(--muted)';
+    el.textContent = '📅 Deadline formazioni: ' + quando + ' (1h prima del primo match)';
+  }
 }
 
 // Percentuale ufficiale di titolarita per un giocatore (o null).
