@@ -25,6 +25,11 @@ Mnemonica: **Millièmes → Mese**, quindi qui è la stagione.
   lo faccia lui: sono scritture reali sui dati di produzione che alimentano l'Oracle.
 - **localStorage segue il browser, non l'account**: prima di dire che un dato "si perde",
   guarda cosa è effettivamente nel cloud e cosa no.
+- **Ogni deploy va accompagnato dal commit.** Il deploy pubblica l'albero di lavoro, non
+  git: una sessione che deploya senza committare lascia il repo indietro e la sessione
+  successiva rischia di mescolare lavoro altrui nel proprio commit (successo l'11/9 col
+  cantiere 0.8 del 3–8/9). Prima di `git add`: `git status`, sempre.
+- **reports/ resta locale** (gitignored): appunti di lavoro, non vanno sul repo pubblico.
 
 ## Contesto completo
 
