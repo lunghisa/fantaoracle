@@ -8033,10 +8033,18 @@ function saveCalendarioToStorage() {
 function findCurrentGiornataIdx() {
   if (!calendario.giornate.length) return -1;
   const now = new Date();
-  now.setHours(0,0,0,0);
   for (let i = 0; i < calendario.giornate.length; i++) {
     const g = calendario.giornate[i];
-    if (g.date && g.date >= now) return i;
+    if (!g.date) continue;
+    // La giornata resta CORRENTE fino a fine posticipi, non fino alla sua
+    // data nominale: il csv porta un giorno solo (di solito la domenica) ma
+    // si gioca da venerdi a lunedi. Regola di Sacha (14/9): finche la G4 e
+    // in campo si vede la G4 — anche per confrontare i voti veri con cio
+    // che l'Oracle consigliava. Quindi: nominale + 1 giorno, a fine giornata.
+    const fine = new Date(g.date);
+    fine.setDate(fine.getDate() + 1);
+    fine.setHours(23, 59, 59, 999);
+    if (fine >= now) return i;
   }
   return calendario.giornate.length - 1;
 }
