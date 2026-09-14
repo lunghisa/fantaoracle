@@ -3813,6 +3813,7 @@ body::before { opacity:.2; }
 .token-fixture { border-radius:6px; background:#0d0916a6; padding:5px 2px; color:#bcb3cb; line-height:1.4; }
 .token-fixture strong { color:#f0eaf8; }
 .fixture-home { color:var(--gold); font-size:11px; }
+.fixture-sep { color:var(--muted); padding:0 3px; flex-shrink:0; }
 .player-token:hover { transform:translateY(calc(var(--sposta,0px) - 3px)); }
 .role-legend { border:0; padding:12px 0 0; gap:12px; }
 .role-legend-dot { width:6px; height:6px; box-shadow:none; }
@@ -6669,14 +6670,16 @@ function playerFixtureHtml(p, compact = false) {
   const ctx = oracleMatchContext(p);
   const own = '<strong>' + escapeHtml(team) + '</strong>';
   if (!ctx) return own + '<span>' + (compact ? 'Avversaria n.d.' : ' · Avversaria non disponibile') + '</span>';
-  // Il nome e il segno casa sono un unico elemento: niente (c) sulla riga sotto.
-  const label = (name, home, bold) => '<span class="fixture-team" title="' + escapeHtml(name + (home ? ' (c)' : '')) + '">'
+  // Convenzione classica (scelta di Sacha, 14/9): PRIMA la squadra che gioca
+  // in casa, poi la trasferta, separate dal trattino delle partite. Niente
+  // piu "(c)": l'ordine dice chi e in casa, il grassetto qual e la tua.
+  const label = (name, bold) => '<span class="fixture-team" title="' + escapeHtml(name) + '">'
     + (bold ? '<strong>' : '<span class="fixture-team-name">') + escapeHtml(name)
-    + (bold ? '</strong>' : '</span>')
-    + (home ? '<span class="fixture-home">&nbsp;(c)</span>' : '') + '</span>';
-  const ownLabel = label(team, ctx.home, true);
-  const opponentLabel = '<span class="fixture-opponent">vs ' + label(ctx.opponent, !ctx.home, false) + '</span>';
-  return compact ? ownLabel + opponentLabel : ownLabel + ' ' + opponentLabel;
+    + (bold ? '</strong>' : '</span>') + '</span>';
+  const casa = ctx.home ? label(team, true) : label(ctx.opponent, false);
+  const fuori = ctx.home ? label(ctx.opponent, false) : label(team, true);
+  return '<span class="fixture-opponent" title="' + escapeHtml((ctx.home ? team : ctx.opponent) + ' in casa') + '">'
+    + casa + '<span class="fixture-sep">–</span>' + fuori + '</span>';
 }
 
 // ---- FORMA: ultimi voti reali registrati per un giocatore ----
@@ -14962,8 +14965,12 @@ function showPlayerDetail(p) {
   try {
     const ctx = oracleMatchContext(p);
     if (ctx) {
+      // Stessa convenzione della rosa: casa prima, trasferta dopo, la
+      // squadra del giocatore in grassetto pieno.
+      const mia = '<strong>' + escapeHtml(p.team || '') + '</strong>';
+      const avv = escapeHtml(ctx.opponent);
       vsTxt = '<span style="color:var(--oracle);font-weight:600">'
-        + (ctx.home ? 'vs ' : '@ ') + escapeHtml(ctx.opponent) + '</span>';
+        + (ctx.home ? mia + ' – ' + avv : avv + ' – ' + mia) + '</span>';
     }
   } catch (e) {}
   const stats = [];

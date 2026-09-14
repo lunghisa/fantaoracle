@@ -35,14 +35,15 @@ for (const file of ['app.html', 'index.html']) test(file + ': JavaScript compila
 });
 test('Partita corrente, indipendente dal calendario sfogliato; alias squadra', () => {
   const c = fixtureContext();
-  assert.equal(fixtureText(c.playerFixtureHtml({team:'Internazionale'})), 'Internazionale (c) vs Roma');
+  assert.equal(fixtureText(c.playerFixtureHtml({team:'Internazionale'})), 'Internazionale\u2013Roma');
   assert.equal(c.oracleMatchContext({team:'Inter'}).giornata, 3);
 });
 test('Trasferta: solo la squadra del giocatore è in grassetto', () => {
   const c = fixtureContext();
-  assert.equal(fixtureText(c.playerFixtureHtml({team:'Roma'})), 'Roma vs Inter (c)');
+  assert.equal(fixtureText(c.playerFixtureHtml({team:'Roma'})), 'Inter\u2013Roma');
   assert.match(c.playerFixtureHtml({team:'Roma'}, true), /<strong>Roma<\/strong>/);
-  assert.match(c.playerFixtureHtml({team:'Roma'}, true), /class="fixture-home">&nbsp;\(c\)/);
+  assert(!c.playerFixtureHtml({team:'Roma'}, true).includes('<strong>Inter</strong>'));
+  assert.match(c.playerFixtureHtml({team:'Roma'}), /Inter in casa/);
 });
 test('Calendario o squadra mancanti: nessuna avversaria inventata', () => {
   const c = fixtureContext();
@@ -105,7 +106,7 @@ test('Le liste titolari e panchina mostrano entrambe la partita', () => {
     document:{getElementById:id=>lists[id],createElement:()=>({style:{},addEventListener(){}})},
   });
   vm.runInContext(fn('renderLists'),c); c.renderLists();
-  assert.match(fixtureText(lists.starterList.children[0].innerHTML), /Inter \(c\) vs Roma/);
-  assert.match(fixtureText(lists.benchList.children[0].innerHTML), /Roma vs Inter \(c\)/);
+  assert.match(fixtureText(lists.starterList.children[0].innerHTML), /Inter–Roma/);
+  assert.match(fixtureText(lists.benchList.children[0].innerHTML), /Inter–Roma/);
   assert(!lists.starterList.children[0].innerHTML.includes('NaN'));
 });
