@@ -4993,6 +4993,11 @@ body::before { opacity:.2; }
       </div>
       <button class="fo-btn fo-btn--fantasma" onclick="diagnosiLeghe()">confronta leghe locale e cloud</button>
       <div class="admin-tools-note">Mette in fila le leghe registrate in questo browser e quelle salvate nel cloud, con gli id veri. Serve se ricompaiono leghe che erano state eliminate.</div>
+      <button class="fo-btn fo-btn--fantasma" style="margin-top:14px" onclick="misuraOracleRetro()">📐 misura oracle (retro)</button>
+      <div class="admin-tools-note">Ricostruisce per ogni giornata passata una previsione base con i soli dati storicizzati
+        (voti admin precedenti, consenso fonti, casa/trasferta, rigoristi) e la confronta con l'andamento reale.
+        Serve a decidere sui fattori, non a fare marketing: le esclusioni sono elencate nel risultato.</div>
+      <div id="misuraOracleBox" style="margin-top:10px"></div>
     </div>
   </div>
 </div>
@@ -14764,6 +14769,97 @@ function renderDashLeagues() {
       selezionaCompetizione(riga.dataset.lega || '', riga.dataset.comp || '');
     });
   });
+}
+
+// ============================================================
+// MISURA ORACLE (retro) — pannellino solo-admin, in STRUMENTI
+// ============================================================
+// Ricostruisce, per ogni giornata con voti pubblicati, una previsione BASE
+// con i soli ingredienti STORICIZZATI nel cloud: voti admin delle giornate
+// precedenti (base + forma, stessi pesi del motore: 0.65/0.35), consenso
+// fonti della giornata (global_consigli, ±0.3), casa/trasferta (±0.15),
+// rigorista (+0.35 dal listone attivo). Poi la confronta con l'andamento
+// reale della giornata, sulla STESSA scala del motore (formSignal).
+// NON è la previsione completa che vedevano gli utenti: probabili,
+// infermeria e ricalibrazione non sono storicizzate e restano fuori —
+// il numero serve a decidere sui fattori, non a farsi belli.
+async function misuraOracleRetro() {
+  const box = document.getElementById('misuraOracleBox');
+  if (!box) return;
+  if (!(currentUser && currentUser.is_admin)) { box.textContent = 'Solo admin.'; return; }
+  box.innerHTML = '<div style="font-size:12px;color:var(--muted)">calcolo…</div>';
+  try {
+    const giornate = (Array.isArray(votiGlobaliInMemoria) ? votiGlobaliInMemoria : [])
+      .slice().sort((a, b) => a.giornata - b.giornata);
+    if (giornate.length < 2) { box.innerHTML = '<div style="font-size:12px;color:var(--orange)">Servono almeno 2 giornate di voti (la prima fa solo da base).</div>'; return; }
+    // consenso storicizzato, tutto in un colpo
+    let consigliPerG = {};
+    try {
+      const client = await ensureSupabaseReady();
+      const { data } = await client.from('global_consigli').select('giornata,consigli');
+      (data || []).forEach(r => { consigliPerG[r.giornata] = r.consigli || {}; });
+    } catch (e) {}
+    // il flag rigorista sta nei players del listone attivo, non nella
+    // proiezione di giocatoriListoneAdmin
+    const listinoFull = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
+    const rigoristi = new Set(listinoFull.filter(p => p && p.rigorista).map(p => rosterNormalizeName(p.name)));
+    const casaDi = (team, gNum) => {
+      const g = (calendario.giornate || []).find(x => parseInt(x.num, 10) === gNum);
+      if (!g || !Array.isArray(g.matches)) return null;
+      const t = normTeamName(team);
+      const m = g.matches.find(x => normTeamName(x.home) === t || normTeamName(x.away) === t);
+      return m ? normTeamName(m.home) === t : null;
+    };
+    const segnale = rec => { const s = FantaLeagueRules.formSignal(rec); return s ? s.score : null; };
+
+    const righe = [];
+    for (let i = 1; i < giornate.length; i++) {
+      const G = giornate[i];
+      const precedenti = giornate.slice(0, i);
+      const errori = []; const coppie = [];
+      Object.keys(G.votes || {}).forEach(key => {
+        const reale = segnale(G.votes[key]);
+        if (reale === null) return;
+        // storico del giocatore PRIMA di questa giornata
+        const prima = precedenti
+          .map(p => segnale((p.votes || {})[key])).filter(v => v !== null);
+        if (!prima.length) return; // nessuna base retro: fuori dal confronto
+        const base = prima.reduce((a, b) => a + b, 0) / prima.length;
+        const ultime = prima.slice(-2);
+        let exp = ultime.length >= 2 ? base * 0.65 + (ultime.reduce((a, b) => a + b, 0) / ultime.length) * 0.35 : base;
+        const team = (G.votes[key] && G.votes[key].team) || '';
+        const casa = casaDi(team, G.giornata);
+        if (casa !== null) exp += casa ? 0.15 : -0.15;
+        const cns = (consigliPerG[G.giornata] || {})[key];
+        if (cns && cns.fascia === 1) exp += 0.3;
+        else if (cns && cns.fascia === 3) exp -= 0.3;
+        if (rigoristi.has(key)) exp += 0.35;
+        errori.push(Math.abs(reale - exp));
+        coppie.push({ exp, reale });
+      });
+      if (!coppie.length) continue;
+      const mae = errori.reduce((a, b) => a + b, 0) / errori.length;
+      const entro1 = errori.filter(e => e <= 1).length / errori.length * 100;
+      // lift: i top-25% per previsione hanno reso piu della media generale?
+      const ord = coppie.slice().sort((a, b) => b.exp - a.exp);
+      const top = ord.slice(0, Math.max(1, Math.floor(ord.length / 4)));
+      const mediaTop = top.reduce((a, b) => a + b.reale, 0) / top.length;
+      const mediaTutti = coppie.reduce((a, b) => a + b.reale, 0) / coppie.length;
+      righe.push({ g: G.giornata, n: coppie.length, mae, entro1, lift: mediaTop - mediaTutti });
+    }
+    if (!righe.length) { box.innerHTML = '<div style="font-size:12px;color:var(--orange)">Nessun confronto possibile.</div>'; return; }
+    box.innerHTML = '<table style="width:100%;border-collapse:collapse;font-family:\'DM Mono\',monospace;font-size:12px">'
+      + '<tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">Giornata</th><th>confronti</th><th title="errore medio assoluto sulla scala del motore">MAE</th><th title="% previsioni entro 1 punto">entro ±1</th><th title="quanto rendono in piu i top-25% per previsione rispetto alla media: sopra zero = l\'ordinamento aiuta a schierare">lift top-25%</th></tr>'
+      + righe.map(r => '<tr style="text-align:right;border-top:1px solid var(--border)">'
+        + '<td style="text-align:left;padding:4px">G' + r.g + '</td><td>' + r.n + '</td>'
+        + '<td>' + r.mae.toFixed(2) + '</td><td>' + r.entro1.toFixed(0) + '%</td>'
+        + '<td style="color:' + (r.lift > 0 ? 'var(--green)' : 'var(--red)') + '">' + (r.lift > 0 ? '+' : '') + r.lift.toFixed(2) + '</td></tr>').join('')
+      + '</table>'
+      + '<div class="admin-tools-note">Esclusi perché non storicizzati: probabili, infermeria, ricalibrazione, avversario, listini di lega. '
+      + 'Solo giocatori con almeno un voto precedente. Il numero che conta è il <strong>lift</strong>: sopra zero, l\'ordinamento Oracle batte il caso.</div>';
+  } catch (e) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--red)">Errore: ' + escapeHtml(String(e && e.message || e)) + '</div>';
+  }
 }
 
 // Mette in fila quello che c'e in locale e quello che c'e nel cloud, con gli
