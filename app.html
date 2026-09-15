@@ -4993,6 +4993,10 @@ body::before { opacity:.2; }
       </div>
       <button class="fo-btn fo-btn--fantasma" onclick="diagnosiLeghe()">confronta leghe locale e cloud</button>
       <div class="admin-tools-note">Mette in fila le leghe registrate in questo browser e quelle salvate nel cloud, con gli id veri. Serve se ricompaiono leghe che erano state eliminate.</div>
+      <button class="fo-btn fo-btn--fantasma" style="margin-top:14px" id="adminCongelaBtn" onclick="congelaPrevisioniGiornata()">❄ congela previsioni giornata</button>
+      <div class="admin-tools-note">Fotografa le previsioni COMPLETE del motore (probabili, infermeria, consenso) per la giornata
+        in arrivo. Da premere il venerdì tra le 16 e la deadline: dopo il primo calcio d'inizio rifiuta.
+        La foto finisce nel cloud e il martedì la misura la confronta coi voti veri.</div>
       <button class="fo-btn fo-btn--fantasma" style="margin-top:14px" onclick="misuraOracleRetro()">📐 misura oracle (retro)</button>
       <div class="admin-tools-note">Ricostruisce per ogni giornata passata una previsione base con i soli dati storicizzati
         (voti admin precedenti, consenso fonti, casa/trasferta, rigoristi) e la confronta con l'andamento reale.
@@ -6611,9 +6615,11 @@ function renderLeagueRules() {
 // ---- RATING SQUADRE SERIE A (derivato dal listone) ----
 // Forza d'attacco = media FM dei migliori 8 tra C+A della squadra
 // Forza difensiva = media FM dei migliori 8 tra P+D della squadra
-function computeTeamRatings() {
+function computeTeamRatings(srcPlayers) {
   const teams = {};
-  const src = (listone && listone.players) ? listone.players : [];
+  // srcPlayers opzionale: il congelamento admin passa il listone globale,
+  // perche l'admin non ha un listone di lega in memoria.
+  const src = srcPlayers || ((listone && listone.players) ? listone.players : []);
   src.forEach(p => {
     const t = normTeamName(p.team);
     if (!t) return;
@@ -14792,12 +14798,16 @@ async function misuraOracleRetro() {
     const giornate = (Array.isArray(votiGlobaliInMemoria) ? votiGlobaliInMemoria : [])
       .slice().sort((a, b) => a.giornata - b.giornata);
     if (giornate.length < 2) { box.innerHTML = '<div style="font-size:12px;color:var(--orange)">Servono almeno 2 giornate di voti (la prima fa solo da base).</div>'; return; }
-    // consenso storicizzato, tutto in un colpo
-    let consigliPerG = {};
+    // consenso storicizzato e previsioni congelate, tutto in un colpo
+    let consigliPerG = {}; let congelatePerG = {};
     try {
       const client = await ensureSupabaseReady();
       const { data } = await client.from('global_consigli').select('giornata,consigli');
       (data || []).forEach(r => { consigliPerG[r.giornata] = r.consigli || {}; });
+      try {
+        const { data: prev } = await client.from('global_previsioni').select('giornata,previsioni');
+        (prev || []).forEach(r => { congelatePerG[r.giornata] = r.previsioni || {}; });
+      } catch (e) {}
     } catch (e) {}
     // il flag rigorista sta nei players del listone attivo, non nella
     // proiezione di giocatoriListoneAdmin
@@ -14846,19 +14856,117 @@ async function misuraOracleRetro() {
       const mediaTop = top.reduce((a, b) => a + b.reale, 0) / top.length;
       const mediaTutti = coppie.reduce((a, b) => a + b.reale, 0) / coppie.length;
       righe.push({ g: G.giornata, n: coppie.length, mae, entro1, lift: mediaTop - mediaTutti });
+      // Se per questa giornata esiste la FOTO pre-deadline (previsioni
+      // complete congelate dall'admin), misura anche quella: e l'Oracle
+      // vero, con probabili/infermeria/consenso della vigilia.
+      const foto = congelatePerG[G.giornata];
+      if (foto) {
+        const errF = []; const cpF = [];
+        Object.keys(G.votes || {}).forEach(key => {
+          const reale = segnale(G.votes[key]);
+          const pr = foto[key];
+          if (reale === null || !pr || !isFinite(pr.exp)) return;
+          errF.push(Math.abs(reale - pr.exp));
+          cpF.push({ exp: pr.exp, reale });
+        });
+        if (cpF.length) {
+          const maeF = errF.reduce((a, b) => a + b, 0) / errF.length;
+          const e1F = errF.filter(e => e <= 1).length / errF.length * 100;
+          const ordF = cpF.slice().sort((a, b) => b.exp - a.exp);
+          const topF = ordF.slice(0, Math.max(1, Math.floor(ordF.length / 4)));
+          const liftF = topF.reduce((a, b) => a + b.reale, 0) / topF.length
+                      - cpF.reduce((a, b) => a + b.reale, 0) / cpF.length;
+          righe.push({ g: G.giornata, n: cpF.length, mae: maeF, entro1: e1F, lift: liftF, congelata: true });
+        }
+      }
     }
     if (!righe.length) { box.innerHTML = '<div style="font-size:12px;color:var(--orange)">Nessun confronto possibile.</div>'; return; }
     box.innerHTML = '<table style="width:100%;border-collapse:collapse;font-family:\'DM Mono\',monospace;font-size:12px">'
       + '<tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">Giornata</th><th>confronti</th><th title="errore medio assoluto sulla scala del motore">MAE</th><th title="% previsioni entro 1 punto">entro ±1</th><th title="quanto rendono in piu i top-25% per previsione rispetto alla media: sopra zero = l\'ordinamento aiuta a schierare">lift top-25%</th></tr>'
-      + righe.map(r => '<tr style="text-align:right;border-top:1px solid var(--border)">'
-        + '<td style="text-align:left;padding:4px">G' + r.g + '</td><td>' + r.n + '</td>'
+      + righe.map(r => '<tr style="text-align:right;border-top:1px solid var(--border)' + (r.congelata ? ';color:var(--oracle)' : '') + '">'
+        + '<td style="text-align:left;padding:4px">G' + r.g + (r.congelata ? ' ❄ completa' : '') + '</td><td>' + r.n + '</td>'
         + '<td>' + r.mae.toFixed(2) + '</td><td>' + r.entro1.toFixed(0) + '%</td>'
         + '<td style="color:' + (r.lift > 0 ? 'var(--green)' : 'var(--red)') + '">' + (r.lift > 0 ? '+' : '') + r.lift.toFixed(2) + '</td></tr>').join('')
       + '</table>'
-      + '<div class="admin-tools-note">Esclusi perché non storicizzati: probabili, infermeria, ricalibrazione, avversario, listini di lega. '
-      + 'Solo giocatori con almeno un voto precedente. Il numero che conta è il <strong>lift</strong>: sopra zero, l\'ordinamento Oracle batte il caso.</div>';
+      + '<div class="admin-tools-note">Righe normali: retro-calcolo BASE (esclusi probabili, infermeria, ricalibrazione, avversario, listini di lega — non storicizzati; solo giocatori con almeno un voto precedente). '
+      + 'Righe <span style="color:var(--oracle)">❄ completa</span>: la foto pre-deadline del motore vero, quando è stata congelata. '
+      + 'Il numero che conta è il <strong>lift</strong>: sopra zero, l\'ordinamento Oracle batte il caso.</div>';
   } catch (e) {
     box.innerHTML = '<div style="font-size:12px;color:var(--red)">Errore: ' + escapeHtml(String(e && e.message || e)) + '</div>';
+  }
+}
+
+// ============================================================
+// CONGELA PREVISIONI — fotografia dell'Oracle COMPLETO pre-deadline
+// ============================================================
+// Calcola la previsione del motore vero (probabili + infermeria + consenso
+// + forma + avversario) per TUTTI i giocatori del listone globale e la
+// scrive in global_previsioni. Il martedi, il pannello misura confronta la
+// foto coi voti: e l'unico modo di misurare i fattori non storicizzati.
+// Solo admin, solo PRIMA del primo calcio d'inizio: dopo, la foto sarebbe
+// contaminata da risultati gia noti e la misura mentirebbe.
+async function congelaPrevisioniGiornata() {
+  const box = document.getElementById('misuraOracleBox');
+  const feedback = msg => { if (box) box.innerHTML = '<div style="font-size:12px;color:var(--muted)">' + msg + '</div>'; };
+  if (!(currentUser && currentUser.is_admin)) { feedback('Solo admin.'); return; }
+  try {
+    const idx = findCurrentGiornataIdx();
+    const g = calendario.giornate[idx];
+    if (!g) { feedback('❌ Calendario non disponibile.'); return; }
+    const gNum = parseInt(g.num, 10);
+    // dati freschi al momento della foto
+    feedback('❄ raccolgo probabili e infermeria…');
+    await Promise.all([caricaInfermeria(), caricaProbabili()]);
+    // guardia deadline: mai congelare a giochi iniziati
+    const pc = probabiliState && probabiliState.primoCalcio;
+    if (pc && pc.ts && Date.now() > pc.ts) {
+      feedback('🔒 Primo match già iniziato (' + escapeHtml(pc.label) + '): congelamento rifiutato — la foto sarebbe contaminata.');
+      return;
+    }
+    const grezzi = (adminState.activeListinoFull && adminState.activeListinoFull.players) || [];
+    if (grezzi.length < 100) { feedback('❌ Listone attivo non in memoria: apri prima la scheda LISTONE.'); return; }
+    // listone cloud → forma-giocatore che il motore capisce (dialetto campi)
+    const players = grezzi.filter(p => p && p.name && p.role).map(p => ({
+      name: p.name, team: p.team || '', role: p.role,
+      quotation: p.quotation !== undefined ? p.quotation : (p.quotazione || 0),
+      fmReal: p.fmReal !== undefined ? p.fmReal : (p.fanta_media || 0),
+      mv: p.mv !== undefined ? p.mv : (p.media_voto || 0),
+      pgv: p.pgv || 0,
+      score: p.score !== undefined ? p.score : (p.fmIndicativa || 0),
+      rigorista: !!p.rigorista,
+    }));
+    const ratings = computeTeamRatings(players);
+    const alerted = new Set(players.filter(p => infermeriaDi(p.name)).map(p => p.name));
+    const titSig = {};
+    players.forEach(p => {
+      const prob = probabiliDi(p.name);
+      if (!prob) return;
+      titSig[p.name] = { status: prob.perc >= 70 ? 'in' : prob.perc >= 40 ? 'doubt' : 'out', perc: prob.perc, source: 'Probabili Fantacalcio.it · ' + prob.perc + '%' };
+    });
+    const previsioni = {};
+    players.forEach(p => {
+      const r = oraclePredictPlayer(p, ratings, alerted, titSig);
+      if (!r || !isFinite(r.expected)) return;
+      previsioni[rosterNormalizeName(p.name)] = { exp: r.expected, conf: r.confidence, role: p.role, team: p.team, name: p.name };
+    });
+    const count = Object.keys(previsioni).length;
+    if (count < 100) { feedback('❌ Solo ' + count + ' previsioni calcolate: qualcosa non torna, non salvo.'); return; }
+    const client = await ensureSupabaseReady();
+    const { data: esiste } = await client.from('global_previsioni').select('giornata,frozen_at').eq('giornata', gNum);
+    if (esiste && esiste.length && !confirm('La G' + gNum + ' è già congelata (' + String(esiste[0].frozen_at).slice(0, 16).replace('T', ' ') + ').\nSovrascrivo con la foto di adesso, più aggiornata?')) { feedback('Congelamento annullato.'); return; }
+    const { error } = await client.from('global_previsioni').upsert({
+      giornata: gNum, previsioni, players_count: count,
+      frozen_at: new Date().toISOString(), frozen_by: currentUser.id,
+    }, { onConflict: 'giornata' });
+    if (error) throw error;
+    // verifica di riscontro: la riga deve esserci davvero (lezione rigoristi)
+    const { data: check } = await client.from('global_previsioni').select('players_count').eq('giornata', gNum);
+    if (!check || !check.length) throw new Error('scrittura non riscontrata');
+    segnaFatto('adminCongelaBtn');
+    if (box) box.innerHTML = '<div style="font-size:12px;color:var(--green)">❄ G' + gNum + ' congelata: ' + count + ' previsioni complete (probabili+infermeria+consenso). Martedì la misura le confronterà coi voti.</div>';
+  } catch (e) {
+    const msg = String(e && e.message || e);
+    feedback('❌ ' + escapeHtml(msg) + (/relation|does not exist|global_previsioni/i.test(msg) ? ' — esegui global_previsioni_setup.sql su Supabase.' : ''));
   }
 }
 
