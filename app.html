@@ -6441,9 +6441,19 @@ function parseListinoWithSheetJS(data, fileName, opts) {
   if (ownedTeams.length > 0) msg += ` · ${ownedTeams.length} fantasquadre rilevate`;
   showToast(msg);
   
-  // Se rilevata una lega vera, propone subito di scegliere la fantasquadra
+  // Se rilevata una lega vera: con la fantasquadra GIA scelta e presente
+  // nel nuovo file, la rosa si reimporta DA SOLA — il ricaricamento dopo
+  // gli scambi aggiornava le rose di lega ma il campo restava vecchio se
+  // uno chiudeva il selettore con la X (successo a Sacha, ott 2026: card
+  // e campo pre-scambi). Il selettore compare solo alla prima scelta o se
+  // la squadra di prima non esiste piu nel file.
   if (ownedTeams.length > 0) {
-    setTimeout(() => openLeagueTeamPicker(), 800);
+    const giaScelta = getMyTeamName();
+    if (giaScelta && ownedTeams.includes(giaScelta)) {
+      setTimeout(() => selectMyTeam(giaScelta), 400); // annuncia gia lei l'import
+    } else {
+      setTimeout(() => openLeagueTeamPicker(), 800);
+    }
   }
 }
 
