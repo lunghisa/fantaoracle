@@ -7952,32 +7952,34 @@ function renderGuidaGiornata() {
   if (!dati || dati.righe.length < 6) { card.style.display = 'none'; return; }
   const numEl = document.getElementById('guidaGiornataNum');
   if (numEl) numEl.textContent = 'G' + dati.giornata;
-  // i miei giocatori offensivi per squadra, per la riga "nella tua rosa"
-  const miei = {};
+  // I miei giocatori per squadra, separati per lato del gioco: gli
+  // offensivi (A/C) contano quando la loro squadra ATTACCA una certa
+  // difesa; portieri e difensori (P/D) contano quando stanno DENTRO la
+  // difesa misurata. Un match e rilevante solo se ho qualcuno dal lato
+  // giusto — e ogni riga mostrata dice sempre CHI (richiesta di Sacha:
+  // righe senza i miei nomi erano solo rumore).
+  const mieiOff = {}, mieiDif = {};
   [...players.starters, ...players.bench].forEach(p => {
-    if (p && p.name && p.name !== '---' && (p.role === 'A' || p.role === 'C')) {
-      const t = normTeamName(p.team || '');
-      (miei[t] = miei[t] || []).push(p.name);
-    }
+    if (!p || !p.name || p.name === '---' || !p.team) return;
+    const t = normTeamName(p.team);
+    const dest = (p.role === 'A' || p.role === 'C') ? mieiOff : mieiDif;
+    (dest[t] = dest[t] || []).push(p.name);
   });
   const riga = (r, colore, freccia) => {
-    const inRosa = (miei[normTeamName(r.attacco)] || []);
+    const attacco = (mieiOff[normTeamName(r.attacco)] || []);
+    const difesa = (mieiDif[normTeamName(r.difesa)] || []);
     return '<div style="display:flex;align-items:baseline;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:13px">'
       + '<span style="color:' + colore + ';flex-shrink:0">' + freccia + '</span>'
       + '<span style="min-width:0"><strong>' + escapeHtml(r.attacco) + '</strong>'
       + ' <span style="color:var(--muted)">contro</span> ' + escapeHtml(r.difesa)
-      + (inRosa.length ? '<span style="display:block;font-size:11px;color:var(--gold)">nella tua rosa: ' + inRosa.map(escapeHtml).join(', ') + '</span>' : '')
+      + (attacco.length ? '<span style="display:block;font-size:11px;color:var(--gold)">in attacco per te: ' + attacco.map(escapeHtml).join(', ') + '</span>' : '')
+      + (difesa.length ? '<span style="display:block;font-size:11px;color:var(--gold)">nella difesa per te: ' + difesa.map(escapeHtml).join(', ') + '</span>' : '')
       + '</span>'
       + '<span style="margin-left:auto;font-family:\'DM Mono\',monospace;color:' + colore + '" title="quanto quella difesa concede in piu/meno della media agli attaccanti avversari (su ' + r.n + ' prestazioni)">'
       + (r.delta > 0 ? '+' : '') + r.delta.toFixed(2) + '</span></div>';
   };
-  // Solo gli accoppiamenti che toccano la MIA rosa (richiesta di Sacha):
-  // un match dove non ho nessuno, ne in attacco ne nella difesa, e rumore.
-  const squadreMie = new Set([...players.starters, ...players.bench]
-    .filter(p => p && p.name && p.name !== '---' && p.team)
-    .map(p => normTeamName(p.team)));
   const rilevanti = dati.righe.filter(r =>
-    squadreMie.has(normTeamName(r.attacco)) || squadreMie.has(normTeamName(r.difesa)));
+    (mieiOff[normTeamName(r.attacco)] || []).length || (mieiDif[normTeamName(r.difesa)] || []).length);
   const occasioni = rilevanti.slice(0, 4).filter(r => r.delta > 0.1);
   const trappole = rilevanti.slice(-4).filter(r => r.delta < -0.1).reverse();
   if (!occasioni.length && !trappole.length) { card.style.display = 'none'; return; }
