@@ -7971,8 +7971,15 @@ function renderGuidaGiornata() {
       + '<span style="margin-left:auto;font-family:\'DM Mono\',monospace;color:' + colore + '" title="quanto quella difesa concede in piu/meno della media agli attaccanti avversari (su ' + r.n + ' prestazioni)">'
       + (r.delta > 0 ? '+' : '') + r.delta.toFixed(2) + '</span></div>';
   };
-  const occasioni = dati.righe.slice(0, 4).filter(r => r.delta > 0.1);
-  const trappole = dati.righe.slice(-4).filter(r => r.delta < -0.1).reverse();
+  // Solo gli accoppiamenti che toccano la MIA rosa (richiesta di Sacha):
+  // un match dove non ho nessuno, ne in attacco ne nella difesa, e rumore.
+  const squadreMie = new Set([...players.starters, ...players.bench]
+    .filter(p => p && p.name && p.name !== '---' && p.team)
+    .map(p => normTeamName(p.team)));
+  const rilevanti = dati.righe.filter(r =>
+    squadreMie.has(normTeamName(r.attacco)) || squadreMie.has(normTeamName(r.difesa)));
+  const occasioni = rilevanti.slice(0, 4).filter(r => r.delta > 0.1);
+  const trappole = rilevanti.slice(-4).filter(r => r.delta < -0.1).reverse();
   if (!occasioni.length && !trappole.length) { card.style.display = 'none'; return; }
   body.innerHTML =
     (occasioni.length ? '<div style="font-size:11px;letter-spacing:1px;color:var(--green);margin-bottom:2px">OCCASIONI — difese che concedono</div>'
@@ -7980,7 +7987,7 @@ function renderGuidaGiornata() {
     + (trappole.length ? '<div style="font-size:11px;letter-spacing:1px;color:var(--red);margin:10px 0 2px">TRAPPOLE — difese blindate</div>'
       + trappole.map(r => riga(r, 'var(--red)', '▼')).join('') : '')
     + '<div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">Calcolata dai voti reali di ' + (votiGlobaliInMemoria || []).length
-    + ' giornate: quanto ogni difesa concede agli attaccanti e centrocampisti avversari, rispetto alla media. Non entra nel calcolo dell\'indice: è una lente in più, la scelta resta tua.</div>';
+    + ' giornate: quanto ogni difesa concede agli attaccanti e centrocampisti avversari, rispetto alla media. Mostra solo gli accoppiamenti che toccano i tuoi giocatori. Non entra nel calcolo dell\'indice: è una lente in più, la scelta resta tua.</div>';
   card.style.display = '';
 }
 
