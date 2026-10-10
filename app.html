@@ -7559,7 +7559,23 @@ function installOracleFormation(best) {
   currentModulo = best.modulo;
   players.starters = best.picks.slice();
   players._lineupByRole = Object.fromEntries(['P','D','C','A'].map(r => [r,best.picks.filter(p => p.role === r)]));
-  players.bench = allPlayers.filter(p => !chosen.has(p) && p && !p.isEmpty && p.name !== '---');
+  // PANCHINA ORDINATA, non avanzi: su Leghe Fantacalcio le sostituzioni
+  // seguono l'ordine della panchina (il primo del ruolo giusto CON VOTO
+  // entra). Quindi davanti vanno i sostituti che un voto lo prenderanno:
+  //   fascia 0 — disponibili, per indice Oracle decrescente;
+  //   fascia 1 — dati verso la panchina dalle probabili/news (voto incerto);
+  //   fascia 2 — infortunati e squalificati: in fondo, non entreranno mai.
+  // Dentro ogni fascia decide l'indice, che gia sconta forma e avversario.
+  const alertedBench = getAlertedPlayerNames();
+  const fasciaSub = p => {
+    if (infermeriaDi(p.name) || alertedBench.has(p.name)) return 2;
+    const t = p._oracleInfo && p._oracleInfo.titStatus;
+    return t === 'out' ? 1 : 0;
+  };
+  const indiceSub = p => (p._oracleInfo && isFinite(p._oracleInfo.expected)) ? p._oracleInfo.expected : (p.oracle || p.score || 0);
+  players.bench = allPlayers
+    .filter(p => !chosen.has(p) && p && !p.isEmpty && p.name !== '---')
+    .sort((a, b) => fasciaSub(a) - fasciaSub(b) || indiceSub(b) - indiceSub(a));
   const label = document.getElementById('moduloLabel');
   if (label) label.textContent = currentModulo;
   document.querySelectorAll('.modulo-btn').forEach(b => b.classList.toggle('active',b.textContent.trim() === currentModulo));
@@ -7589,7 +7605,7 @@ function applyOracleFormation() {
     const f = document.getElementById('fieldWrap');
     if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 120);
-  showToast('🔮 Oracle ha schierato il ' + best.modulo + ' · formazione consigliata');
+  showToast('🔮 Oracle: ' + best.modulo + ' schierato · panchina ordinata per i cambi');
 }
 
 // ---- POST-PARTITA: quanti punti hai lasciato in panchina ----
