@@ -7576,9 +7576,13 @@ function installOracleFormation(best) {
     return t === 'out' ? 1 : 0;
   };
   const indiceSub = p => (p._oracleInfo && isFinite(p._oracleInfo.expected)) ? p._oracleInfo.expected : (p.oracle || p.score || 0);
+  // Gli infortunati/squalificati (fascia 2) escono dai gruppi di ruolo e
+  // finiscono in fondo A TUTTA la panchina (sempre in ordine A,C,D,P tra
+  // loro): in mezzo alla lista erano solo d'intralcio alla lettura.
   players.bench = allPlayers
     .filter(p => !chosen.has(p) && p && !p.isEmpty && p.name !== '---')
-    .sort((a, b) => (RUOLO_PANCA[a.role] ?? 9) - (RUOLO_PANCA[b.role] ?? 9)
+    .sort((a, b) => (fasciaSub(a) === 2 ? 1 : 0) - (fasciaSub(b) === 2 ? 1 : 0)
+      || (RUOLO_PANCA[a.role] ?? 9) - (RUOLO_PANCA[b.role] ?? 9)
       || fasciaSub(a) - fasciaSub(b) || indiceSub(b) - indiceSub(a));
   const label = document.getElementById('moduloLabel');
   if (label) label.textContent = currentModulo;

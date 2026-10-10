@@ -213,5 +213,5 @@ test('Panchina Oracle raggruppata A,C,D,P con la priorita dentro ogni ruolo',()=
  vm.createContext(c);vm.runInContext(fn('installOracleFormation'),c);
  c.installOracleFormation({modulo:'4-3-3',picks:xi});
  assert.equal(c.players.bench.map(p=>p.name).join(','),
-  'AttSano,AttOut,CenSano,CenInfortunato,DifOk,PortiereTop');
+  'AttSano,AttOut,CenSano,DifOk,PortiereTop,CenInfortunato');
 });
