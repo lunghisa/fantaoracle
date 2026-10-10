@@ -7561,12 +7561,15 @@ function installOracleFormation(best) {
   players._lineupByRole = Object.fromEntries(['P','D','C','A'].map(r => [r,best.picks.filter(p => p.role === r)]));
   // PANCHINA ORDINATA, non avanzi: su Leghe Fantacalcio le sostituzioni
   // seguono l'ordine della panchina (il primo del ruolo giusto CON VOTO
-  // entra). Quindi davanti vanno i sostituti che un voto lo prenderanno:
+  // entra). Raggruppata PER RUOLO nell'ordine A, C, D, P (convenzione
+  // scelta da Sacha, ott 2026) e dentro ogni ruolo per priorita di cambio:
   //   fascia 0 — disponibili, per indice Oracle decrescente;
   //   fascia 1 — dati verso la panchina dalle probabili/news (voto incerto);
   //   fascia 2 — infortunati e squalificati: in fondo, non entreranno mai.
-  // Dentro ogni fascia decide l'indice, che gia sconta forma e avversario.
+  // Lo scorrimento dei cambi cerca comunque il ruolo giusto, quindi il
+  // raggruppamento non costa nulla e rende la lista leggibile a colpo d'occhio.
   const alertedBench = getAlertedPlayerNames();
+  const RUOLO_PANCA = { A: 0, C: 1, D: 2, P: 3 };
   const fasciaSub = p => {
     if (infermeriaDi(p.name) || alertedBench.has(p.name)) return 2;
     const t = p._oracleInfo && p._oracleInfo.titStatus;
@@ -7575,7 +7578,8 @@ function installOracleFormation(best) {
   const indiceSub = p => (p._oracleInfo && isFinite(p._oracleInfo.expected)) ? p._oracleInfo.expected : (p.oracle || p.score || 0);
   players.bench = allPlayers
     .filter(p => !chosen.has(p) && p && !p.isEmpty && p.name !== '---')
-    .sort((a, b) => fasciaSub(a) - fasciaSub(b) || indiceSub(b) - indiceSub(a));
+    .sort((a, b) => (RUOLO_PANCA[a.role] ?? 9) - (RUOLO_PANCA[b.role] ?? 9)
+      || fasciaSub(a) - fasciaSub(b) || indiceSub(b) - indiceSub(a));
   const label = document.getElementById('moduloLabel');
   if (label) label.textContent = currentModulo;
   document.querySelectorAll('.modulo-btn').forEach(b => b.classList.toggle('active',b.textContent.trim() === currentModulo));

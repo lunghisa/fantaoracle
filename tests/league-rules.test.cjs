@@ -195,9 +195,23 @@ test('Panchina Oracle ordinata: sani per indice, poi gli out, infortunati in fon
  const mk=(name,exp,tit)=>({name,role:'C',_oracleInfo:{expected:exp,titStatus:tit||null}});
  const xi=Array.from({length:11},(_,i)=>mk('T'+i,7));
  const panca=[mk('InfortunatoForte',7.8),mk('ScarsoSano',5.8),mk('BuonoMaOut',7.0,'out'),mk('BuonoSano',6.9)];
+ panca.forEach(p=>p.role='C');
  const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:n=>n==='InfortunatoForte'?{stato:'infortunato'}:null,
   currentModulo:'',players:{starters:xi,bench:panca},document:{getElementById:()=>null,querySelectorAll:()=>[]}};
  vm.createContext(c);vm.runInContext(fn('installOracleFormation'),c);
  c.installOracleFormation({modulo:'4-3-3',picks:xi});
  assert.equal(c.players.bench.map(p=>p.name).join(','),'BuonoSano,ScarsoSano,BuonoMaOut,InfortunatoForte');
+});
+
+test('Panchina Oracle raggruppata A,C,D,P con la priorita dentro ogni ruolo',()=>{
+ const mk=(name,role,exp,tit)=>({name,role,_oracleInfo:{expected:exp,titStatus:tit||null}});
+ const xi=Array.from({length:11},(_,i)=>mk('T'+i,'C',7));
+ const panca=[mk('PortiereTop','P',7.5),mk('DifOk','D',6.4),mk('AttOut','A',7.2,'out'),
+  mk('AttSano','A',6.2),mk('CenInfortunato','C',7.9),mk('CenSano','C',6.0)];
+ const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:n=>n==='CenInfortunato'?{stato:'infortunato'}:null,
+  currentModulo:'',players:{starters:xi,bench:panca},document:{getElementById:()=>null,querySelectorAll:()=>[]}};
+ vm.createContext(c);vm.runInContext(fn('installOracleFormation'),c);
+ c.installOracleFormation({modulo:'4-3-3',picks:xi});
+ assert.equal(c.players.bench.map(p=>p.name).join(','),
+  'AttSano,AttOut,CenSano,CenInfortunato,DifOk,PortiereTop');
 });
