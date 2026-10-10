@@ -53,7 +53,7 @@ test('App: il profilo segue lo stato della lega, e usa solo eventi completi dell
 test('App: applicare Oracle mantiene i giocatori effettivamente ottimizzati sul campo e nelle liste',()=>{
  const picks=Array.from({length:11},(_,i)=>({name:'Chosen'+i,role:i===0?'P':i<5?'D':i<8?'C':'A'}));
  const bench={name:'Bench',role:'D'};
- const c={oracleState:{manualModulo:'3-4-3'},oracleSaveState(){},currentMode:'oracle',runOracleEngine(){},oracleBestFormation:()=>({modulo:'4-3-3',total:72,picks}),players:{starters:picks,bench:[bench]},setModulo(){},saveRosterToStorage(){},showPage(){},showToast(){},document:{getElementById:()=>null,querySelectorAll:()=>[]},setTimeout(){}};
+ const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:()=>null,oracleState:{manualModulo:'3-4-3'},oracleSaveState(){},currentMode:'oracle',runOracleEngine(){},oracleBestFormation:()=>({modulo:'4-3-3',total:72,picks}),players:{starters:picks,bench:[bench]},setModulo(){},saveRosterToStorage(){},showPage(){},showToast(){},document:{getElementById:()=>null,querySelectorAll:()=>[]},setTimeout(){}};
  vm.createContext(c);vm.runInContext(fn('installOracleFormation'),c);vm.runInContext(fn('applyOracleFormation'),c);c.applyOracleFormation();assert.equal(c.oracleState.manualModulo,null);
  assert.deepEqual(c.players.starters,picks);assert.equal(c.players.bench[0],bench);assert.equal(c.players._lineupByRole.D.length,4);
 });
@@ -154,7 +154,7 @@ test('Assist: segnale sportivo positivo e limitato, indipendente dal valore in p
 
 test('Allineamento apertura: modulo automatico e undici seguono il consiglio; manuale resta per lega',()=>{
  const pick={name:'Test',role:'P'};
- const c={activeLeagueRules:()=>R.premier,oracleState:{},formations:{'4-3-3':{},'3-4-3':{}},currentModulo:'3-4-3',oracleBestFormation:()=>({modulo:'4-3-3',picks:[pick]}),players:{starters:[],bench:[pick]},document:{getElementById:()=>null,querySelectorAll:()=>[]},setModulo(m){c.currentModulo=m;}};
+ const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:()=>null,activeLeagueRules:()=>R.premier,oracleState:{},formations:{'4-3-3':{},'3-4-3':{}},currentModulo:'3-4-3',oracleBestFormation:()=>({modulo:'4-3-3',picks:[pick]}),players:{starters:[],bench:[pick]},document:{getElementById:()=>null,querySelectorAll:()=>[]},setModulo(m){c.currentModulo=m;}};
  vm.createContext(c);for(const n of ['installOracleFormation','alignOracleFormation'])vm.runInContext(fn(n),c);
  c.alignOracleFormation();assert.equal(c.currentModulo,'4-3-3');assert.equal(c.players.starters[0],pick);
  c.oracleState.manualModulo='3-4-3';c.alignOracleFormation();assert.equal(c.currentModulo,'3-4-3');
@@ -189,4 +189,15 @@ test('Copertura panchina: 4 C sani su 8 non devono finire tutti titolari',()=>{
  const forzato=R.best(roster,{'3-4-3':formations['3-4-3']},{...rules,modules:['3-4-3']},scoreOf,voteOf,riskOf);
  assert.ok(forzato.copertura.perRuolo.C.scoperte>0.25);
  assert.equal(forzato.copertura.perRuolo.C.sani,0);
+});
+
+test('Panchina Oracle ordinata: sani per indice, poi gli out, infortunati in fondo',()=>{
+ const mk=(name,exp,tit)=>({name,role:'C',_oracleInfo:{expected:exp,titStatus:tit||null}});
+ const xi=Array.from({length:11},(_,i)=>mk('T'+i,7));
+ const panca=[mk('InfortunatoForte',7.8),mk('ScarsoSano',5.8),mk('BuonoMaOut',7.0,'out'),mk('BuonoSano',6.9)];
+ const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:n=>n==='InfortunatoForte'?{stato:'infortunato'}:null,
+  currentModulo:'',players:{starters:xi,bench:panca},document:{getElementById:()=>null,querySelectorAll:()=>[]}};
+ vm.createContext(c);vm.runInContext(fn('installOracleFormation'),c);
+ c.installOracleFormation({modulo:'4-3-3',picks:xi});
+ assert.equal(c.players.bench.map(p=>p.name).join(','),'BuonoSano,ScarsoSano,BuonoMaOut,InfortunatoForte');
 });
