@@ -5001,6 +5001,7 @@ body::before { opacity:.2; }
       <button class="fo-btn fo-btn--fantasma" onclick="diagnosiLeghe()">confronta leghe locale e cloud</button>
       <div class="admin-tools-note">Mette in fila le leghe registrate in questo browser e quelle salvate nel cloud, con gli id veri. Serve se ricompaiono leghe che erano state eliminate.</div>
       <button class="fo-btn fo-btn--fantasma" style="margin-top:14px" id="adminCongelaBtn" onclick="congelaPrevisioniGiornata()">❄ congela previsioni giornata</button>
+      <div id="adminCongelaStato" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:6px">foto congelate: —</div>
       <div class="admin-tools-note">Fotografa le previsioni COMPLETE del motore (probabili, infermeria, consenso) per la giornata
         in arrivo. Da premere il venerdì tra le 16 e la deadline: dopo il primo calcio d'inizio rifiuta.
         La foto finisce nel cloud e il martedì la misura la confronta coi voti veri.</div>
@@ -13868,6 +13869,7 @@ function showPage(id, btn) {
     adminState.pendingCalendar = null;
     refreshAdminListino();
     refreshAdminCalendar();
+    aggiornaStatoCongelamento();
     switchAdminTab('listino');
   }
   // Ogni sezione riparte dall'inizio, anche dalla navigazione mobile.
@@ -15065,6 +15067,28 @@ async function misuraOracleRetro() {
 // foto coi voti: e l'unico modo di misurare i fattori non storicizzati.
 // Solo admin, solo PRIMA del primo calcio d'inizio: dopo, la foto sarebbe
 // contaminata da risultati gia noti e la misura mentirebbe.
+// Riga fissa sotto il bottone ❄: quali giornate hanno la foto nel cloud.
+// Il messaggio verde del congelamento finiva nel box della misura e il
+// clic successivo lo cancellava: il 13/10 nessuno sapeva dire se la G6
+// fosse congelata. Questa riga si rilegge dal cloud a ogni apertura.
+async function aggiornaStatoCongelamento() {
+  const el = document.getElementById('adminCongelaStato');
+  if (!el || !(currentUser && currentUser.is_admin)) return;
+  try {
+    const client = await ensureSupabaseReady();
+    const { data, error } = await client.from('global_previsioni')
+      .select('giornata,players_count,frozen_at').order('giornata', { ascending: false });
+    if (error) throw error;
+    if (!data || !data.length) { el.textContent = 'foto congelate: nessuna'; return; }
+    el.innerHTML = 'foto congelate: ' + data.map(r => {
+      const quando = new Date(r.frozen_at).toLocaleString('it-IT', { weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return '<span style="color:var(--oracle)">G' + r.giornata + ' ❄</span> ' + escapeHtml(quando) + ' · ' + r.players_count;
+    }).join(' &nbsp;|&nbsp; ');
+  } catch (e) {
+    el.textContent = 'foto congelate: lettura non riuscita (' + String(e && e.message || e) + ')';
+  }
+}
+
 async function congelaPrevisioniGiornata() {
   const box = document.getElementById('misuraOracleBox');
   const feedback = msg => { if (box) box.innerHTML = '<div style="font-size:12px;color:var(--muted)">' + msg + '</div>'; };
@@ -15076,9 +15100,21 @@ async function congelaPrevisioniGiornata() {
     const gNum = parseInt(g.num, 10);
     // dati freschi al momento della foto
     feedback('❄ raccolgo probabili e infermeria…');
-    await Promise.all([caricaInfermeria(), caricaProbabili()]);
-    // guardia deadline: mai congelare a giochi iniziati
+    const [, probOk] = await Promise.all([caricaInfermeria(), caricaProbabili()]);
+    // Senza probabili la foto non e "completa", e senza l'orario del primo
+    // calcio (che arriva dalla stessa pagina) salta anche la guardia
+    // deadline: prima si congelava lo stesso, in silenzio.
     const pc = probabiliState && probabiliState.primoCalcio;
+    const nProb = probabiliState && probabiliState.map ? Object.keys(probabiliState.map).length : 0;
+    if (!probOk || nProb < 100 || !pc || !pc.ts) {
+      const manca = (!probOk || nProb < 100) ? 'probabili formazioni non caricate' : 'orario del primo calcio d\'inizio non trovato';
+      if (!confirm('⚠️ ' + manca + ' (G' + gNum + ').\n\nLa foto sarebbe senza probabili e senza il controllo della deadline: '
+        + 'se la giornata è già iniziata, sarebbe contaminata.\n\nRiprova tra qualche minuto. Congelo lo stesso?')) {
+        feedback('❄ Congelamento annullato: ' + manca + '. Riprova tra qualche minuto.');
+        return;
+      }
+    }
+    // guardia deadline: mai congelare a giochi iniziati
     if (pc && pc.ts && Date.now() > pc.ts) {
       feedback('🔒 Primo match già iniziato (' + escapeHtml(pc.label) + '): congelamento rifiutato — la foto sarebbe contaminata.');
       return;
@@ -15123,6 +15159,7 @@ async function congelaPrevisioniGiornata() {
     const { data: check } = await client.from('global_previsioni').select('players_count').eq('giornata', gNum);
     if (!check || !check.length) throw new Error('scrittura non riscontrata');
     segnaFatto('adminCongelaBtn');
+    aggiornaStatoCongelamento();
     if (box) box.innerHTML = '<div style="font-size:12px;color:var(--green)">❄ G' + gNum + ' congelata: ' + count + ' previsioni complete (probabili+infermeria+consenso). Martedì la misura le confronterà coi voti.</div>';
   } catch (e) {
     const msg = String(e && e.message || e);
