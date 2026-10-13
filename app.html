@@ -14939,6 +14939,21 @@ function renderDashLeagues() {
   });
 }
 
+// Statistiche di una serie di coppie {exp, reale}: errore medio, quota entro
+// 1 punto, scarto medio con segno (sotto zero = l'Oracle sottostima) e lift
+// dei top-25% per previsione sulla media.
+function statMisura(coppie) {
+  const n = coppie.length;
+  const err = coppie.map(c => c.exp - c.reale);
+  const mae = err.reduce((a, e) => a + Math.abs(e), 0) / n;
+  const entro1 = err.filter(e => Math.abs(e) <= 1).length / n * 100;
+  const bias = err.reduce((a, e) => a + e, 0) / n;
+  const ord = coppie.slice().sort((a, b) => b.exp - a.exp);
+  const top = ord.slice(0, Math.max(1, Math.floor(n / 4)));
+  const lift = top.reduce((a, c) => a + c.reale, 0) / top.length - coppie.reduce((a, c) => a + c.reale, 0) / n;
+  return { n, mae, entro1, bias, lift };
+}
+
 // ============================================================
 // MISURA ORACLE (retro) — pannellino solo-admin, in STRUMENTI
 // ============================================================
@@ -14984,11 +14999,11 @@ async function misuraOracleRetro() {
     };
     const segnale = rec => { const s = FantaLeagueRules.formSignal(rec); return s ? s.score : null; };
 
-    const righe = [];
+    const righe = []; const titolarita = [];
     for (let i = 1; i < giornate.length; i++) {
       const G = giornate[i];
       const precedenti = giornate.slice(0, i);
-      const errori = []; const coppie = [];
+      const coppie = [];
       Object.keys(G.votes || {}).forEach(key => {
         const reale = segnale(G.votes[key]);
         if (reale === null) return;
@@ -15006,53 +15021,71 @@ async function misuraOracleRetro() {
         if (cns && cns.fascia === 1) exp += 0.3;
         else if (cns && cns.fascia === 3) exp -= 0.3;
         if (rigoristi.has(key)) exp += 0.35;
-        errori.push(Math.abs(reale - exp));
-        coppie.push({ exp, reale });
+        coppie.push({ key, exp, reale });
       });
       if (!coppie.length) continue;
-      const mae = errori.reduce((a, b) => a + b, 0) / errori.length;
-      const entro1 = errori.filter(e => e <= 1).length / errori.length * 100;
-      // lift: i top-25% per previsione hanno reso piu della media generale?
-      const ord = coppie.slice().sort((a, b) => b.exp - a.exp);
-      const top = ord.slice(0, Math.max(1, Math.floor(ord.length / 4)));
-      const mediaTop = top.reduce((a, b) => a + b.reale, 0) / top.length;
-      const mediaTutti = coppie.reduce((a, b) => a + b.reale, 0) / coppie.length;
-      righe.push({ g: G.giornata, n: coppie.length, mae, entro1, lift: mediaTop - mediaTutti });
+      righe.push(Object.assign({ g: G.giornata }, statMisura(coppie)));
       // Se per questa giornata esiste la FOTO pre-deadline (previsioni
       // complete congelate dall'admin), misura anche quella: e l'Oracle
       // vero, con probabili/infermeria/consenso della vigilia.
+      // Sugli STESSI giocatori della riga base (13/10): prima la foto
+      // contava anche chi non aveva storico, i casi piu difficili, e
+      // MAE/entro±1 delle due righe non erano confrontabili.
       const foto = congelatePerG[G.giornata];
       if (foto) {
-        const errF = []; const cpF = [];
-        Object.keys(G.votes || {}).forEach(key => {
-          const reale = segnale(G.votes[key]);
-          const pr = foto[key];
-          if (reale === null || !pr || !isFinite(pr.exp)) return;
-          errF.push(Math.abs(reale - pr.exp));
-          cpF.push({ exp: pr.exp, reale });
+        const cpF = [];
+        coppie.forEach(cp => {
+          const pr = foto[cp.key];
+          if (pr && isFinite(pr.exp)) cpF.push({ key: cp.key, exp: pr.exp, reale: cp.reale });
         });
-        if (cpF.length) {
-          const maeF = errF.reduce((a, b) => a + b, 0) / errF.length;
-          const e1F = errF.filter(e => e <= 1).length / errF.length * 100;
-          const ordF = cpF.slice().sort((a, b) => b.exp - a.exp);
-          const topF = ordF.slice(0, Math.max(1, Math.floor(ordF.length / 4)));
-          const liftF = topF.reduce((a, b) => a + b.reale, 0) / topF.length
-                      - cpF.reduce((a, b) => a + b.reale, 0) / cpF.length;
-          righe.push({ g: G.giornata, n: cpF.length, mae: maeF, entro1: e1F, lift: liftF, congelata: true });
+        if (cpF.length) righe.push(Object.assign({ g: G.giornata, congelata: true }, statMisura(cpF)));
+        // L'errore che i voti non vedono: chi la foto dava in campo e non ha
+        // preso voto. Con la % delle probabili (foto dalla G7 in poi) si
+        // contano i titolari previsti (>=70%); per le foto precedenti si
+        // ripiega sui top per previsione, che e solo un'approssimazione.
+        const votati = new Set(Object.keys(G.votes || {}));
+        const voci = Object.keys(foto).map(k => Object.assign({ key: k }, foto[k])).filter(p => isFinite(p.exp));
+        const conTit = voci.filter(p => typeof p.tit === 'number');
+        let gruppo, criterio;
+        if (conTit.length >= 100) {
+          gruppo = conTit.filter(p => p.tit >= 70);
+          criterio = 'titolari previsti dalle probabili (≥70%)';
+        } else {
+          const quota = { P: 20, D: 60, C: 60, A: 30 };
+          gruppo = [];
+          ['P', 'D', 'C', 'A'].forEach(R => {
+            gruppo.push(...voci.filter(p => p.role === R).sort((a, b) => b.exp - a.exp).slice(0, quota[R]));
+          });
+          criterio = 'top per previsione (20 P, 60 D, 60 C, 30 A): foto senza % probabili';
         }
+        const assenti = gruppo.filter(p => !votati.has(p.key)).sort((a, b) => b.exp - a.exp);
+        if (gruppo.length) titolarita.push({ g: G.giornata, n: gruppo.length, giocato: gruppo.length - assenti.length, criterio, assenti });
       }
     }
     if (!righe.length) { box.innerHTML = '<div style="font-size:12px;color:var(--orange)">Nessun confronto possibile.</div>'; return; }
+    const segno = x => (x > 0 ? '+' : '') + x.toFixed(2);
     box.innerHTML = '<table style="width:100%;border-collapse:collapse;font-family:\'DM Mono\',monospace;font-size:12px">'
-      + '<tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">Giornata</th><th>confronti</th><th title="errore medio assoluto sulla scala del motore">MAE</th><th title="% previsioni entro 1 punto">entro ±1</th><th title="quanto rendono in piu i top-25% per previsione rispetto alla media: sopra zero = l\'ordinamento aiuta a schierare">lift top-25%</th></tr>'
+      + '<tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">Giornata</th><th>confronti</th><th title="errore medio assoluto sulla scala del motore">MAE</th><th title="% previsioni entro 1 punto">entro ±1</th><th title="media di (previsione - reale): sotto zero = l\'Oracle sottostima">scarto medio</th><th title="quanto rendono in piu i top-25% per previsione rispetto alla media: sopra zero = l\'ordinamento aiuta a schierare">lift top-25%</th></tr>'
       + righe.map(r => '<tr style="text-align:right;border-top:1px solid var(--border)' + (r.congelata ? ';color:var(--oracle)' : '') + '">'
         + '<td style="text-align:left;padding:4px">G' + r.g + (r.congelata ? ' ❄ completa' : '') + '</td><td>' + r.n + '</td>'
         + '<td>' + r.mae.toFixed(2) + '</td><td>' + r.entro1.toFixed(0) + '%</td>'
-        + '<td style="color:' + (r.lift > 0 ? 'var(--green)' : 'var(--red)') + '">' + (r.lift > 0 ? '+' : '') + r.lift.toFixed(2) + '</td></tr>').join('')
+        + '<td>' + segno(r.bias) + '</td>'
+        + '<td style="color:' + (r.lift > 0 ? 'var(--green)' : 'var(--red)') + '">' + segno(r.lift) + '</td></tr>').join('')
       + '</table>'
+      + (titolarita.length ? '<div style="margin-top:12px;font-family:\'DM Mono\',monospace;font-size:12px">'
+        + '<div style="color:var(--muted);margin-bottom:4px">Chi la foto ❄ dava in campo: ha preso voto?</div>'
+        + titolarita.map(t => '<div style="padding:3px 0;border-top:1px solid var(--border)">'
+          + '<span style="color:var(--oracle)">G' + t.g + ' ❄</span> ' + t.giocato + '/' + t.n + ' in campo ('
+          + (t.giocato / t.n * 100).toFixed(0) + '%) · <span style="color:var(--muted)">' + escapeHtml(t.criterio) + '</span>'
+          + (t.assenti.length ? '<div style="color:var(--muted);font-size:11px">senza voto: '
+            + t.assenti.slice(0, 15).map(p => escapeHtml(p.name) + ' (' + escapeHtml(p.team) + ', ' + p.exp.toFixed(1)
+              + (typeof p.tit === 'number' ? ', ' + p.tit + '%' : '') + ')').join(', ')
+            + (t.assenti.length > 15 ? '…' : '') + '</div>' : '')
+          + '</div>').join('') + '</div>' : '')
       + '<div class="admin-tools-note">Righe normali: retro-calcolo BASE (esclusi probabili, infermeria, ricalibrazione, avversario, listini di lega — non storicizzati; solo giocatori con almeno un voto precedente). '
-      + 'Righe <span style="color:var(--oracle)">❄ completa</span>: la foto pre-deadline del motore vero, quando è stata congelata. '
-      + 'Il numero che conta è il <strong>lift</strong>: sopra zero, l\'ordinamento Oracle batte il caso.</div>';
+      + 'Righe <span style="color:var(--oracle)">❄ completa</span>: la foto pre-deadline del motore vero, misurata sugli stessi giocatori della riga base. '
+      + 'Il numero che conta è il <strong>lift</strong>: sopra zero, l\'ordinamento Oracle batte il caso. Lo <strong>scarto medio</strong> dice se i valori sono tirati in basso o in alto. '
+      + 'MAE, entro ±1 e lift contano solo chi ha giocato: chi era previsto in campo e non ha preso voto lo dice l\'elenco sotto la tabella.</div>';
   } catch (e) {
     box.innerHTML = '<div style="font-size:12px;color:var(--red)">Errore: ' + escapeHtml(String(e && e.message || e)) + '</div>';
   }
@@ -15143,7 +15176,11 @@ async function congelaPrevisioniGiornata() {
     players.forEach(p => {
       const r = oraclePredictPlayer(p, ratings, alerted, titSig);
       if (!r || !isFinite(r.expected)) return;
-      previsioni[rosterNormalizeName(p.name)] = { exp: r.expected, conf: r.confidence, role: p.role, team: p.team, name: p.name };
+      // tit: % titolarita delle probabili al momento della foto (null se
+      // assente). Serve alla misura per contare i titolari previsti che
+      // poi non hanno giocato: dai voti da soli quell'errore non si vede.
+      const tit = titSig[p.name] ? titSig[p.name].perc : null;
+      previsioni[rosterNormalizeName(p.name)] = { exp: r.expected, conf: r.confidence, tit, role: p.role, team: p.team, name: p.name };
     });
     const count = Object.keys(previsioni).length;
     if (count < 100) { feedback('❌ Solo ' + count + ' previsioni calcolate: qualcosa non torna, non salvo.'); return; }
