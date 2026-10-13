@@ -15,6 +15,12 @@
 -- Cosa NON espone: la colonna votes (i voti veri), uploaded_by (chi ha
 -- pubblicato), e ovviamente nulla di profiles/leagues/roster_players.
 --
+-- Righe 'previsioni' (13/10): una per giornata congelata col bottone
+-- "❄ congela previsioni" — giornata, quante previsioni, frozen_at. Il
+-- jsonb previsioni e frozen_by restano fuori. Serve a sapere il martedì,
+-- senza login, se la foto del venerdì c'è davvero: prima si poteva solo
+-- chiedere a Sacha di guardare dalla console.
+--
 -- Nota sulla sicurezza: la vista e deliberatamente SECURITY DEFINER
 -- (security_invoker = off). E il modo corretto di pubblicare una
 -- proiezione ristretta di tabelle protette da RLS: l'RLS filtra le
@@ -38,13 +44,21 @@ select
   l.players_count,
   l.uploaded_at
 from public.global_listino l
-where l.is_active;
+where l.is_active
+union all
+select
+  'previsioni'::text,
+  p.giornata::text,
+  p.players_count,
+  p.frozen_at
+from public.global_previsioni p;
 
 -- Sola lettura, a chiunque: sono metadati di prodotto, non dati utente.
 revoke all on public.stato_pubblicazioni from anon, authenticated;
 grant select on public.stato_pubblicazioni to anon, authenticated;
 
 -- ---- CONTROLLO ----
--- Deve elencare una riga per giornata pubblicata piu una per il listino
--- attivo. Se e vuota, non e stato pubblicato ancora nulla.
+-- Deve elencare una riga per giornata pubblicata, una per il listino
+-- attivo e una per ogni giornata congelata. Se e vuota, non e stato
+-- pubblicato ancora nulla.
 select * from public.stato_pubblicazioni order by tipo, pubblicato_il desc;
