@@ -6769,11 +6769,16 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   else if ((p.pgv || 0) > 0 && p.pgv < 5) conf -= 8; // poche partite: meno affidabile
 
   // 1. FORMA dai voti reali registrati (il loop di auto-correzione la alimenta)
+  // Ogni addendo di exp viene anche tenuto da parte (parts, in fondo): la
+  // misura del martedi (20/10) sapeva dire che il motore completo fa peggio
+  // del retro-calcolo, non QUALE fattore sbaglia, perche exp e una somma.
   let exp = base;
+  let formaAdj = 0;
   const recent = samples.slice(0,3).map(v => v.score);
   if (recent.length >= 2) {
     const formAvg = recent.reduce((a,b) => a+b, 0) / recent.length;
     exp = base * 0.65 + formAvg * 0.35;
+    formaAdj = exp - base;
     conf += 15;
     const d = formAvg - base;
     if (d >= 0.3) factors.push('forma in crescita (' + formAvg.toFixed(1) + ' nelle ultime ' + recent.length + ')');
@@ -6784,6 +6789,7 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
     // temporaneo. Smette di applicarsi da solo appena ci sono >=2 voti reali.
     const fp = Math.max(-0.5, Math.min(0.5, p.formaPreseason));
     exp += fp;
+    formaAdj = fp;
     conf += 5;
     if (fp >= 0.15) factors.push('📋 forma preseason positiva (amichevoli)');
     else if (fp <= -0.15) factors.push('📋 forma preseason opaca (amichevoli)');
@@ -6846,14 +6852,17 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   // 4. INDISPONIBILITÀ: prima la fonte ufficiale (infermeria
   // Fantacalcio.it), poi le news real-time come rete residua.
   let risk = null;
+  let infAdj = 0;
   const infermeria = infermeriaDi(p.name);
   if (infermeria) {
-    exp -= infermeria.stato === 'squalificato' ? 2.0 : 1.5;
+    infAdj = infermeria.stato === 'squalificato' ? -2.0 : -1.5;
+    exp += infAdj;
     conf = Math.min(conf, 25);
     risk = 'news infortunio'; // stessa corsia dei rischi gia gestiti a valle
     factors.unshift('🚑 ' + infermeria.stato + ' (infermeria Fantacalcio.it)' + (infermeria.nota ? ' — ' + infermeria.nota.slice(0, 90) : ''));
   } else if (alerted.has(p.name)) {
-    exp -= 1.5;
+    infAdj = -1.5;
+    exp += infAdj;
     conf = Math.min(conf, 30);
     risk = 'news infortunio';
     factors.unshift('🚑 menzionato in news infortunio');
@@ -6861,6 +6870,7 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
 
   // 4b. SEGNALE TITOLARITÀ dalle news di formazione (semaforo)
   let titStatus = null;
+  let titAdj = 0;
   const tsig = titSig && titSig[p.name];
   if (tsig) {
     titStatus = tsig.status;
@@ -6869,12 +6879,14 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
     // "una news lo dava fuori".
     const pctxt = (tsig.perc != null) ? ' (' + tsig.perc + '% nelle probabili ufficiali)' : '';
     if (tsig.status === 'out') {
-      exp -= 1.0;
+      titAdj = -1.0;
+      exp += titAdj;
       conf = Math.min(conf, 35);
       if (!risk) risk = 'verso la panchina';
       factors.unshift('🔴 ' + (pctxt ? 'panchina probabile' + pctxt : 'dato verso la panchina'));
     } else if (tsig.status === 'doubt') {
-      exp -= 0.4;
+      titAdj = -0.4;
+      exp += titAdj;
       conf -= 12;
       if (!risk) risk = 'in ballottaggio';
       factors.unshift('🟡 ' + (pctxt ? 'ballottaggio' + pctxt : 'ballottaggio / titolarità in dubbio'));
@@ -6900,8 +6912,10 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   }
 
   // 7. RIGORISTA DESIGNATO (da listone, marcato dall'admin)
+  let rigAdj = 0;
   if (p.rigorista) {
-    exp += 0.35;
+    rigAdj = 0.35;
+    exp += rigAdj;
     factors.push('🎯 rigorista designato (+0.35)');
   }
 
@@ -6917,14 +6931,23 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   // l'interfaccia non lo nomina.
   const consigli = consigliGiornataCorrente();
   const consiglio = consigli ? consigli[rosterNormalizeName(p.name)] : null;
+  let consAdj = 0;
   if (consiglio) {
-    if (consiglio.fascia === 1) exp += 0.3;
-    else if (consiglio.fascia === 3) exp -= 0.3;
+    if (consiglio.fascia === 1) consAdj = 0.3;
+    else if (consiglio.fascia === 3) consAdj = -0.3;
+    exp += consAdj;
   }
 
   exp = Math.max(4, Math.min(9.5, exp));
   conf = Math.max(5, Math.min(95, Math.round(conf)));
-  return { expected: parseFloat(exp.toFixed(2)), model: 'form-v2', confidence: conf, factors, risk, titStatus, bonusProp, ctx, oppAdj, csAdj, base };
+  const expected = parseFloat(exp.toFixed(2));
+  // Scomposizione di expected: base + ogni correzione, nell'ordine in cui
+  // entrano. `clamp` e quel che resta per arrivare al numero pubblicato
+  // (taglio a [4, 9.5] e arrotondamento a 2 decimali): la somma delle parti
+  // coincide con expected, cosi la misura puo togliere un fattore alla volta.
+  const parts = { base, forma: formaAdj, oppAdj, homeAdj, csAdj, bias, infAdj, titAdj, rigorista: rigAdj, consenso: consAdj };
+  parts.clamp = expected - Object.keys(parts).reduce((sum, k) => sum + parts[k], 0);
+  return { expected, model: 'form-v2', confidence: conf, factors, risk, titStatus, bonusProp, ctx, oppAdj, csAdj, base, parts };
 }
 
 // ---- ARRICCHIMENTO: ripristina i metadati ricchi dal listone ----
@@ -14954,6 +14977,31 @@ function statMisura(coppie) {
   return { n, mae, entro1, bias, lift };
 }
 
+// Per ogni fattore del motore: quanti giocatori ha toccato (|contributo|
+// >= 0.1) e come cambiano MAE e scarto medio togliendo SOLO quel contributo
+// (exp - parte, stessi giocatori). Lavora sulle previsioni della foto che
+// hanno `parts` (dalla G8 in poi): per G6 e G7 restituisce null.
+// `voci` sono tutte le previsioni della foto, anche chi non ha preso voto:
+// infermeria e titolarita toccano soprattutto chi poi non gioca.
+const FATTORI_MOTORE = [['forma', 'forma'], ['oppAdj', 'avversario'], ['homeAdj', 'casa/trasferta'], ['csAdj', 'clean sheet'],
+  ['infAdj', 'infermeria'], ['titAdj', 'titolarità (probabili)'], ['rigorista', 'rigorista'], ['consenso', 'consenso fonti']];
+function misuraPerFattore(coppie, voci) {
+  const haParts = x => x && x.parts && typeof x.parts === 'object';
+  const conParts = coppie.filter(haParts);
+  if (!conParts.length) return null;
+  const con = statMisura(conParts);
+  const parte = (x, k) => (haParts(x) && typeof x.parts[k] === 'number') ? x.parts[k] : 0;
+  const tocca = (x, k) => Math.abs(parte(x, k)) >= 0.1;
+  const righe = FATTORI_MOTORE.map(([k, label]) => {
+    const toccati = conParts.filter(c => tocca(c, k)).length;
+    const inFoto = (voci || []).filter(v => tocca(v, k)).length;
+    const senza = statMisura(conParts.map(c => ({ key: c.key, exp: c.exp - parte(c, k), reale: c.reale })));
+    return { k, label, toccati, inFoto, maeSenza: senza.mae, biasSenza: senza.bias,
+      dMae: senza.mae - con.mae, dBias: Math.abs(senza.bias) - Math.abs(con.bias) };
+  });
+  return { n: conParts.length, mae: con.mae, bias: con.bias, righe };
+}
+
 // ============================================================
 // MISURA ORACLE (retro) — pannellino solo-admin, in STRUMENTI
 // ============================================================
@@ -14999,7 +15047,7 @@ async function misuraOracleRetro() {
     };
     const segnale = rec => { const s = FantaLeagueRules.formSignal(rec); return s ? s.score : null; };
 
-    const righe = []; const titolarita = [];
+    const righe = []; const titolarita = []; const perFattore = [];
     for (let i = 1; i < giornate.length; i++) {
       const G = giornate[i];
       const precedenti = giornate.slice(0, i);
@@ -15036,7 +15084,7 @@ async function misuraOracleRetro() {
         const cpF = [];
         coppie.forEach(cp => {
           const pr = foto[cp.key];
-          if (pr && isFinite(pr.exp)) cpF.push({ key: cp.key, exp: pr.exp, reale: cp.reale });
+          if (pr && isFinite(pr.exp)) cpF.push({ key: cp.key, exp: pr.exp, reale: cp.reale, parts: pr.parts });
         });
         if (cpF.length) righe.push(Object.assign({ g: G.giornata, congelata: true }, statMisura(cpF)));
         // L'errore che i voti non vedono: chi la foto dava in campo e non ha
@@ -15045,6 +15093,9 @@ async function misuraOracleRetro() {
         // ripiega sui top per previsione, che e solo un'approssimazione.
         const votati = new Set(Object.keys(G.votes || {}));
         const voci = Object.keys(foto).map(k => Object.assign({ key: k }, foto[k])).filter(p => isFinite(p.exp));
+        // Foto con le componenti (dalla G8): un fattore alla volta.
+        const pf = misuraPerFattore(cpF, voci);
+        if (pf) perFattore.push(Object.assign({ g: G.giornata }, pf));
         const conTit = voci.filter(p => typeof p.tit === 'number');
         let gruppo, criterio;
         if (conTit.length >= 100) {
@@ -15072,6 +15123,25 @@ async function misuraOracleRetro() {
         + '<td>' + segno(r.bias) + '</td>'
         + '<td style="color:' + (r.lift > 0 ? 'var(--green)' : 'var(--red)') + '">' + segno(r.lift) + '</td></tr>').join('')
       + '</table>'
+      + perFattore.map(pf => '<div style="margin-top:12px;font-family:\'DM Mono\',monospace;font-size:12px">'
+        + '<div style="color:var(--muted);margin-bottom:4px"><span style="color:var(--oracle)">G' + pf.g + ' ❄</span> per fattore · ' + pf.n + ' confronti · MAE ' + pf.mae.toFixed(2) + ' · scarto ' + segno(pf.bias) + ' — cosa succede togliendo SOLO quel fattore</div>'
+        + '<table style="width:100%;border-collapse:collapse">'
+        + '<tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">fattore</th><th title="giocatori con |contributo| ≥ 0.1: con voto / in tutta la foto">toccati</th><th title="MAE senza il fattore (variazione: sotto zero = togliendolo l\'errore cala)">MAE senza</th><th title="scarto medio senza il fattore (variazione del valore assoluto: sotto zero = togliendolo si avvicina a zero)">scarto senza</th><th>verdetto</th></tr>'
+        + pf.righe.map(r => {
+          const vuoto = r.toccati === 0;
+          const verdetto = vuoto ? 'non usato sui confronti'
+            : (r.dMae <= -0.01 ? 'togliendolo l\'errore cala: il fattore PEGGIORA la previsione'
+            : (r.dMae >= 0.01 ? 'togliendolo l\'errore sale: il fattore AIUTA' : 'indifferente sull\'errore'));
+          const colore = v => v < -0.005 ? 'var(--green)' : (v > 0.005 ? 'var(--red)' : 'var(--muted)');
+          return '<tr style="text-align:right;border-top:1px solid var(--border)' + (vuoto ? ';color:var(--muted)' : '') + '">'
+            + '<td style="text-align:left;padding:4px">' + escapeHtml(r.label) + '</td>'
+            + '<td>' + r.toccati + ' / ' + r.inFoto + '</td>'
+            + (vuoto ? '<td>—</td><td>—</td>'
+              : '<td>' + r.maeSenza.toFixed(2) + ' <span style="color:' + colore(r.dMae) + '">(' + segno(r.dMae) + ')</span></td>'
+              + '<td>' + segno(r.biasSenza) + ' <span style="color:' + colore(r.dBias) + '">(' + segno(r.dBias) + ')</span></td>')
+            + '<td style="text-align:left;padding-left:8px;font-size:11px">' + verdetto + '</td></tr>';
+        }).join('')
+        + '</table></div>').join('')
       + (titolarita.length ? '<div style="margin-top:12px;font-family:\'DM Mono\',monospace;font-size:12px">'
         + '<div style="color:var(--muted);margin-bottom:4px">Chi la foto ❄ dava in campo: ha preso voto?</div>'
         + titolarita.map(t => '<div style="padding:3px 0;border-top:1px solid var(--border)">'
@@ -15085,7 +15155,9 @@ async function misuraOracleRetro() {
       + '<div class="admin-tools-note">Righe normali: retro-calcolo BASE (esclusi probabili, infermeria, ricalibrazione, avversario, listini di lega — non storicizzati; solo giocatori con almeno un voto precedente). '
       + 'Righe <span style="color:var(--oracle)">❄ completa</span>: la foto pre-deadline del motore vero, misurata sugli stessi giocatori della riga base. '
       + 'Il numero che conta è il <strong>lift</strong>: sopra zero, l\'ordinamento Oracle batte il caso. Lo <strong>scarto medio</strong> dice se i valori sono tirati in basso o in alto. '
-      + 'MAE, entro ±1 e lift contano solo chi ha giocato: chi era previsto in campo e non ha preso voto lo dice l\'elenco sotto la tabella.</div>';
+      + 'MAE, entro ±1 e lift contano solo chi ha giocato: chi era previsto in campo e non ha preso voto lo dice l\'elenco sotto la tabella. '
+      + 'Il blocco <strong>per fattore</strong> (foto dalla G8) toglie dalla previsione congelata un solo contributo alla volta e rimisura sugli stessi giocatori: se l\'errore cala, quel fattore sta sbagliando; se sale, sta aiutando. '
+      + 'Il verdetto parla dell\'errore medio (MAE); lo scarto dice se il fattore tira in basso o in alto.</div>';
   } catch (e) {
     box.innerHTML = '<div style="font-size:12px;color:var(--red)">Errore: ' + escapeHtml(String(e && e.message || e)) + '</div>';
   }
@@ -15120,6 +15192,17 @@ async function aggiornaStatoCongelamento() {
   } catch (e) {
     el.textContent = 'foto congelate: lettura non riuscita (' + String(e && e.message || e) + ')';
   }
+}
+
+// Le parti della previsione come vanno nella foto: 3 decimali e senza gli
+// zeri, cosi la riga jsonb resta leggibile e una parte assente vale 0.
+function compattaParts(parts) {
+  const out = {};
+  Object.keys(parts || {}).forEach(k => {
+    const v = Math.round(Number(parts[k]) * 1000) / 1000;
+    if (isFinite(v) && v !== 0) out[k] = v;
+  });
+  return out;
 }
 
 async function congelaPrevisioniGiornata() {
@@ -15180,7 +15263,10 @@ async function congelaPrevisioniGiornata() {
       // assente). Serve alla misura per contare i titolari previsti che
       // poi non hanno giocato: dai voti da soli quell'errore non si vede.
       const tit = titSig[p.name] ? titSig[p.name].perc : null;
-      previsioni[rosterNormalizeName(p.name)] = { exp: r.expected, conf: r.confidence, tit, role: p.role, team: p.team, name: p.name };
+      // parts: i contributi separati (base, forma, avversario, ...) con cui
+      // la misura del martedi dice QUALE fattore sbaglia. Prima foto con le
+      // componenti: G8 (23/10/2026); G6 e G7 non le hanno.
+      previsioni[rosterNormalizeName(p.name)] = { exp: r.expected, conf: r.confidence, tit, role: p.role, team: p.team, name: p.name, parts: compattaParts(r.parts) };
     });
     const count = Object.keys(previsioni).length;
     if (count < 100) { feedback('❌ Solo ' + count + ' previsioni calcolate: qualcosa non torna, non salvo.'); return; }
