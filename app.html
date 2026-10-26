@@ -8222,7 +8222,22 @@ function saveCalendarioToStorage() {
 
 // Trova la giornata "in arrivo": la prima con date > oggi
 // Se non ne trova (stagione finita), prende l'ultima
+// Cache breve: la funzione gira decine di migliaia di volte per render
+// (infermeriaDi -> consigliGiornataCorrente dentro il confronto moduli) e
+// rifarla ogni volta rendeva lenta la navigazione (26/10). Si ricalcola
+// se cambiano calendario o voti (vengono riassegnati, non modificati) o
+// dopo 5 secondi. var e non let: puo girare prima di questa riga.
+var _giornataIdxCache = null;
 function findCurrentGiornataIdx() {
+  const c = _giornataIdxCache;
+  let voti = null;
+  try { voti = votiGlobaliInMemoria; } catch (e) {}
+  if (c && c.giornate === calendario.giornate && c.voti === voti && Date.now() - c.t < 5000) return c.idx;
+  const idx = findCurrentGiornataIdxCalc();
+  _giornataIdxCache = { giornate: calendario.giornate, voti, t: Date.now(), idx };
+  return idx;
+}
+function findCurrentGiornataIdxCalc() {
   if (!calendario.giornate.length) return -1;
   const now = new Date();
   const chiuse = giornateConVoti();
@@ -13771,13 +13786,18 @@ async function fetchGlobalConsigliForUser() {
 
 // I consigli della giornata su cui il motore sta ragionando. Fascia e
 // titolarita valgono per UNA giornata: quelli vecchi non si applicano.
+var _consigliCorrCache = null;
 function consigliGiornataCorrente() {
   if (!Array.isArray(consigliGlobaliInMemoria) || consigliGlobaliInMemoria.length === 0) return null;
   const idx = (typeof findCurrentGiornataIdx === 'function') ? findCurrentGiornataIdx() : -1;
   if (idx >= 0 && calendario.giornate[idx]) {
     const num = calendario.giornate[idx].num;
+    const c = _consigliCorrCache;
+    if (c && c.rows === consigliGlobaliInMemoria && c.num === num) return c.out;
     const riga = consigliGlobaliInMemoria.find(r => r.giornata === num);
-    return riga ? (riga.consigli || null) : null;
+    const out = riga ? (riga.consigli || null) : null;
+    _consigliCorrCache = { rows: consigliGlobaliInMemoria, num, out };
+    return out;
   }
   // Senza calendario Serie A caricato: l'ultima giornata pubblicata e la
   // migliore approssimazione della "prossima".
