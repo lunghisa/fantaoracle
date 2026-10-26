@@ -19,6 +19,15 @@
 //
 // Risposta: { ok, giornata, abbinati, nonAbbinati: [...] } — la routine può
 // leggere i non abbinati e correggersi da sola al giro successivo.
+//
+// Merge di più fonti (26/10, pesi decisi da Sacha: SOS Fanta 50%, il resto
+// diviso fra le altre). La routine fa la somma pesata e manda il risultato:
+//   - fasce: un campo numerico in coda alla riga è il punteggio pesato
+//     (-1..+1), "Inter: Lautaro Martinez: 1: T: 0.75". Senza, vale la fascia.
+//   - infermeria: campo "infermeria", righe "Squadra: Nome: out|dubbio: nota".
+// Le due parti si aggiornano separatamente: un invio con sole "righe"
+// sostituisce le fasce e tiene l'infermeria della giornata, un invio con
+// sola "infermeria" la sostituisce e tiene le fasce.
 
 function norm(s) {
   return (s || '').toLowerCase()
@@ -85,8 +94,9 @@ export default async function handler(req, res) {
   const body = req.body || {};
   const giornata = parseInt(body.giornata, 10);
   const righe = String(body.righe || '');
+  const righeInf = String(body.infermeria || '');
   if (!giornata || giornata < 1 || giornata > 50) { res.status(400).json({ error: 'giornata mancante o non valida' }); return; }
-  if (!righe.trim()) { res.status(400).json({ error: 'righe mancanti' }); return; }
+  if (!righe.trim() && !righeInf.trim()) { res.status(400).json({ error: 'righe mancanti' }); return; }
 
   try {
     // Il listone attivo: serve per abbinare i nomi alle chiavi dei giocatori.
@@ -98,23 +108,67 @@ export default async function handler(req, res) {
     const giocatori = players.filter(p => p && p.name)
       .map(p => ({ key: norm(p.name), name: p.name, team: p.team || '' }));
 
+    const trova = (squadraIn, name) => {
+      const team = norm(squadraIn);
+      const squadra = giocatori.filter(g => norm(g.team) === team);
+      return abbina(squadra, name) || abbina(giocatori, name);
+    };
+
+    // La giornata già salvata: si sostituisce solo la parte inviata.
+    const prev = await db('global_consigli?giornata=eq.' + giornata + '&select=consigli&limit=1');
+    if (!prev.ok) throw new Error('lettura giornata fallita: ' + prev.status);
+    const vecchio = ((await prev.json())[0] || {}).consigli || {};
+
     const consigli = {};
     const nonAbbinati = [];
-    righe.split(/\r?\n/).forEach(line => {
-      if (!line.trim()) return;
-      const parts = line.split(':').map(x => x.trim());
-      if (parts.length < 3) { nonAbbinati.push(line.trim()); return; }
-      const team = norm(parts[0]);
-      const name = parts[1];
-      const fascia = parseInt(parts[2], 10);
-      const titRaw = (parts[3] || '').toUpperCase();
-      const tit = titRaw === 'T' ? 'in' : titRaw === 'D' ? 'doubt' : null;
-      if (!team || !name || ![1, 2, 3].includes(fascia)) { nonAbbinati.push(line.trim()); return; }
-      const squadra = giocatori.filter(g => norm(g.team) === team);
-      const hit = abbina(squadra, name) || abbina(giocatori, name);
-      if (!hit) { nonAbbinati.push(name); return; }
-      consigli[hit.key] = { fascia, tit, name: hit.name, team: hit.team };
-    });
+    if (righe.trim()) {
+      righe.split(/\r?\n/).forEach(line => {
+        if (!line.trim()) return;
+        const parts = line.split(':').map(x => x.trim());
+        if (parts.length < 3) { nonAbbinati.push(line.trim()); return; }
+        const name = parts[1];
+        const fascia = parseInt(parts[2], 10);
+        let tit = null, score = null;
+        parts.slice(3).forEach(x => {
+          const u = x.toUpperCase();
+          if (u === 'T') tit = 'in';
+          else if (u === 'D') tit = 'doubt';
+          else if (/^[+-]?(\d+\.?\d*|\.\d+)$/.test(x)) score = Math.max(-1, Math.min(1, parseFloat(x)));
+        });
+        if (!norm(parts[0]) || !name || ![1, 2, 3].includes(fascia)) { nonAbbinati.push(line.trim()); return; }
+        const hit = trova(parts[0], name);
+        if (!hit) { nonAbbinati.push(name); return; }
+        consigli[hit.key] = { fascia, tit, name: hit.name, team: hit.team };
+        if (score !== null) consigli[hit.key].score = score;
+      });
+    } else {
+      // solo infermeria: le fasce restano quelle di prima
+      Object.keys(vecchio).forEach(k => {
+        if (vecchio[k] && vecchio[k].fascia) { const { inf, infNota, ...resto } = vecchio[k]; consigli[k] = resto; }
+      });
+    }
+
+    let infCount = 0;
+    if (righeInf.trim()) {
+      righeInf.split(/\r?\n/).forEach(line => {
+        if (!line.trim()) return;
+        const parts = line.split(':').map(x => x.trim());
+        const stato = (parts[2] || '').toLowerCase();
+        if (parts.length < 3 || !['out', 'dubbio'].includes(stato)) { nonAbbinati.push(line.trim()); return; }
+        const hit = trova(parts[0], parts[1]);
+        if (!hit) { nonAbbinati.push(parts[1]); return; }
+        const nota = parts.slice(3).join(': ').slice(0, 220);
+        consigli[hit.key] = Object.assign(consigli[hit.key] || { name: hit.name, team: hit.team }, { inf: stato, infNota: nota });
+        infCount++;
+      });
+    } else {
+      // solo fasce: l'infermeria della giornata resta
+      Object.keys(vecchio).forEach(k => {
+        const v = vecchio[k];
+        if (!v || !v.inf) return;
+        consigli[k] = Object.assign(consigli[k] || { name: v.name, team: v.team }, { inf: v.inf, infNota: v.infNota || '' });
+      });
+    }
 
     const count = Object.keys(consigli).length;
     if (count === 0) { res.status(422).json({ error: 'nessuna riga abbinata al listone', nonAbbinati }); return; }
@@ -134,8 +188,8 @@ export default async function handler(req, res) {
       throw new Error('scrittura fallita: ' + up.status + ' ' + t.slice(0, 200));
     }
 
-    console.log('[consigli-import] G' + giornata + ': ' + count + ' abbinati, ' + nonAbbinati.length + ' scartati');
-    res.status(200).json({ ok: true, giornata, abbinati: count, nonAbbinati });
+    console.log('[consigli-import] G' + giornata + ': ' + count + ' abbinati (' + infCount + ' infermeria), ' + nonAbbinati.length + ' scartati');
+    res.status(200).json({ ok: true, giornata, abbinati: count, infermeria: infCount, nonAbbinati });
   } catch (e) {
     console.error('[consigli-import]', e.message || e);
     res.status(500).json({ error: 'errore interno' });

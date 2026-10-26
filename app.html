@@ -6850,7 +6850,14 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
     exp += infAdj;
     conf = Math.min(conf, 25);
     risk = 'news infortunio'; // stessa corsia dei rischi gia gestiti a valle
-    factors.unshift('🚑 ' + infermeria.stato + ' (infermeria Fantacalcio.it)' + (infermeria.nota ? ' — ' + infermeria.nota.slice(0, 90) : ''));
+    factors.unshift('🚑 ' + infermeria.stato + ' (infermeria ' + (infermeria.fonte || 'Fantacalcio.it') + ')' + (infermeria.nota ? ' — ' + infermeria.nota.slice(0, 90) : ''));
+  } else if (infDubbioDi(p.name)) {
+    // una sola fonte minore lo da fuori: mezzo malus, meno fiducia
+    const d = infDubbioDi(p.name);
+    infAdj = -0.75;
+    exp += infAdj;
+    conf = Math.min(conf, 40);
+    factors.unshift('🩹 in dubbio per infortunio' + (d.infNota ? ' — ' + d.infNota.slice(0, 90) : ''));
   } else if (alerted.has(p.name)) {
     infAdj = -1.5;
     exp += infAdj;
@@ -6923,12 +6930,8 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   // l'interfaccia non lo nomina.
   const consigli = consigliGiornataCorrente();
   const consiglio = consigli ? consigli[rosterNormalizeName(p.name)] : null;
-  let consAdj = 0;
-  if (consiglio) {
-    if (consiglio.fascia === 1) consAdj = 0.3;
-    else if (consiglio.fascia === 3) consAdj = -0.3;
-    exp += consAdj;
-  }
+  const consAdj = consAdjDi(consiglio);
+  exp += consAdj;
 
   exp = Math.max(4, Math.min(9.5, exp));
   conf = Math.max(5, Math.min(95, Math.round(conf)));
@@ -13736,6 +13739,21 @@ function consigliGiornataCorrente() {
   return consigliGlobaliInMemoria[consigliGlobaliInMemoria.length - 1].consigli || null;
 }
 
+// Peso del consenso fonti su un giocatore. Dal 26/10 la routine unisce piu
+// fonti (SOS Fanta 50%, il resto alle altre) e manda score = somma pesata
+// in -1..+1: SOS da solo (0.5) vale ancora ±0.3 come prima, l'accordo di
+// piu fonti arriva al massimo a ±0.4. Le giornate vecchie, senza score,
+// restano a fascia 1 = +0.3, fascia 3 = -0.3.
+function consAdjDi(cns) {
+  if (!cns) return 0;
+  if (typeof cns.score === 'number' && isFinite(cns.score)) {
+    return Math.round(Math.max(-0.4, Math.min(0.4, cns.score * 0.6)) * 100) / 100;
+  }
+  if (cns.fascia === 1) return 0.3;
+  if (cns.fascia === 3) return -0.3;
+  return 0;
+}
+
 async function fetchGlobalVotiForUser() {
   const client = await ensureSupabaseReady();
   if (!client || !currentUser) return null;
@@ -14226,15 +14244,30 @@ function probabiliDi(nomeGiocatore) {
 
 // Stato infermeria di un giocatore della rosa (o null). Match esatto sul
 // nome normalizzato: listone e infermeria usano la stessa forma breve.
+// Se la pagina ufficiale non lo segna, vale l'infermeria unita dalla
+// routine (piu fonti pesate, dentro global_consigli): 'out' conta come
+// indisponibile, 'dubbio' no (lo pesa il motore a parte, infDubbioDi).
 function infermeriaDi(nomeGiocatore) {
   const k = rosterNormalizeName(nomeGiocatore);
-  return (k && infermeriaState.map && infermeriaState.map[k]) || null;
+  if (!k) return null;
+  const ufficiale = infermeriaState.map && infermeriaState.map[k];
+  if (ufficiale) return ufficiale;
+  const cns = (typeof consigliGiornataCorrente === 'function') ? consigliGiornataCorrente() : null;
+  const c = cns && cns[k];
+  if (c && c.inf === 'out') return { nome: c.name, team: c.team, stato: 'infortunato', nota: c.infNota || '', fonte: 'più fonti' };
+  return null;
+}
+function infDubbioDi(nomeGiocatore) {
+  const k = rosterNormalizeName(nomeGiocatore);
+  const cns = (k && typeof consigliGiornataCorrente === 'function') ? consigliGiornataCorrente() : null;
+  const c = cns && cns[k];
+  return (c && c.inf === 'dubbio') ? c : null;
 }
 
 // Titolo per l'icona 🚑: la nota ufficiale se c'e, altrimenti il generico.
 function motivoIndisponibile(nomeGiocatore) {
   const inf = infermeriaDi(nomeGiocatore);
-  if (inf) return (inf.stato === 'squalificato' ? 'Squalificato — ' : 'Infortunato — ') + (inf.nota || 'fonte Fantacalcio.it');
+  if (inf) return (inf.stato === 'squalificato' ? 'Squalificato — ' : 'Infortunato — ') + (inf.nota || 'fonte ' + (inf.fonte || 'Fantacalcio.it'));
   return 'Menzionato in news infortunio';
 }
 
@@ -15058,8 +15091,7 @@ async function misuraOracleRetro() {
         const casa = casaDi(team, G.giornata);
         if (casa !== null) exp += casa ? 0.15 : -0.15;
         const cns = (consigliPerG[G.giornata] || {})[key];
-        if (cns && cns.fascia === 1) exp += 0.3;
-        else if (cns && cns.fascia === 3) exp -= 0.3;
+        exp += consAdjDi(cns);
         if (rigoristi.has(key)) exp += 0.35;
         coppie.push({ key, exp, reale });
       });

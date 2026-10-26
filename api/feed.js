@@ -19,6 +19,8 @@ const ALLOWED_HOSTS = [
   // Fantacalcistiche
   'fantamaster.it', 'www.fantamaster.it',
   'sosfanta.com', 'www.sosfanta.com',
+  // Consigli e indisponibili per il merge delle fonti (routine, 26/10)
+  'goal.com', 'www.goal.com',
   // Lista infermeria (indisponibili-serie-a): stessi nomi brevi del listone
   'fantacalcio.it', 'www.fantacalcio.it',
   // Generaliste

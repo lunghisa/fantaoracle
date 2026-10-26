@@ -36,7 +36,7 @@ function motore(opts = {}) {
   };
   vm.createContext(c);
   for (const name of ['quotationToFm', 'normTeamName', 'rosterNormalizeName', 'oracleMatchContext', 'computeTeamRatings',
-    'oracleFormSamples', 'oraclePredictPlayer', 'compattaParts', 'statMisura', 'misuraPerFattore']) vm.runInContext(fn(name), c);
+    'oracleFormSamples', 'oraclePredictPlayer', 'compattaParts', 'statMisura', 'misuraPerFattore', 'consAdjDi', 'infDubbioDi']) vm.runInContext(fn(name), c);
   vm.runInContext(constante('FATTORI_MOTORE'), c);
   return c;
 }
@@ -133,4 +133,27 @@ test('Per fattore: conteggio dei toccati e MAE/scarto senza il fattore; foto vec
   assert.equal(c.misuraPerFattore(coppie.map(x => ({ key: x.key, exp: x.exp, reale: x.reale })), []), null);
   assert.equal(c.misuraPerFattore([], []), null);
   assert.equal(vm.runInContext('FATTORI_MOTORE.map(f => f[0]).join()', c), 'forma,oppAdj,homeAdj,csAdj,infAdj,titAdj,rigorista,consenso');
+});
+
+test('Consenso di piu fonti: lo score pesato decide il peso, fino a ±0.4', () => {
+  assert.equal(motore().consAdjDi({ fascia: 1, score: 0.5 }), 0.3, 'SOS da solo: come prima');
+  assert.equal(motore().consAdjDi({ fascia: 1, score: 1 }), 0.4, 'tutte d\'accordo: tetto 0.4');
+  assert.equal(motore().consAdjDi({ fascia: 3, score: -0.25 }), -0.15);
+  assert.equal(motore().consAdjDi({ fascia: 3 }), -0.3, 'giornate vecchie senza score');
+  assert.equal(motore().consAdjDi({ inf: 'out' }), 0, 'solo infermeria: nessun consenso');
+  const voti = [5, 6, 7].map(g => vg(g, { lautaro: voto('Inter', 7, 1, 0) }));
+  const c = motore({ voti, consigli: { lautaro: { fascia: 1, score: 0.9 } } });
+  const l = predici(c, { name: 'Lautaro', team: 'Inter', role: 'A', quotation: 35, fmReal: 7.8, mv: 6.6, pgv: 3 });
+  assert.equal(l.parts.consenso, 0.4);
+  assert.ok(Math.abs(somma(l.parts) - l.expected) < 1e-9);
+});
+
+test('Infermeria unita: "dubbio" da mezzo malus, il resto non cambia', () => {
+  const voti = [5, 6, 7].map(g => vg(g, { bastoni: voto('Inter', 6.5) }));
+  const c = motore({ voti, consigli: { bastoni: { inf: 'dubbio', infNota: 'affaticamento' } } });
+  const b = predici(c, { name: 'Bastoni', team: 'Inter', role: 'D', quotation: 18, fmReal: 6.7, mv: 6.2, pgv: 3 });
+  assert.equal(b.parts.infAdj, -0.75);
+  assert.equal(b.parts.consenso, 0);
+  assert.ok(b.factors.some(f => /in dubbio/.test(f)));
+  assert.ok(Math.abs(somma(b.parts) - b.expected) < 1e-9);
 });
