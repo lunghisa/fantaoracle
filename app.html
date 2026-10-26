@@ -4477,6 +4477,7 @@ body::before { opacity:.2; }
         <div class="mode-explain" id="modeExplain">
           <span>Carica la tua rosa dalla Dashboard: appena c'è, il campo mostra le previsioni dell'Oracle.</span>
         </div>
+        <div id="lineupProvvisorio" style="display:none;margin:0 0 12px;padding:8px 10px;background:rgba(255,140,66,0.07);border:1px solid rgba(255,140,66,0.35);border-radius:8px;font-size:12px;line-height:1.5;color:var(--text)"></div>
 
         <!-- Selettore modulo SOPRA al campo (punto B UX round 2) -->
         <div class="modulo-bar">
@@ -7868,6 +7869,7 @@ function estraiVotiDaWorkbook(wb, giocatori) {
 // ============================================================
 function renderOraclePage() {
   renderOracleGiornata();
+  try { renderAvvisoProvvisorio(); } catch (e) {}
   renderLeagueRules();
   const all = [...players.starters, ...players.bench]
     .filter(p => p && p.name && p.name !== '---' && !p.isEmpty);
@@ -8223,8 +8225,14 @@ function saveCalendarioToStorage() {
 function findCurrentGiornataIdx() {
   if (!calendario.giornate.length) return -1;
   const now = new Date();
+  const chiuse = giornateConVoti();
   for (let i = 0; i < calendario.giornate.length; i++) {
     const g = calendario.giornate[i];
+    // Voti pubblicati = giornata chiusa: si passa subito alla successiva,
+    // anche se la data dice che e ancora "in campo". Regola di Sacha
+    // (26/10): coi voti fuori si guarda gia la prossima, al limite con
+    // l'avviso di line-up provvisorio (vedi renderAvvisoProvvisorio).
+    if (chiuse.has(parseInt(g.num, 10))) continue;
     if (!g.date) continue;
     // La giornata resta CORRENTE fino a fine posticipi, non fino alla sua
     // data nominale: il csv porta un giorno solo (di solito la domenica) ma
@@ -8237,6 +8245,36 @@ function findCurrentGiornataIdx() {
     if (fine >= now) return i;
   }
   return calendario.giornate.length - 1;
+}
+
+// Numeri delle giornate con i voti gia pubblicati dall'admin. try/catch:
+// questa funzione puo girare prima che lo script abbia dichiarato
+// votiGlobaliInMemoria (let piu in basso).
+function giornateConVoti() {
+  try {
+    return new Set((Array.isArray(votiGlobaliInMemoria) ? votiGlobaliInMemoria : [])
+      .filter(r => r && r.votes && Object.keys(r.votes).length > 0)
+      .map(r => parseInt(r.giornata, 10)));
+  } catch (e) { return new Set(); }
+}
+
+// Avviso sopra il campo quando la giornata in arrivo non ha ancora i suoi
+// dati settimanali (le fasce delle fonti): l'undici e provvisorio. Il
+// consenso non si nomina (scelta di prodotto del 27/8).
+function renderAvvisoProvvisorio() {
+  const el = document.getElementById('lineupProvvisorio');
+  if (!el) return;
+  let gNum = null;
+  try {
+    const idx = findCurrentGiornataIdx();
+    const caricati = Array.isArray(consigliGlobaliInMemoria);
+    if (currentMode === 'oracle' && caricati && idx >= 0 && calendario.giornate[idx]
+        && !consigliGiornataCorrente()) gNum = calendario.giornate[idx].num;
+  } catch (e) { gNum = null; }
+  if (!gNum) { el.style.display = 'none'; return; }
+  el.innerHTML = '<span>⏳ <strong>Line-up provvisorio:</strong> per la giornata ' + escapeHtml(String(gNum))
+    + ' mancano ancora alcuni dati della settimana. Il consiglio può cambiare quando arrivano: ricontrolla prima del calcio d\'inizio.</span>';
+  el.style.display = '';
 }
 
 function resetCalendarioToday() {
@@ -13697,12 +13735,19 @@ async function applyGlobalListinoAndCalendar() {
     // ============ VOTI DI GIORNATA (pubblicati dall'admin) ============
     if (Array.isArray(votiData) && votiData.length > 0) {
       votiGlobaliInMemoria = votiData;
+      // I voti chiudono la giornata: la corrente puo essere cambiata.
+      if (calendario.giornate.length) {
+        calendario.currentIdx = findCurrentGiornataIdx();
+        try { renderCalendarioWidget(); } catch (e) {}
+        try { renderOracleGiornata(); } catch (e) {}
+      }
       const applicate = applicaVotiGlobali(votiData);
       if (applicate.length > 0) {
         try { renderOraclePage(); renderField(); renderLists(); } catch (e) {}
         showToast('📊 Voti ufficiali applicati: giornata ' + applicate.join(', ') + ' — andamento Oracle aggiornato');
       }
     }
+    try { renderAvvisoProvvisorio(); } catch (e) {}
   } catch(e) {
     console.warn('[Cloud] applyGlobalListinoAndCalendar error:', e);
   }
@@ -13935,6 +13980,7 @@ function setMode(mode) {
     }
   }
   renderField(); renderLists();
+  try { renderAvvisoProvvisorio(); } catch (e) {}
   if (isOracle) showToast('🔮 Oracle attivo: indici orientativi per la prossima giornata');
 }
 function setModulo(m, btn) {
