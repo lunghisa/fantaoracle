@@ -102,6 +102,8 @@ L'Oracle è passato da mockup a motore reale, in più passi:
    squadra con quello offensivo dell'avversario (già calcolati in
    `computeTeamRatings`) e modula il punteggio atteso di conseguenza, con nota
    esplicita tra i motivi ("🛡️ clean sheet probabile..." / "difesa a rischio...").
+   **Spento il 26/10/2026** insieme alla penalità -0.4 sul ballottaggio: la prima
+   misura per fattore (foto G8 con le componenti) li dava entrambi in perdita.
 
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
