@@ -55,19 +55,21 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   assert.ok(lautaro.parts.forma !== 0, 'forma dai 3 voti');
   assert.ok(lautaro.parts.oppAdj > 0, 'Lecce abbordabile');
   assert.equal(lautaro.parts.homeAdj, 0.15);
-  assert.equal(lautaro.parts.csAdj, 0, 'clean sheet solo P/D');
-  assert.equal(lautaro.parts.titAdj, -0.4);
+  assert.equal(lautaro.parts.csAdj, 0, 'clean sheet spento il 26/10');
+  assert.equal(lautaro.parts.titAdj, 0, 'ballottaggio: niente piu -0.4 (26/10), solo meno fiducia');
+  assert.equal(lautaro.titStatus, 'doubt');
   assert.equal(lautaro.parts.rigorista, 0.35);
   assert.equal(lautaro.parts.consenso, 0.3);
   assert.equal(lautaro.parts.infAdj, 0);
   // il numero pubblicato resta quello di prima: base + correzioni, 2 decimali
-  const prima = lautaro.parts.base + lautaro.parts.forma + lautaro.parts.oppAdj + 0.15 - 0.4 + 0.35 + 0.3;
+  const prima = lautaro.parts.base + lautaro.parts.forma + lautaro.parts.oppAdj + 0.15 + 0.35 + 0.3;
   assert.equal(lautaro.expected, parseFloat(prima.toFixed(2)));
 
   const bastoni = predici(c, { name: 'Bastoni', team: 'Inter', role: 'D', quotation: 18, fmReal: 6.7, mv: 6.2, pgv: 3 });
   assert.ok(Math.abs(somma(bastoni.parts) - bastoni.expected) < 1e-9);
   assert.equal(bastoni.parts.infAdj, -1.5);
-  assert.ok(bastoni.parts.csAdj > 0, 'difesa Inter vs attacco Lecce');
+  assert.equal(bastoni.parts.csAdj, 0, 'clean sheet spento il 26/10, anche per i difensori');
+  assert.ok(!bastoni.factors.some(f => /clean sheet|difesa a rischio/.test(f)), 'nessuna riga clean sheet nei fattori');
   assert.equal(bastoni.parts.consenso, 0);
 
   const krstovic = predici(c, { name: 'Krstovic', team: 'Lecce', role: 'A', quotation: 14, fmReal: 6.4, mv: 6.0, pgv: 3 }, { Krstovic: { status: 'out', perc: 20 } });

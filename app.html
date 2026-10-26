@@ -6826,21 +6826,12 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   }
   exp += oppAdj + homeAdj;
 
-  // 2b. CLEAN SHEET (P/D): difesa propria vs attacco avversario.
-  // Segnale distinto dall'oppAdj sopra: qui pesa quanto è forte la MIA difesa,
-  // non solo quanto è debole l'attacco avversario rispetto alla media lega.
-  let csAdj = 0;
-  if (ctx && (p.role === 'P' || p.role === 'D')) {
-    const myRating = ratings[normTeamName(p.team)];
-    const oppRating = ratings[ctx.oppNorm];
-    if (myRating && oppRating) {
-      const csRel = myRating.def - oppRating.att;
-      csAdj = Math.max(-0.4, Math.min(0.4, csRel * 0.8));
-      exp += csAdj;
-      if (csAdj >= 0.15) factors.push('🛡️ clean sheet probabile: difesa solida vs ' + ctx.opponent);
-      else if (csAdj <= -0.15) factors.push('difesa a rischio contro ' + ctx.opponent);
-    }
-  }
+  // 2b. CLEAN SHEET (P/D): SPENTO da Sacha il 26/10/2026. La misura per
+  // fattore della G8 (prima foto con le componenti) lo dava giusto nel 17%
+  // dei casi: togliendolo il MAE sui toccati passava da 0.96 a 0.75. Era
+  // (difesa propria - attacco avversario) * 0.8, tagliato a ±0.4. Resta a 0
+  // nelle parti, cosi le foto vecchie e quelle nuove si leggono allo stesso modo.
+  const csAdj = 0;
 
   // 3. BIAS APPRESO per ruolo (auto-correzione)
   const bias = 0; // Un indice non si calibra sottraendo fantapunti reali.
@@ -6885,8 +6876,9 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
       if (!risk) risk = 'verso la panchina';
       factors.unshift('🔴 ' + (pctxt ? 'panchina probabile' + pctxt : 'dato verso la panchina'));
     } else if (tsig.status === 'doubt') {
-      titAdj = -0.4;
-      exp += titAdj;
+      // Niente piu -0.4 (Sacha, 26/10/2026): nella G8 il 70% dei 40-69%
+      // giocava, e su chi giocava la penalita portava il MAE da 0.67 a 0.87.
+      // Resta il segnale: meno fiducia, rischio dichiarato, riga nei fattori.
       conf -= 12;
       if (!risk) risk = 'in ballottaggio';
       factors.unshift('🟡 ' + (pctxt ? 'ballottaggio' + pctxt : 'ballottaggio / titolarità in dubbio'));
@@ -8097,7 +8089,7 @@ function renderOracleRisky() {
     } else if (info.titStatus === 'out') {
       risky.push({ p, reason: '🔴 Dato verso la panchina dalle news', impact: '-1.0', prio: 1 });
     } else if (info.titStatus === 'doubt') {
-      risky.push({ p, reason: '🟡 In ballottaggio / titolarità in dubbio', impact: '-0.4', prio: 2 });
+      risky.push({ p, reason: '🟡 In ballottaggio / titolarità in dubbio', impact: '~', prio: 2 });
     } else if (info.oppAdj <= -0.25) {
       risky.push({ p, reason: 'Avversario molto ostico' + (info.ctx ? ': ' + info.ctx.opponent : ''), impact: info.oppAdj.toFixed(1), prio: 3 });
     } else if (info.risk === 'campione ridotto') {
