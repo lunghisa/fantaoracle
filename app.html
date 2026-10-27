@@ -6735,6 +6735,64 @@ function oracleFormSamples(p) {
     return signal ? [signal] : [];
   });
 }
+// ---- PROBABILITÀ DI PRENDERE VOTO (27/10/2026) ----
+// Modello "garanzia voto": quanto e probabile che il giocatore prenda voto,
+// cosa diversa dal partire titolare (con i 5 cambi molti panchinari prendono
+// voto). Tarata sulle misure delle foto ❄ G7 e G8: probabili >=70% → 93-94%
+// in campo, 40-69% → 70-74%, <40% → 20-27%, assenti dalle probabili → ~0%.
+// Il numero pubblicato e la media pesata tra "se gioca" e il valore di un
+// voto mancato (VALORE_SENZA_VOTO = 5.0: e il valore che le vecchie penalita
+// fisse -1.0/-1.5 implicavano, a meta tra "entra la panchina" e "si gioca in
+// 10"). Da ritarare con la calibrazione che la misura mostra dalla G9.
+const VALORE_SENZA_VOTO = 5.0;
+const PVOTO_CALIBRAZIONE = [[0, 0.10], [20, 0.27], [55, 0.70], [80, 0.94], [100, 0.97]];
+function pVotoDaPerc(perc) {
+  const x = Math.max(0, Math.min(100, Number(perc) || 0));
+  for (let i = 1; i < PVOTO_CALIBRAZIONE.length; i++) {
+    const x0 = PVOTO_CALIBRAZIONE[i - 1][0], y0 = PVOTO_CALIBRAZIONE[i - 1][1];
+    const x1 = PVOTO_CALIBRAZIONE[i][0], y1 = PVOTO_CALIBRAZIONE[i][1];
+    if (x <= x1) return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+  }
+  return PVOTO_CALIBRAZIONE[PVOTO_CALIBRAZIONE.length - 1][1];
+}
+// Quota delle giornate pubblicate in cui il giocatore ha preso voto (null
+// sotto le 3 giornate: troppo poco per dire qualcosa).
+function tassoVotoStagione(key) {
+  if (!Array.isArray(votiGlobaliInMemoria) || votiGlobaliInMemoria.length < 3) return null;
+  let con = 0;
+  votiGlobaliInMemoria.forEach(d => { const r = (d.votes || {})[key]; if (r && FantaLeagueRules.formSignal(r)) con++; });
+  return con / votiGlobaliInMemoria.length;
+}
+// Le probabili ufficiali sono caricate e coprono la squadra del giocatore?
+// Solo allora "assente dalle probabili" vuol dire qualcosa (nei turni
+// infrasettimanali la pagina puo uscire a pezzi, partita per partita).
+function probabiliCopronoSquadra(team) {
+  const map = (typeof probabiliState !== 'undefined' && probabiliState && probabiliState.map) || {};
+  const keys = Object.keys(map);
+  if (keys.length < 100) return false;
+  const t = normTeamName(team);
+  if (!t) return false;
+  return keys.some(k => normTeamName(map[k].team) === t);
+}
+// → { p, base, fonte, causa }: p finale; base = la titolarita da sola;
+// causa 'disponibilita' quando a decidere e infermeria/news, 'titolarita'
+// altrimenti (serve alla misura per fattore: infAdj vs titAdj).
+function pVotoDi(p, tsig, dispo) {
+  dispo = dispo || {};
+  const tasso = tassoVotoStagione(rosterNormalizeName(p.name));
+  let base, fonte;
+  if (tsig && tsig.perc != null) { base = pVotoDaPerc(tsig.perc); fonte = 'probabili'; }
+  else if (tsig && tsig.status) { base = ({ in: 0.92, doubt: 0.70, out: 0.30 })[tsig.status] || 0.85; fonte = 'news'; }
+  else if (probabiliCopronoSquadra(p.team)) { base = 0.05 + 0.3 * (tasso == null ? 0.5 : tasso); fonte = 'assente dalle probabili'; }
+  else if (tasso != null) { base = Math.max(0.05, Math.min(0.97, tasso)); fonte = 'storico'; }
+  else { base = 0.90; fonte = 'default'; } // nessuna informazione: nessun peso sul numero
+  let pf = base, causa = 'titolarita';
+  if (dispo.infermeria) { pf = 0.05; causa = 'disponibilita'; }
+  else if (dispo.alerted) { pf = Math.min(base, 0.4); causa = 'disponibilita'; }
+  else if (dispo.inDubbio) { pf = base * 0.6; causa = 'disponibilita'; }
+  return { p: Math.round(pf * 100) / 100, base: Math.round(base * 100) / 100, fonte, causa };
+}
+
 function oraclePredictPlayer(p, ratings, alerted, titSig) {
   const factors = [];
   const samples = oracleFormSamples(p);
@@ -6842,26 +6900,23 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   }
 
   // 4. INDISPONIBILITÀ: prima la fonte ufficiale (infermeria
-  // Fantacalcio.it), poi le news real-time come rete residua.
+  // Fantacalcio.it), poi le news real-time come rete residua. Dal 27/10
+  // qui si decidono solo fiducia, rischio e riga nei fattori: il peso sul
+  // numero passa dalla probabilita di prendere voto (punto 9).
   let risk = null;
   let infAdj = 0;
   const infermeria = infermeriaDi(p.name);
+  const inDubbio = infermeria ? null : infDubbioDi(p.name);
   if (infermeria) {
-    infAdj = infermeria.stato === 'squalificato' ? -2.0 : -1.5;
-    exp += infAdj;
     conf = Math.min(conf, 25);
     risk = 'news infortunio'; // stessa corsia dei rischi gia gestiti a valle
     factors.unshift('🚑 ' + infermeria.stato + ' (infermeria ' + (infermeria.fonte || 'Fantacalcio.it') + ')' + (infermeria.nota ? ' — ' + infermeria.nota.slice(0, 90) : ''));
-  } else if (infDubbioDi(p.name)) {
-    // una sola fonte minore lo da fuori: mezzo malus, meno fiducia
-    const d = infDubbioDi(p.name);
-    infAdj = -0.75;
-    exp += infAdj;
+  } else if (inDubbio) {
+    // una sola fonte minore lo da fuori: meno fiducia, p ridotta al punto 9
+    const d = inDubbio;
     conf = Math.min(conf, 40);
     factors.unshift('🩹 in dubbio per infortunio' + (d.infNota ? ' — ' + d.infNota.slice(0, 90) : ''));
   } else if (alerted.has(p.name)) {
-    infAdj = -1.5;
-    exp += infAdj;
     conf = Math.min(conf, 30);
     risk = 'news infortunio';
     factors.unshift('🚑 menzionato in news infortunio');
@@ -6878,8 +6933,6 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
     // "una news lo dava fuori".
     const pctxt = (tsig.perc != null) ? ' (' + tsig.perc + '% nelle probabili ufficiali)' : '';
     if (tsig.status === 'out') {
-      titAdj = -1.0;
-      exp += titAdj;
       conf = Math.min(conf, 35);
       if (!risk) risk = 'verso la panchina';
       factors.unshift('🔴 ' + (pctxt ? 'panchina probabile' + pctxt : 'dato verso la panchina'));
@@ -6934,6 +6987,19 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   const consAdj = consAdjDi(consiglio);
   exp += consAdj;
 
+  // 9. PROBABILITÀ DI PRENDERE VOTO. Fin qui exp e la previsione SE GIOCA.
+  // Indisponibilita e probabili non tolgono piu punti fissi: pesano come
+  // probabilita p, e il numero pubblicato e la media pesata tra "gioca" e
+  // "voto mancato". Sopra 0.9 non si tocca niente: il rischio residuo di un
+  // titolare certo e rumore su cui l'utente non puo agire. p finisce nella
+  // foto ❄ (pv) e la misura ne controlla la calibrazione.
+  const expSeGioca = exp;
+  const pv = pVotoDi(p, tsig, { infermeria, inDubbio, alerted: alerted.has(p.name) });
+  const pesoVoto = pv.p >= 0.9 ? 0 : (1 - pv.p) * (VALORE_SENZA_VOTO - expSeGioca);
+  if (pv.causa === 'disponibilita') infAdj = pesoVoto; else titAdj = pesoVoto;
+  exp += pesoVoto;
+  if (pesoVoto !== 0) factors.push('🎲 prende voto al ' + Math.round(pv.p * 100) + '%: previsione pesata (se gioca ' + expSeGioca.toFixed(1) + ')');
+
   exp = Math.max(4, Math.min(9.5, exp));
   conf = Math.max(5, Math.min(95, Math.round(conf)));
   const expected = parseFloat(exp.toFixed(2));
@@ -6943,7 +7009,8 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   // coincide con expected, cosi la misura puo togliere un fattore alla volta.
   const parts = { base, forma: formaAdj, oppAdj, homeAdj, csAdj, bias, infAdj, titAdj, rigorista: rigAdj, consenso: consAdj };
   parts.clamp = expected - Object.keys(parts).reduce((sum, k) => sum + parts[k], 0);
-  return { expected, model: 'form-v2', confidence: conf, factors, risk, titStatus, bonusProp, ctx, oppAdj, csAdj, base, parts };
+  return { expected, model: 'form-v2', confidence: conf, factors, risk, titStatus, bonusProp, ctx, oppAdj, csAdj, base, parts,
+    pVoto: pv.p, pVotoFonte: pv.fonte, expSeGioca: parseFloat(expSeGioca.toFixed(2)) };
 }
 
 // ---- ARRICCHIMENTO: ripristina i metadati ricchi dal listone ----
@@ -8089,12 +8156,17 @@ function renderOracleRisky() {
   const risky = [];
   starters.forEach(p => {
     const info = p._oracleInfo;
+    // Il peso del voto mancato e quello calcolato dal motore (parts), non
+    // piu una cifra fissa.
+    const pesoVoto = info.parts ? ((info.parts.infAdj || 0) + (info.parts.titAdj || 0)) : 0;
+    const impVoto = (Math.abs(pesoVoto) >= 0.05 ? (pesoVoto > 0 ? '+' : '') + pesoVoto.toFixed(1) : '~')
+      + (typeof info.pVoto === 'number' ? ' · voto al ' + Math.round(info.pVoto * 100) + '%' : '');
     if (info.risk === 'news infortunio') {
-      risky.push({ p, reason: 'Menzionato in news infortunio', impact: '-1.5', prio: 0 });
+      risky.push({ p, reason: 'Menzionato in news infortunio', impact: impVoto, prio: 0 });
     } else if (info.titStatus === 'out') {
-      risky.push({ p, reason: '🔴 Dato verso la panchina dalle news', impact: '-1.0', prio: 1 });
+      risky.push({ p, reason: '🔴 Dato verso la panchina dalle news', impact: impVoto, prio: 1 });
     } else if (info.titStatus === 'doubt') {
-      risky.push({ p, reason: '🟡 In ballottaggio / titolarità in dubbio', impact: '~', prio: 2 });
+      risky.push({ p, reason: '🟡 In ballottaggio / titolarità in dubbio', impact: impVoto, prio: 2 });
     } else if (info.oppAdj <= -0.25) {
       risky.push({ p, reason: 'Avversario molto ostico' + (info.ctx ? ': ' + info.ctx.opponent : ''), impact: info.oppAdj.toFixed(1), prio: 3 });
     } else if (info.risk === 'campione ridotto') {
@@ -15189,6 +15261,21 @@ function statMisura(coppie) {
 // infermeria e titolarita toccano soprattutto chi poi non gioca.
 const FATTORI_MOTORE = [['forma', 'forma'], ['oppAdj', 'avversario'], ['homeAdj', 'casa/trasferta'], ['csAdj', 'clean sheet'],
   ['infAdj', 'infermeria'], ['titAdj', 'titolarità (probabili)'], ['rigorista', 'rigorista'], ['consenso', 'consenso fonti']];
+// Calibrazione della probabilita di prendere voto (pv nella foto, dal
+// 27/10): per fascia di pv, quanti giocatori e quanti hanno preso voto
+// davvero. Ben tarata = "prevista" e "preso voto" vicine in ogni fascia.
+function calibrazionePVoto(voci, votati) {
+  const con = (voci || []).filter(v => typeof v.pv === 'number');
+  if (con.length < 50) return null;
+  const fasce = [[0, 0.2], [0.2, 0.4], [0.4, 0.6], [0.6, 0.8], [0.8, 1.01]];
+  const righe = fasce.map(f => {
+    const g = con.filter(v => v.pv >= f[0] && v.pv < f[1]);
+    const giocato = g.filter(v => votati.has(v.key)).length;
+    return { fascia: f[0].toFixed(1) + '–' + Math.min(f[1], 1).toFixed(1), n: g.length,
+      prevista: g.length ? g.reduce((a, v) => a + v.pv, 0) / g.length : null, giocato: g.length ? giocato / g.length : null };
+  });
+  return { n: con.length, righe };
+}
 function misuraPerFattore(coppie, voci) {
   const haParts = x => x && x.parts && typeof x.parts === 'object';
   const conParts = coppie.filter(haParts);
@@ -15251,7 +15338,7 @@ async function misuraOracleRetro() {
     };
     const segnale = rec => { const s = FantaLeagueRules.formSignal(rec); return s ? s.score : null; };
 
-    const righe = []; const titolarita = []; const perFattore = [];
+    const righe = []; const titolarita = []; const perFattore = []; const calibrazioni = [];
     for (let i = 1; i < giornate.length; i++) {
       const G = giornate[i];
       const precedenti = giornate.slice(0, i);
@@ -15299,6 +15386,8 @@ async function misuraOracleRetro() {
         // Foto con le componenti (dalla G8): un fattore alla volta.
         const pf = misuraPerFattore(cpF, voci);
         if (pf) perFattore.push(Object.assign({ g: G.giornata }, pf));
+        const cal = calibrazionePVoto(voci, votati);
+        if (cal) calibrazioni.push(Object.assign({ g: G.giornata }, cal));
         const conTit = voci.filter(p => typeof p.tit === 'number');
         let gruppo, criterio;
         if (conTit.length >= 100) {
@@ -15344,6 +15433,12 @@ async function misuraOracleRetro() {
               + '<td>' + segno(r.biasSenza) + ' <span style="color:' + colore(r.dBias) + '">(' + segno(r.dBias) + ')</span></td>')
             + '<td style="text-align:left;padding-left:8px;font-size:11px">' + verdetto + '</td></tr>';
         }).join('')
+        + '</table></div>').join('')
+      + calibrazioni.map(c => '<div style="margin-top:12px;font-family:\'DM Mono\',monospace;font-size:12px">'
+        + '<div style="color:var(--muted);margin-bottom:4px"><span style="color:var(--oracle)">G' + c.g + ' ❄</span> probabilità di prendere voto (pv) · calibrazione su ' + c.n + ' giocatori della foto</div>'
+        + '<table style="width:100%;border-collapse:collapse"><tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">pv prevista</th><th>giocatori</th><th>media prevista</th><th>hanno preso voto</th></tr>'
+        + c.righe.map(r => '<tr style="text-align:right;border-top:1px solid var(--border)' + (r.n ? '' : ';color:var(--muted)') + '"><td style="text-align:left;padding:4px">' + r.fascia + '</td><td>' + r.n + '</td>'
+          + (r.n ? '<td>' + (r.prevista * 100).toFixed(0) + '%</td><td style="color:' + (Math.abs(r.giocato - r.prevista) <= 0.1 ? 'var(--green)' : 'var(--orange)') + '">' + (r.giocato * 100).toFixed(0) + '%</td>' : '<td>—</td><td>—</td>') + '</tr>').join('')
         + '</table></div>').join('')
       + (titolarita.length ? '<div style="margin-top:12px;font-family:\'DM Mono\',monospace;font-size:12px">'
         + '<div style="color:var(--muted);margin-bottom:4px">Chi la foto ❄ dava in campo: ha preso voto?</div>'
@@ -15469,7 +15564,9 @@ async function congelaPrevisioniGiornata() {
       // parts: i contributi separati (base, forma, avversario, ...) con cui
       // la misura del martedi dice QUALE fattore sbaglia. Prima foto con le
       // componenti: G8 (23/10/2026); G6 e G7 non le hanno.
-      previsioni[rosterNormalizeName(p.name)] = { exp: r.expected, conf: r.confidence, tit, role: p.role, team: p.team, name: p.name, parts: compattaParts(r.parts) };
+      // pv: probabilita di prendere voto stimata alla foto (dal 27/10): la
+      // misura la confronta con chi ha davvero preso voto (calibrazione).
+      previsioni[rosterNormalizeName(p.name)] = { exp: r.expected, conf: r.confidence, tit, role: p.role, team: p.team, name: p.name, parts: compattaParts(r.parts), pv: r.pVoto };
     });
     const count = Object.keys(previsioni).length;
     if (count < 100) { feedback('❌ Solo ' + count + ' previsioni calcolate: qualcosa non torna, non salvo.'); return; }

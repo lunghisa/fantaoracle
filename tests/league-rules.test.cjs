@@ -59,7 +59,7 @@ test('App: applicare Oracle mantiene i giocatori effettivamente ottimizzati sul 
 });
 test('App: forma uguale per Premier, Fagioli e lega standard; nessuna calibrazione in fantapunti',()=>{
  const c={FantaLeagueRules:R,leagues:[{id:'p',name:rules.name},{id:'x',name:'Altra'},{id:'f',name:R.fagioli.name}],activeLeagueId:'p',oracleState:{history:[],calib:{biasByRole:{D:0},samples:0}},rosterNormalizeName:s=>s.toLowerCase(),normTeamName:s=>s.toLowerCase(),votiGlobaliInMemoria:Array.from({length:10},(_,i)=>({giornata:i+1,votes:{rossi:{team:'Roma',events:{...events(),goals:1}}}})),quotationToFm:()=>6,oracleMatchContext:()=>null,infermeriaDi:()=>null,consigliGiornataCorrente:()=>null};
- vm.createContext(c);for(const n of ['activeLeagueRules','leaguePlayerSamples','oracleRecentVotes','oracleFormSamples','oraclePredictPlayer','consAdjDi','infDubbioDi'])vm.runInContext(fn(n),c);
+ vm.createContext(c);for(const n of ['activeLeagueRules','leaguePlayerSamples','oracleRecentVotes','oracleFormSamples','oraclePredictPlayer','consAdjDi','infDubbioDi','pVotoDaPerc','tassoVotoStagione','probabiliCopronoSquadra','pVotoDi'])vm.runInContext(fn(n),c);vm.runInContext('const VALORE_SENZA_VOTO=5.0;const PVOTO_CALIBRAZIONE=[[0,0.10],[20,0.27],[55,0.70],[80,0.94],[100,0.97]];',c);
  const p={name:'Rossi',team:'Roma',role:'D',fmReal:6,pgv:10,mv:6};
  const premier=c.oraclePredictPlayer(p,{},new Set(),{});assert.equal(premier.expected,6.6);
  for(const id of ['x','f']) { c.activeLeagueId=id;c.oracleState.calib.biasByRole.D=0.8; assert.equal(c.oraclePredictPlayer(p,{},new Set(),{}).expected,premier.expected); }

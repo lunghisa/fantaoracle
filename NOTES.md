@@ -105,6 +105,14 @@ L'Oracle è passato da mockup a motore reale, in più passi:
    **Spento il 26/10/2026** insieme alla penalità -0.4 sul ballottaggio: la prima
    misura per fattore (foto G8 con le componenti) li dava entrambi in perdita.
 
+11. **Probabilità di prendere voto (27/10/2026).** Infermeria, news e probabili non
+    tolgono più punti fissi (-1.5 / -1.0): diventano una probabilità p di prendere
+    voto (taratura dalle foto G7/G8: probabili ≥70% → 0.94, 40–69% → 0.70, <40% → 0.27,
+    assente dalle probabili → ~0.1–0.2, infermeria → 0.05) e il numero pubblicato è la
+    media pesata tra "se gioca" e un voto mancato (`VALORE_SENZA_VOTO` = 5.0, quello che
+    le vecchie penalità implicavano). Sopra p 0.9 il numero non cambia. La foto ❄ salva
+    `pv`; la misura mostra la calibrazione per fascia (prevista vs chi ha preso voto).
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già
