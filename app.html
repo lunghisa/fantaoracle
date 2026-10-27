@@ -8253,10 +8253,19 @@ function findCurrentGiornataIdxCalc() {
     // data nominale: il csv porta un giorno solo (di solito la domenica) ma
     // si gioca da venerdi a lunedi. Regola di Sacha (14/9): finche la G4 e
     // in campo si vede la G4 — anche per confrontare i voti veri con cio
-    // che l'Oracle consigliava. Quindi: nominale + 1 giorno, a fine giornata.
-    const fine = new Date(g.date);
-    fine.setDate(fine.getDate() + 1);
-    fine.setHours(23, 59, 59, 999);
+    // che l'Oracle consigliava. Se il calendario REALE di Fantacalcio.it
+    // conosce la giornata, fa fede lui: ultimo calcio + 4 ore copre anche
+    // anticipi e infrasettimanali che il csv nominale non vede (ott 2026:
+    // G9 di martedi-mercoledi). Altrimenti: nominale + 1 giorno.
+    const reale = (typeof finestraRealeGiornata === 'function') ? finestraRealeGiornata(parseInt(g.num, 10)) : null;
+    let fine;
+    if (reale && reale.ultimo) {
+      fine = new Date(reale.ultimo + 4 * 3600000);
+    } else {
+      fine = new Date(g.date);
+      fine.setDate(fine.getDate() + 1);
+      fine.setHours(23, 59, 59, 999);
+    }
     if (fine >= now) return i;
   }
   return calendario.giornate.length - 1;
@@ -9453,7 +9462,7 @@ function enterApp(ev) {
     // Infermeria e probabili ufficiali in sottofondo; quando arrivano,
     // campo e liste si ridisegnano cosi icone 🚑 e pallini compaiono senza
     // aspettare un'azione.
-    Promise.all([caricaInfermeria(), caricaProbabili()]).then(esiti => {
+    Promise.all([caricaInfermeria(), caricaProbabili(), caricaCalendarioReale()]).then(esiti => {
       try { aggiornaDeadlineOracle(); } catch (e) {}
       if (!esiti.some(Boolean)) return;
       try { renderField(); renderLists(); } catch (e) {}
@@ -11252,7 +11261,7 @@ document.addEventListener('visibilitychange', () => {
     // infermeria e probabili: il TTL interno evita richieste inutili; se
     // torna roba fresca, icone e pallini si aggiornano da soli.
     if (typeof caricaInfermeria === 'function') {
-      Promise.all([caricaInfermeria(), caricaProbabili()]).then(esiti => {
+      Promise.all([caricaInfermeria(), caricaProbabili(), caricaCalendarioReale()]).then(esiti => {
         try { aggiornaDeadlineOracle(); } catch (e) {}
         if (esiti.some(Boolean)) { try { renderField(); renderLists(); } catch (e) {} }
       });
@@ -14282,7 +14291,8 @@ async function caricaProbabili(forza) {
 function aggiornaDeadlineOracle() {
   const el = document.getElementById('oracleDeadline');
   if (!el) return;
-  const pc = probabiliState && probabiliState.primoCalcio;
+  // priorita al calendario reale (copre 4 giornate), probabili come ripiego
+  const pc = primoCalcioCorrente();
   if (!pc || !pc.ts) { el.style.display = 'none'; return; }
   const deadline = pc.ts - 3600000;
   const ore = (deadline - Date.now()) / 3600000;
@@ -14300,6 +14310,109 @@ function aggiornaDeadlineOracle() {
     el.style.color = 'var(--muted)';
     el.textContent = '📅 Deadline formazioni: ' + quando + ' (1h prima del primo match)';
   }
+}
+
+// ============================================================
+// CALENDARIO REALE — anticipi e posticipi da Fantacalcio.it
+// ============================================================
+// Il csv del calendario ha UNA data nominale per giornata, ma la Lega
+// annuncia anticipi/posticipi con 3-4 giornate di anticipo (e i turni
+// infrasettimanali: la G9 2026 si e giocata martedi-mercoledi). La pagina
+// /serie-a/calendario espone le date e gli orari VERI per giornata
+// (markup schema.org + orario nel pill). Qui si legge la giornata corrente
+// e le 3 successive e si tiene, per ciascuna, primo e ultimo calcio
+// d'inizio: alimentano giornata corrente, riga deadline e guardia del
+// congelamento. Fetch fallito = si degrada alle date nominali, come prima.
+const CALENDARIO_REALE_CACHE_KEY = 'fantaoracle_calreale_v1';
+const CALENDARIO_REALE_TTL_MIN = 720; // 12 ore: le variazioni non corrono
+let calendarioRealeState = { giornate: {}, ts: 0 };
+
+// Una pagina giornata → { num, primo, ultimo, partite } (timestamp) o null.
+function parseCalendarioRealePagina(html) {
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    let num = null, primo = null, ultimo = null, partite = 0;
+    doc.querySelectorAll('li.match, .match-pill').forEach(el => {
+      const pill = el.classList.contains('match-pill') ? el : el.querySelector('.match-pill');
+      if (!pill) return;
+      const mw = pill.querySelector('.matchweek');
+      const sd = pill.querySelector('[itemprop="startDate"]');
+      if (!mw || !sd) return;
+      const n = parseInt(mw.textContent, 10);
+      const data = (sd.getAttribute('content') || '').trim(); // "2026-10-27"
+      const ora = ((pill.textContent.match(/\b(\d{1,2}):(\d{2})\b/) || [])[0] || '18:00');
+      if (!n || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return;
+      const [hh, mm] = ora.split(':').map(Number);
+      const [y, mo, d] = data.split('-').map(Number);
+      const ts = new Date(y, mo - 1, d, hh, mm).getTime();
+      if (num === null) num = n;
+      if (n !== num) return; // una pagina = una giornata
+      partite++;
+      if (primo === null || ts < primo) primo = ts;
+      if (ultimo === null || ts > ultimo) ultimo = ts;
+    });
+    return (num && partite >= 5) ? { num, primo, ultimo, partite } : null;
+  } catch (e) { return null; }
+}
+
+async function caricaCalendarioReale(forza) {
+  if (!forza) {
+    try {
+      const raw = sessionStorage.getItem(CALENDARIO_REALE_CACHE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if ((Date.now() - p.ts) / 60000 < CALENDARIO_REALE_TTL_MIN && p.giornate) {
+          calendarioRealeState = p; return true;
+        }
+      }
+    } catch (e) {}
+  }
+  const scarica = async url => {
+    for (let i = 0; i < CORS_PROXIES.length; i++) {
+      try {
+        const resp = await fetchWithTimeout(CORS_PROXIES[i](url), NEWS_FETCH_TIMEOUT_MS);
+        if (!resp.ok) continue;
+        const t = await resp.text();
+        if (t && t.includes('matchweek')) return t;
+      } catch (e) { continue; }
+    }
+    return null;
+  };
+  // la pagina base atterra sulla giornata corrente: e l'ancora
+  const base = await scarica('https://www.fantacalcio.it/serie-a/calendario');
+  const g0 = base && parseCalendarioRealePagina(base);
+  if (!g0) return false;
+  const giornate = { [g0.num]: g0 };
+  // le 3 successive, in parallelo (le variazioni si annunciano in anticipo)
+  const future = await Promise.all([1, 2, 3].map(k =>
+    scarica('https://www.fantacalcio.it/serie-a/calendario/' + (g0.num + k))
+      .then(h => h && parseCalendarioRealePagina(h))));
+  future.forEach(g => { if (g) giornate[g.num] = g; });
+  calendarioRealeState = { giornate, ts: Date.now() };
+  try { sessionStorage.setItem(CALENDARIO_REALE_CACHE_KEY, JSON.stringify(calendarioRealeState)); } catch (e) {}
+  console.log('[FantaOracle] calendario reale: giornate ' + Object.keys(giornate).join(', '));
+  return true;
+}
+
+// Finestra reale (primo/ultimo calcio) di una giornata, o null.
+function finestraRealeGiornata(num) {
+  const g = calendarioRealeState.giornate && calendarioRealeState.giornate[num];
+  return (g && g.primo) ? g : null;
+}
+
+// Primo calcio della giornata corrente: calendario reale se c'e, altrimenti
+// la pagina probabili. Serve a riga deadline e guardia del congelamento.
+function primoCalcioCorrente() {
+  try {
+    const idx = findCurrentGiornataIdx();
+    const g = calendario.giornate[idx];
+    const reale = g ? finestraRealeGiornata(parseInt(g.num, 10)) : null;
+    if (reale) {
+      const d = new Date(reale.primo);
+      return { ts: reale.primo, label: d.toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) };
+    }
+  } catch (e) {}
+  return (probabiliState && probabiliState.primoCalcio) || null;
 }
 
 // Percentuale ufficiale di titolarita per un giocatore (o null).
@@ -15306,11 +15419,11 @@ async function congelaPrevisioniGiornata() {
     const gNum = parseInt(g.num, 10);
     // dati freschi al momento della foto
     feedback('❄ raccolgo probabili e infermeria…');
-    const [, probOk] = await Promise.all([caricaInfermeria(), caricaProbabili()]);
-    // Senza probabili la foto non e "completa", e senza l'orario del primo
-    // calcio (che arriva dalla stessa pagina) salta anche la guardia
-    // deadline: prima si congelava lo stesso, in silenzio.
-    const pc = probabiliState && probabiliState.primoCalcio;
+    const [, probOk] = await Promise.all([caricaInfermeria(), caricaProbabili(), caricaCalendarioReale()]);
+    // Senza probabili la foto non e "completa"; per l'orario del primo
+    // calcio fa fede il calendario reale (anticipi e infrasettimanali
+    // compresi), con le probabili come ripiego.
+    const pc = primoCalcioCorrente();
     const nProb = probabiliState && probabiliState.map ? Object.keys(probabiliState.map).length : 0;
     if (!probOk || nProb < 100 || !pc || !pc.ts) {
       const manca = (!probOk || nProb < 100) ? 'probabili formazioni non caricate' : 'orario del primo calcio d\'inizio non trovato';
