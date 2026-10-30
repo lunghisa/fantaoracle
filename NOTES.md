@@ -113,6 +113,14 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     le vecchie penalità implicavano). Sopra p 0.9 il numero non cambia. La foto ❄ salva
     `pv`; la misura mostra la calibrazione per fascia (prevista vs chi ha preso voto).
 
+12. **Pesi ritoccati dopo la misura G9 (30/10/2026).** Consenso fonti: +0.1 ai
+    consigliati (fascia 1 o score > 0), zero agli altri; prima ±0.3/±0.4. Le fonti
+    distinguono (fascia 1 reale 6.48, fascia 3 5.82 in G9) ma la base storica lo sa
+    già: col ±0.4 il consenso era il fattore peggiore in G8 e G9. Avversario dimezzato
+    da ±0.5 a ±0.25 (−0.02 di MAE in entrambe le giornate). La riga base del pannello
+    "misura" usa lo stesso `consAdjDi`, quindi le righe base delle giornate passate
+    cambiano un po' rispetto al report precedente.
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già

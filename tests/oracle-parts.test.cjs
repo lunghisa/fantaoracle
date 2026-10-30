@@ -65,10 +65,11 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   assert.ok(Math.abs(lautaro.parts.titAdj - 0.3 * (5 - lautaro.expSeGioca)) < 0.02, 'titAdj = (1-p)(5-expSeGioca)');
   assert.ok(lautaro.factors.some(f => /prende voto al 70%/.test(f)));
   assert.equal(lautaro.parts.rigorista, 0.35);
-  assert.equal(lautaro.parts.consenso, 0.3);
+  assert.equal(lautaro.parts.consenso, 0.1, 'consigliato: +0.1 dal 30/10');
+  assert.ok(lautaro.parts.oppAdj <= 0.3, 'avversario dimezzato il 30/10: al massimo 0.25, 0.3 con bonus');
   assert.equal(lautaro.parts.infAdj, 0);
   // il numero pubblicato resta quello di prima: base + correzioni, 2 decimali
-  const seGioca = lautaro.parts.base + lautaro.parts.forma + lautaro.parts.oppAdj + 0.15 + 0.35 + 0.3;
+  const seGioca = lautaro.parts.base + lautaro.parts.forma + lautaro.parts.oppAdj + 0.15 + 0.35 + 0.1;
   assert.ok(Math.abs(lautaro.expSeGioca - seGioca) < 0.011, 'se gioca = base + correzioni');
 
   const bastoni = predici(c, { name: 'Bastoni', team: 'Inter', role: 'D', quotation: 18, fmReal: 6.7, mv: 6.2, pgv: 3 });
@@ -88,7 +89,8 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   // panchina al 20% → p 0.27: niente piu -1.0 fisso
   assert.equal(krstovic.pVoto, 0.27);
   assert.ok(Math.abs(krstovic.parts.titAdj - 0.73 * (5 - krstovic.expSeGioca)) < 0.02);
-  assert.equal(krstovic.parts.consenso, -0.3);
+  assert.equal(krstovic.parts.consenso, 0, 'sconsigliato: neutro dal 30/10');
+  assert.ok(krstovic.parts.oppAdj >= -0.25, 'avversario ostico: al massimo -0.25');
 });
 
 test('Senza calendario e senza voti: forma preseason, nessun fattore inventato, clamp che chiude i conti', () => {
@@ -146,16 +148,18 @@ test('Per fattore: conteggio dei toccati e MAE/scarto senza il fattore; foto vec
   assert.equal(vm.runInContext('FATTORI_MOTORE.map(f => f[0]).join()', c), 'forma,oppAdj,homeAdj,csAdj,infAdj,titAdj,rigorista,consenso');
 });
 
-test('Consenso di piu fonti: lo score pesato decide il peso, fino a ±0.4', () => {
-  assert.equal(motore().consAdjDi({ fascia: 1, score: 0.5 }), 0.3, 'SOS da solo: come prima');
-  assert.equal(motore().consAdjDi({ fascia: 1, score: 1 }), 0.4, 'tutte d\'accordo: tetto 0.4');
-  assert.equal(motore().consAdjDi({ fascia: 3, score: -0.25 }), -0.15);
-  assert.equal(motore().consAdjDi({ fascia: 3 }), -0.3, 'giornate vecchie senza score');
+test('Consenso fonti dal 30/10: +0.1 ai consigliati, zero a tutti gli altri (misura G8/G9)', () => {
+  assert.equal(motore().consAdjDi({ fascia: 1, score: 0.5 }), 0.1, 'SOS da solo');
+  assert.equal(motore().consAdjDi({ fascia: 1, score: 1 }), 0.1, 'tutte d\'accordo: stesso +0.1');
+  assert.equal(motore().consAdjDi({ fascia: 3, score: -0.25 }), 0, 'sconsigliato: neutro');
+  assert.equal(motore().consAdjDi({ fascia: 3 }), 0, 'giornate vecchie senza score: neutro');
+  assert.equal(motore().consAdjDi({ fascia: 1 }), 0.1, 'giornate vecchie, fascia 1');
+  assert.equal(motore().consAdjDi({ fascia: 2, score: 0 }), 0, 'score zero: neutro');
   assert.equal(motore().consAdjDi({ inf: 'out' }), 0, 'solo infermeria: nessun consenso');
   const voti = [5, 6, 7].map(g => vg(g, { lautaro: voto('Inter', 7, 1, 0) }));
   const c = motore({ voti, consigli: { lautaro: { fascia: 1, score: 0.9 } } });
   const l = predici(c, { name: 'Lautaro', team: 'Inter', role: 'A', quotation: 35, fmReal: 7.8, mv: 6.6, pgv: 3 });
-  assert.equal(l.parts.consenso, 0.4);
+  assert.equal(l.parts.consenso, 0.1);
   assert.ok(Math.abs(somma(l.parts) - l.expected) < 1e-9);
 });
 
