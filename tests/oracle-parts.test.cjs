@@ -60,10 +60,10 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   assert.ok(lautaro.parts.oppAdj > 0, 'Lecce abbordabile');
   assert.equal(lautaro.parts.homeAdj, 0.15);
   assert.equal(lautaro.parts.csAdj, 0, 'clean sheet spento il 26/10');
-  // ballottaggio al 55% → p 0.70 (taratura G7/G8): il numero e la media pesata con il voto mancato
-  assert.equal(lautaro.pVoto, 0.7); assert.equal(lautaro.titStatus, 'doubt');
-  assert.ok(Math.abs(lautaro.parts.titAdj - 0.3 * (5 - lautaro.expSeGioca)) < 0.02, 'titAdj = (1-p)(5-expSeGioca)');
-  assert.ok(lautaro.factors.some(f => /prende voto al 70%/.test(f)));
+  // ballottaggio al 55% → p 0.79 (ritaratura 3/11 su G9/G10): il numero e la media pesata con il voto mancato
+  assert.equal(lautaro.pVoto, 0.79); assert.equal(lautaro.titStatus, 'doubt');
+  assert.ok(Math.abs(lautaro.parts.titAdj - 0.21 * (5 - lautaro.expSeGioca)) < 0.02, 'titAdj = (1-p)(5-expSeGioca)');
+  assert.ok(lautaro.factors.some(f => /prende voto al 79%/.test(f)));
   assert.equal(lautaro.parts.rigorista, 0.35);
   assert.equal(lautaro.parts.consenso, 0.1, 'consigliato: +0.1 dal 30/10');
   assert.ok(lautaro.parts.oppAdj <= 0.3, 'avversario dimezzato il 30/10: al massimo 0.25, 0.3 con bonus');
@@ -178,8 +178,9 @@ test('Infermeria unita: "dubbio" da mezzo malus, il resto non cambia', () => {
 
 test('Probabilità di prendere voto: taratura, storico, assenti dalle probabili, titolari certi intoccati', () => {
   const c = motore();
-  for (const [perc, p] of [[0, 0.10], [20, 0.27], [55, 0.70], [80, 0.94], [100, 0.97]]) assert.ok(Math.abs(c.pVotoDaPerc(perc) - p) < 1e-9, 'perc ' + perc);
-  assert.ok(c.pVotoDaPerc(37.5) > 0.27 && c.pVotoDaPerc(37.5) < 0.70, 'interpolazione');
+  for (const [perc, p] of [[0, 0.10], [20, 0.27], [50, 0.48], [55, 0.79], [80, 0.94], [100, 0.97]]) assert.ok(Math.abs(c.pVotoDaPerc(perc) - p) < 1e-9, 'perc ' + perc);
+  assert.ok(c.pVotoDaPerc(37.5) > 0.27 && c.pVotoDaPerc(37.5) < 0.48, 'interpolazione');
+  assert.ok(Math.abs(c.pVotoDaPerc(60) - 0.82) < 1e-9, '60%: 0.82 (84% in campo in G9 e G10)');
   assert.ok(c.pVotoDaPerc(-5) === 0.10 && c.pVotoDaPerc(150) === 0.97, 'fuori scala');
   // titolare certo (85%): p 0.95 → nessun peso sul numero
   const sicuro = predici(c, { name: 'Sicuro', team: 'Inter', role: 'D', quotation: 10, fmReal: 6.4, mv: 6.1, pgv: 8 }, { Sicuro: { status: 'in', perc: 85 } });

@@ -121,6 +121,11 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     "misura" usa lo stesso `consAdjDi`, quindi le righe base delle giornate passate
     cambiano un po' rispetto al report precedente.
 
+13. **Ritaratura pv (3/11/2026).** Dalle calibrazioni G9 e G10 (identiche): probabili
+    50% → 46–50% in campo, 55% → 79%, 60% → 84%. In `PVOTO_CALIBRAZIONE` aggiunti
+    [50, 0.48] e [55, 0.79] (prima 50% → 0.64 e 55% → 0.70): i ballottaggi vinti
+    perdono 0.1 di penalità, il 50% secco resta un lancio di moneta.
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già

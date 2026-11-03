@@ -6740,12 +6740,14 @@ function oracleFormSamples(p) {
 // cosa diversa dal partire titolare (con i 5 cambi molti panchinari prendono
 // voto). Tarata sulle misure delle foto ❄ G7 e G8: probabili >=70% → 93-94%
 // in campo, 40-69% → 70-74%, <40% → 20-27%, assenti dalle probabili → ~0%.
+// Ritarata il 3/11 sulle foto G9 e G10 (calibrazione nel pannello misura):
+// probabili 50% → 46-50% in campo (era 0.64), 55% → 79% (era 0.70), 60% → 84%.
 // Il numero pubblicato e la media pesata tra "se gioca" e il valore di un
 // voto mancato (VALORE_SENZA_VOTO = 5.0: e il valore che le vecchie penalita
 // fisse -1.0/-1.5 implicavano, a meta tra "entra la panchina" e "si gioca in
 // 10"). Da ritarare con la calibrazione che la misura mostra dalla G9.
 const VALORE_SENZA_VOTO = 5.0;
-const PVOTO_CALIBRAZIONE = [[0, 0.10], [20, 0.27], [55, 0.70], [80, 0.94], [100, 0.97]];
+const PVOTO_CALIBRAZIONE = [[0, 0.10], [20, 0.27], [50, 0.48], [55, 0.79], [80, 0.94], [100, 0.97]];
 function pVotoDaPerc(perc) {
   const x = Math.max(0, Math.min(100, Number(perc) || 0));
   for (let i = 1; i < PVOTO_CALIBRAZIONE.length; i++) {
