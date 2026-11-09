@@ -4429,6 +4429,7 @@ body::before { opacity:.2; }
         <div class="pro-eyebrow"><span class="pro-live"></span> FANTAORACLE <span class="pro-divider">/</span> CLASSIC</div>
         <h2>La tua <span>formazione.</span></h2>
         <p>Giornata <strong id="oracleGiornata">—</strong> <span class="pro-divider">/</span> Ogni scelta conta.</p>
+        <div id="oracleCalcolato" style="display:none;margin-top:6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></div>
         <div id="oracleDeadline" style="display:none;margin-top:8px;font-size:13px;font-weight:600"></div>
       </div>
       <div class="pro-actions">
@@ -7077,24 +7078,51 @@ function runOracleEngine(silent) {
     predictions[rosterNormalizeName(p.name)] = { exp: r.expected, role: p.role, name: p.name, model: 'form-v2' };
   });
   alignOracleFormation();
-  if (!silent) oracleState.lastRun = Date.now();
+  // Anche il ricalcolo silenzioso (apertura del tab Oracle) lascia l'ora:
+  // fino al 9/11 il tab non diceva QUANDO aveva calcolato e non salvava
+  // niente, quindi di cio che aveva consigliato la domenica non restava
+  // traccia (caso Cristante, G10/G11). Richiesta di Sacha del 9/11.
+  oracleState.lastRun = Date.now();
   // Snapshot previsioni + formazione schierata, legato alla giornata corrente.
   // Serve all'auto-correzione e al post-partita "punti lasciati in panchina".
+  // Si aggiorna a ogni ricalcolo FINO al primo calcio d'inizio: dopo, la foto
+  // della vigilia resta com'e (un ricalcolo a giochi iniziati la
+  // contaminerebbe con infermeria e news gia note).
   const idxSnap = findCurrentGiornataIdx();
-  if (!silent && calendario.giornate.length && idxSnap >= 0) {
+  if (calendario.giornate.length && idxSnap >= 0) {
     const gNum = calendario.giornate[idxSnap].num;
-    const lineup = players.starters
-      .filter(p => p && p.name && p.name !== '---' && !p.isEmpty)
-      .map(p => ({ key: rosterNormalizeName(p.name), role: p.role, name: p.name }));
-    const prev = oracleState.snapshots[gNum] || {};
-    oracleState.snapshots[gNum] = {
-      dateISO: new Date().toISOString(),
-      predictions,
-      lineup,
-      modulo: currentModulo,
-    };
+    const prev = oracleState.snapshots[gNum] || null;
+    let dopoCalcio = false;
+    try { const pc = primoCalcioCorrente(); dopoCalcio = !!(pc && pc.ts && Date.now() > pc.ts); } catch (e) {}
+    if (!(dopoCalcio && prev && !prev.dopoCalcio)) {
+      const vivo = p => p && p.name && p.name !== '---' && !p.isEmpty;
+      const voce = p => ({ key: rosterNormalizeName(p.name), role: p.role, name: p.name });
+      const lineup = players.starters.filter(vivo).map(voce);
+      // Panchina nell'ordine dei cambi e undici "ingenuo" (fantamedia tra i
+      // disponibili): servono alla misura del martedi, che confronta la
+      // FORMAZIONE consigliata coi voti veri, non solo i singoli numeri.
+      const bench = players.bench.filter(vivo).map(voce);
+      let ingenua = null;
+      try {
+        const disponibile = p => { if (alerted.has(p.name)) return false; const pr = probabiliDi(p.name); return !(pr && pr.perc < 40); };
+        ingenua = formazioneIngenua(all, leagueRules, p => p.fmReal || p.score || 0, disponibile);
+      } catch (e) {}
+      oracleState.snapshots[gNum] = {
+        dateISO: new Date().toISOString(),
+        primoCalcoloISO: (prev && prev.primoCalcoloISO) || (prev && prev.dateISO) || new Date().toISOString(),
+        dopoCalcio,
+        predictions,
+        lineup,
+        bench,
+        ingenua,
+        modulo: currentModulo,
+        moduli: leagueRules ? leagueRules.modules.slice() : null,
+        sostituzioni: leagueRules && typeof leagueRules.substitutions === 'number' ? leagueRules.substitutions : 5,
+      };
+    }
   }
-  if (!silent) { oracleSaveState(); saveRosterToStorage(); }
+  oracleSaveState();
+  if (!silent) saveRosterToStorage();
   return true;
 }
 
@@ -7956,6 +7984,7 @@ function renderOraclePage() {
   if (empty) empty.style.display = 'none';
   if (body) body.style.display = 'block';
   runOracleEngine(true); // ricalcolo prima di mostrare campo e consiglio
+  renderOracleCalcolato();
   renderField(); renderLists();
   renderOracleHeroStats();
   renderOraclePicks();
@@ -7964,6 +7993,27 @@ function renderOraclePage() {
   renderOracleModulo();
   renderHeadToHead();
   renderOracleHistory();
+}
+
+// Riga sotto il titolo: quando il consiglio e stato calcolato e con quali
+// probabili. Il tab ricalcola a ogni apertura, quindi l'ora e quasi sempre
+// "adesso"; conta soprattutto l'ora delle probabili, che dice quanto e
+// fresca la base del consiglio, e l'avviso a giochi iniziati.
+function renderOracleCalcolato() {
+  const el = document.getElementById('oracleCalcolato');
+  if (!el) return;
+  const t = oracleState.lastRun;
+  if (!t) { el.style.display = 'none'; return; }
+  const ora = d => new Date(d).toLocaleString('it-IT', { weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+  let testo = 'consiglio calcolato ' + ora(t);
+  const pts = probabiliState && probabiliState.ts;
+  const nProb = probabiliState && probabiliState.map ? Object.keys(probabiliState.map).length : 0;
+  testo += pts && nProb ? ' · probabili delle ' + ora(pts) : ' · senza probabili formazioni';
+  let dopoCalcio = false;
+  try { const pc = primoCalcioCorrente(); dopoCalcio = !!(pc && pc.ts && Date.now() > pc.ts); } catch (e) {}
+  if (dopoCalcio) testo += ' · <span style="color:var(--orange)">giornata in corso: la foto della vigilia resta quella</span>';
+  el.innerHTML = testo;
+  el.style.display = '';
 }
 
 function oracleRunAndRender() {
@@ -15409,6 +15459,56 @@ async function misuraOracleRetro() {
     }
     if (!righe.length) { box.innerHTML = '<div style="font-size:12px;color:var(--orange)">Nessun confronto possibile.</div>'; return; }
     const segno = x => (x > 0 ? '+' : '') + x.toFixed(2);
+    // Formazioni consigliate congelate al ❄, lega per lega: la misura che
+    // guarda quello che l'utente schiera davvero, non il voto dei singoli.
+    let formLeghe = [], formErr = null;
+    try { formLeghe = await misuraFormazioniLeghe(giornate, await ensureSupabaseReady()); }
+    catch (e) { formErr = String(e && e.message || e); }
+    const segno1 = x => (x > 0 ? '+' : '') + x.toFixed(1);
+    let htmlFormazioni = '';
+    if (formErr) {
+      htmlFormazioni = '<div style="margin-top:12px;font-size:12px;color:var(--orange)">Formazioni di lega: lettura non riuscita (' + escapeHtml(formErr) + ')</div>';
+    } else if (formLeghe.length) {
+      const perLega = {};
+      formLeghe.forEach(r => {
+        const t = perLega[r.lega] = perLega[r.lega] || { n: 0, oracle: 0, ingenua: 0, ottimo: 0, conIngenua: 0 };
+        t.n++; t.oracle += r.oracle.punti; t.ottimo += r.ottimo ? r.ottimo.punti : r.oracle.punti;
+        if (r.ingenua) { t.ingenua += r.ingenua.punti; t.conIngenua++; }
+      });
+      const colore = v => v > 0.05 ? 'var(--green)' : (v < -0.05 ? 'var(--red)' : 'var(--muted)');
+      htmlFormazioni = '<div style="margin-top:12px;font-family:\'DM Mono\',monospace;font-size:12px">'
+        + '<div style="color:var(--muted);margin-bottom:4px"><span style="color:var(--oracle)">formazioni consigliate</span> per lega, come mostrate all\'utente all\'ultima apertura prima del calcio d\'inizio · punti con le sostituzioni dalla panchina · fantavoto Fantacalcio senza modificatore difesa</div>'
+        + '<table style="width:100%;border-collapse:collapse">'
+        + '<tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">lega · giornata</th><th>modulo</th><th title="undici consigliato dall\'Oracle all\'ultima apertura, con le sostituzioni">Oracle</th><th title="undici per fantamedia tra i disponibili allo stesso momento">ingenua</th><th title="miglior undici a posteriori coi voti veri">perfetto</th><th title="Oracle meno ingenua: sopra zero l\'Oracle aggiunge punti">vs ingenua</th><th title="quanto manca all\'undici perfetto">a perfetto</th></tr>'
+        + formLeghe.map(r => {
+          const dIng = r.ingenua ? r.oracle.punti - r.ingenua.punti : null;
+          const gap = r.ottimo ? r.ottimo.punti - r.oracle.punti : null;
+          return '<tr style="text-align:right;border-top:1px solid var(--border)">'
+            + '<td style="text-align:left;padding:4px">' + escapeHtml(r.lega) + ' · G' + r.g + '</td><td>' + escapeHtml(r.modulo || '—') + '</td>'
+            + '<td>' + r.oracle.punti.toFixed(1) + (r.oracle.sostituzioni ? ' <span style="color:var(--muted)">(' + r.oracle.sostituzioni + ' cambi' + (r.oracle.senzaVoto ? ', ' + r.oracle.senzaVoto + ' in 10' : '') + ')</span>' : '') + '</td>'
+            + '<td>' + (r.ingenua ? r.ingenua.punti.toFixed(1) : '—') + '</td>'
+            + '<td>' + (r.ottimo ? r.ottimo.punti.toFixed(1) + ' <span style="color:var(--muted)">' + escapeHtml(r.ottimo.modulo) + '</span>' : '—') + '</td>'
+            + '<td style="color:' + (dIng === null ? 'var(--muted)' : colore(dIng)) + '">' + (dIng === null ? '—' : segno1(dIng)) + '</td>'
+            + '<td>' + (gap === null ? '—' : segno1(-gap)) + '</td></tr>'
+            + (r.lasciati.length ? '<tr><td colspan="7" style="text-align:left;padding:0 4px 6px;color:var(--muted);font-size:11px">lasciati fuori: '
+              + r.lasciati.slice(0, 5).map(x => escapeHtml(x.name) + ' ' + x.voto.toFixed(1)).join(', ') + '</td></tr>' : '');
+        }).join('')
+        + Object.keys(perLega).sort().map(l => {
+          const t = perLega[l];
+          const dIng = t.conIngenua ? (t.oracle - t.ingenua) / t.conIngenua : null;
+          return '<tr style="text-align:right;border-top:2px solid var(--border);font-weight:600">'
+            + '<td style="text-align:left;padding:4px">' + escapeHtml(l) + ' · media su ' + t.n + '</td><td></td>'
+            + '<td>' + (t.oracle / t.n).toFixed(1) + '</td><td>' + (t.conIngenua ? (t.ingenua / t.conIngenua).toFixed(1) : '—') + '</td><td>' + (t.ottimo / t.n).toFixed(1) + '</td>'
+            + '<td style="color:' + (dIng === null ? 'var(--muted)' : colore(dIng)) + '">' + (dIng === null ? '—' : segno1(dIng)) + '</td>'
+            + '<td>' + segno1(-(t.ottimo - t.oracle) / t.n) + '</td></tr>';
+        }).join('')
+        + '</table>'
+        + '<div class="admin-tools-note">Il numero che conta e <strong>vs ingenua</strong>: punti a giornata che l\'Oracle aggiunge rispetto a chi schiera per fantamedia tra i disponibili. '
+        + '<strong>a perfetto</strong> e la distanza dall\'undici che nessuno indovina. La formazione che hai schierato tu non e nell\'app: si confronta a mano.</div>'
+        + '</div>';
+    } else {
+      htmlFormazioni = '<div style="margin-top:12px;font-size:12px;color:var(--muted)">Formazioni di lega: nessuno snapshot con panchina e voti disponibili (li scrive il browser dell\'utente aprendo il tab Oracle, dalla G12).</div>';
+    }
     box.innerHTML = '<table style="width:100%;border-collapse:collapse;font-family:\'DM Mono\',monospace;font-size:12px">'
       + '<tr style="color:var(--muted);text-align:right"><th style="text-align:left;padding:4px">Giornata</th><th>confronti</th><th title="errore medio assoluto sulla scala del motore">MAE</th><th title="% previsioni entro 1 punto">entro ±1</th><th title="media di (previsione - reale): sotto zero = l\'Oracle sottostima">scarto medio</th><th title="quanto rendono in piu i top-25% per previsione rispetto alla media: sopra zero = l\'ordinamento aiuta a schierare">lift top-25%</th></tr>'
       + righe.map(r => '<tr style="text-align:right;border-top:1px solid var(--border)' + (r.congelata ? ';color:var(--oracle)' : '') + '">'
@@ -15452,6 +15552,7 @@ async function misuraOracleRetro() {
               + (typeof p.tit === 'number' ? ', ' + p.tit + '%' : '') + ')').join(', ')
             + (t.assenti.length > 15 ? '…' : '') + '</div>' : '')
           + '</div>').join('') + '</div>' : '')
+      + htmlFormazioni
       + '<div class="admin-tools-note">Righe normali: retro-calcolo BASE (esclusi probabili, infermeria, ricalibrazione, avversario, listini di lega — non storicizzati; solo giocatori con almeno un voto precedente). '
       + 'Righe <span style="color:var(--oracle)">❄ completa</span>: la foto pre-deadline del motore vero, misurata sugli stessi giocatori della riga base. '
       + 'Il numero che conta è il <strong>lift</strong>: sopra zero, l\'ordinamento Oracle batte il caso. Lo <strong>scarto medio</strong> dice se i valori sono tirati in basso o in alto. '
@@ -15492,6 +15593,134 @@ async function aggiornaStatoCongelamento() {
   } catch (e) {
     el.textContent = 'foto congelate: lettura non riuscita (' + String(e && e.message || e) + ')';
   }
+}
+
+// ============================================================
+// MISURA DELLA FORMAZIONE — non solo del voto (richiesta di Sacha, 9/11)
+// ============================================================
+// Fino al 9/11 il martedi si misurava il voto dei singoli giocatori, mai la
+// formazione consigliata: e quella che l'utente schiera. Caso Cristante (G10):
+// 60% nelle probabili, quinto centrocampista, panchina — e fa 11.
+// Qui: punti di una formazione (titolari + panchina ordinata) coi voti veri, con le sostituzioni
+// come su Leghe Fantacalcio classic (un titolare senza voto e sostituito dal
+// primo della panchina, nell'ordine congelato, dello stesso ruolo CON voto,
+// fino a maxSubs cambi; chi resta senza cambio vale 0: si gioca in 10). Il
+// voto e il fantavoto Fantacalcio, bonus compresi, senza modificatore difesa.
+function puntiFormazione(titolari, panchina, voti, maxSubs) {
+  const max = typeof maxSubs === 'number' ? maxSubs : 5;
+  const votoDi = p => (p && typeof voti[p.key] === 'number') ? voti[p.key] : null;
+  const usati = new Set();
+  const schierati = [];
+  let punti = 0, sostituzioni = 0, senzaVoto = 0;
+  (titolari || []).forEach(t => {
+    const v = votoDi(t);
+    if (v !== null) { punti += v; schierati.push({ key: t.key, name: t.name, role: t.role, voto: v, daPanchina: false }); return; }
+    const sub = sostituzioni < max
+      ? ((panchina || []).find(b => b && b.role === t.role && !usati.has(b.key) && votoDi(b) !== null) || null)
+      : null;
+    if (sub) {
+      usati.add(sub.key); sostituzioni++;
+      punti += votoDi(sub);
+      schierati.push({ key: sub.key, name: sub.name, role: sub.role, voto: votoDi(sub), daPanchina: true, per: t.name });
+    } else {
+      senzaVoto++;
+      schierati.push({ key: t.key, name: t.name, role: t.role, voto: null, daPanchina: false });
+    }
+  });
+  return { punti: Math.round(punti * 10) / 10, schierati, sostituzioni, senzaVoto };
+}
+
+// Undici perfetto a posteriori: miglior modulo per somma di fantavoti tra chi
+// ha preso voto, coi moduli ammessi dalla lega. Nessuno lo indovina: e il
+// tetto contro cui si misurano Oracle, ingenua e la formazione schierata.
+function ottimoAPosteriori(rosa, voti, moduli, formationsMap) {
+  const pool = { P: [], D: [], C: [], A: [] };
+  const visti = new Set();
+  (rosa || []).forEach(p => {
+    if (!p || !pool[p.role] || visti.has(p.key) || typeof voti[p.key] !== 'number') return;
+    visti.add(p.key);
+    pool[p.role].push({ key: p.key, name: p.name, role: p.role, voto: voti[p.key] });
+  });
+  Object.keys(pool).forEach(r => pool[r].sort((a, b) => b.voto - a.voto));
+  let best = null;
+  (Array.isArray(moduli) && moduli.length ? moduli : Object.keys(formationsMap)).forEach(m => {
+    const need = formationsMap[m] && formationsMap[m].requirements;
+    if (!need) return;
+    let total = 0, ok = true;
+    const scelti = [];
+    ['P', 'D', 'C', 'A'].forEach(r => {
+      const sel = pool[r].slice(0, need[r] || 0);
+      if (sel.length < (need[r] || 0)) ok = false;
+      sel.forEach(x => { total += x.voto; scelti.push(x); });
+    });
+    if (ok && (!best || total > best.punti)) best = { modulo: m, punti: Math.round(total * 10) / 10, scelti };
+  });
+  return best;
+}
+
+// Undici "ingenuo": chi sceglie per fantamedia stagionale tra i disponibili
+// (fuori infortunati, squalificati e chi le probabili danno in panchina), col
+// modulo che somma di piu. E il riferimento minimo: se l'Oracle non lo batte
+// con regolarita, i suoi fattori non valgono la fatica.
+function formazioneIngenua(all, rules, fmOf, disponibile) {
+  const punteggio = p => disponibile(p) ? Math.max(0.01, Number(fmOf(p)) || 0) : 0;
+  const best = FantaLeagueRules.best(all, formations, rules, punteggio, () => null, null);
+  if (!best || !best.picks || best.picks.length < 11) return null;
+  const voce = p => ({ key: rosterNormalizeName(p.name), name: p.name, role: p.role, fm: Math.round((Number(fmOf(p)) || 0) * 100) / 100 });
+  const scelti = new Set(best.picks);
+  const ORDINE = { A: 0, C: 1, D: 2, P: 3 };
+  const panchina = all.filter(p => !scelti.has(p))
+    .sort((a, b) => (ORDINE[a.role] ?? 9) - (ORDINE[b.role] ?? 9) || punteggio(b) - punteggio(a));
+  return { modulo: best.modulo, titolari: best.picks.map(voce), panchina: panchina.map(voce) };
+}
+
+// Il martedi: per ogni lega nel cloud (l'admin le legge tutte) e ogni
+// giornata con snapshot pre-calcio E voti pubblicati, punti dell'undici che
+// l'Oracle mostrava all'utente (con le sostituzioni dalla sua panchina), punti
+// dell'undici ingenuo e dell'undici perfetto a posteriori. Lo snapshot lo
+// scrive il browser dell'utente a ogni apertura del tab Oracle fino al primo
+// calcio d'inizio (runOracleEngine): e cio che ha visto davvero, non una foto
+// dell'admin. Le leghe di Sacha stanno sul suo account giocatore, non su
+// quello admin: per questo la misura legge il cloud e non il browser.
+// La formazione davvero schierata dall'utente non e nell'app: si confronta a mano.
+async function misuraFormazioniLeghe(giornate, client) {
+  if (!client || !currentUser) return [];
+  const { data: stati, error } = await client.from('oracle_states').select('league_id, user_id, state');
+  if (error) throw error;
+  const nomeDi = {};
+  try {
+    const { data: nomi } = await client.from('leagues').select('id, league_name, team_name');
+    (nomi || []).forEach(r => { nomeDi[r.id] = (r.league_name || '?') + (r.team_name ? ' · ' + r.team_name : ''); });
+  } catch (e) {}
+  const votiPerG = {};
+  (giornate || []).forEach(G => {
+    const m = {};
+    Object.keys(G.votes || {}).forEach(k => { const v = G.votes[k] && G.votes[k].v; if (typeof v === 'number') m[k] = v; });
+    votiPerG[G.giornata] = m;
+  });
+  const out = [];
+  (stati || []).forEach(row => {
+    const snaps = (row.state && row.state.snapshots) || {};
+    Object.keys(snaps).map(Number).sort((a, b) => a - b).forEach(g => {
+      const f = snaps[g];
+      const voti = votiPerG[g];
+      // Solo snapshot con la panchina (dal 9/11) e scritti prima del calcio
+      // d'inizio: senza panchina non si fanno i cambi, dopo il calcio la
+      // formazione e contaminata da cio che si sapeva gia.
+      if (!f || !Array.isArray(f.lineup) || !Array.isArray(f.bench) || f.dopoCalcio || !voti || !Object.keys(voti).length) return;
+      const rosa = f.lineup.concat(f.bench);
+      const oracle = puntiFormazione(f.lineup, f.bench, voti, f.sostituzioni);
+      const ingenua = f.ingenua && Array.isArray(f.ingenua.titolari)
+        ? puntiFormazione(f.ingenua.titolari, f.ingenua.panchina, voti, f.sostituzioni) : null;
+      const ottimo = ottimoAPosteriori(rosa, voti, f.moduli, formations);
+      if (!ottimo) return;
+      const inCampo = new Set(oracle.schierati.filter(x => x.voto !== null).map(x => x.key));
+      const lasciati = ottimo.scelti.filter(x => !inCampo.has(x.key)).sort((a, b) => b.voto - a.voto);
+      out.push({ lega: nomeDi[row.league_id] || String(row.league_id).slice(0, 8), g, modulo: f.modulo, dateISO: f.dateISO, oracle, ingenua, ottimo, lasciati });
+    });
+  });
+  out.sort((a, b) => a.lega.localeCompare(b.lega) || a.g - b.g);
+  return out;
 }
 
 // Le parti della previsione come vanno nella foto: 3 decimali e senza gli

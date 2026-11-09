@@ -126,6 +126,22 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     [50, 0.48] e [55, 0.79] (prima 50% → 0.64 e 55% → 0.70): i ballottaggi vinti
     perdono 0.1 di penalità, il 50% secco resta un lancio di moneta.
 
+14. **Misura della formazione, non solo del voto (9/11/2026).** Domanda di
+    Sacha: "cosa misura l'Oracle?" — misurava il voto dei singoli, mai l'undici
+    consigliato (caso Cristante, G10: 60% nelle probabili, quinto C, panchina,
+    fa 11). Ora il tab Oracle dice quando ha calcolato e con quali probabili, e
+    il ricalcolo silenzioso (apertura del tab) salva ora e snapshot — titolari,
+    panchina nell'ordine dei cambi, undici ingenuo per fantamedia tra i
+    disponibili, regole di lega — fino al primo calcio d'inizio; dopo, la foto
+    della vigilia non si tocca. Lo snapshot va nel cloud con `oracle_states` e
+    il martedì la misura (`misuraFormazioniLeghe`, che da admin legge TUTTE le
+    leghe) lo confronta coi voti: punti Oracle con le sostituzioni, punti
+    dell'ingenua, undici perfetto a posteriori. Il numero che conta è "vs
+    ingenua". Attenzione: le leghe di Sacha stanno sul suo account giocatore
+    (utente 0669ebfb), non su quello admin: per questo si misura dal cloud e
+    non dal browser che preme il ❄. La formazione schierata davvero non è
+    nell'app: si confronta a mano.
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già
