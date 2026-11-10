@@ -57,7 +57,10 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   const lautaro = predici(c, { name: 'Lautaro', team: 'Inter', role: 'A', quotation: 35, fmReal: 7.8, mv: 6.6, pgv: 3, rigorista: true }, { Lautaro: { status: 'doubt', perc: 55 } });
   assert.ok(Math.abs(somma(lautaro.parts) - lautaro.expected) < 1e-9, 'somma = expected');
   assert.ok(lautaro.parts.forma !== 0, 'forma dai 3 voti');
-  assert.ok(lautaro.parts.oppAdj > 0, 'Lecce abbordabile');
+  // 10/11: l'avversario non entra piu per centrocampisti e attaccanti (nessun segnale su 1300 casi)
+  assert.equal(lautaro.parts.oppAdj, 0, 'attaccante: avversario spento');
+  assert.ok(!lautaro.factors.some(f => /avversario abbordabile|avversario ostico/.test(f)), 'nessuna riga avversario nei fattori');
+  assert.ok(lautaro.factors.some(f => /in casa vs Lecce/.test(f)), 'la partita resta nominata');
   assert.equal(lautaro.parts.homeAdj, 0.15);
   assert.equal(lautaro.parts.csAdj, 0, 'clean sheet spento il 26/10');
   // ballottaggio al 55% → p 0.79 (ritaratura 3/11 su G9/G10): il numero e la media pesata con il voto mancato
@@ -66,7 +69,6 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   assert.ok(lautaro.factors.some(f => /prende voto al 79%/.test(f)));
   assert.equal(lautaro.parts.rigorista, 0.35);
   assert.equal(lautaro.parts.consenso, 0.1, 'consigliato: +0.1 dal 30/10');
-  assert.ok(lautaro.parts.oppAdj <= 0.3, 'avversario dimezzato il 30/10: al massimo 0.25, 0.3 con bonus');
   assert.equal(lautaro.parts.infAdj, 0);
   // il numero pubblicato resta quello di prima: base + correzioni, 2 decimali
   const seGioca = lautaro.parts.base + lautaro.parts.forma + lautaro.parts.oppAdj + 0.15 + 0.35 + 0.1;
@@ -81,16 +83,17 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   assert.equal(bastoni.parts.csAdj, 0, 'clean sheet spento il 26/10, anche per i difensori');
   assert.ok(!bastoni.factors.some(f => /clean sheet|difesa a rischio/.test(f)), 'nessuna riga clean sheet nei fattori');
   assert.equal(bastoni.parts.consenso, 0);
+  assert.equal(bastoni.parts.oppAdj, 0.25, 'difensore: l\'avversario resta, tetto 0.25 dal 30/10');
+  assert.ok(bastoni.factors.some(f => /avversario abbordabile: Lecce/.test(f)));
 
   const krstovic = predici(c, { name: 'Krstovic', team: 'Lecce', role: 'A', quotation: 14, fmReal: 6.4, mv: 6.0, pgv: 3 }, { Krstovic: { status: 'out', perc: 20 } });
   assert.ok(Math.abs(somma(krstovic.parts) - krstovic.expected) < 1e-9);
-  assert.ok(krstovic.parts.oppAdj < 0, 'Inter ostica');
+  assert.equal(krstovic.parts.oppAdj, 0, 'attaccante contro l\'Inter: avversario spento');
   assert.equal(krstovic.parts.homeAdj, -0.15);
   // panchina al 20% → p 0.27: niente piu -1.0 fisso
   assert.equal(krstovic.pVoto, 0.27);
   assert.ok(Math.abs(krstovic.parts.titAdj - 0.73 * (5 - krstovic.expSeGioca)) < 0.02);
   assert.equal(krstovic.parts.consenso, 0, 'sconsigliato: neutro dal 30/10');
-  assert.ok(krstovic.parts.oppAdj >= -0.25, 'avversario ostico: al massimo -0.25');
 });
 
 test('Senza calendario e senza voti: forma preseason, nessun fattore inventato, clamp che chiude i conti', () => {
@@ -236,4 +239,12 @@ test('Portieri: la forma non entra, l\'avversario pesa il doppio; difensori inva
   assert.equal(sommer.parts.oppAdj, 0.5, 'portiere contro il Lecce: tetto 0.5');
   assert.equal(falcone.parts.oppAdj, -0.5, 'portiere contro l\'Inter: -0.5');
   for (const x of [sommer, bastoni, falcone]) assert.ok(Math.abs(somma(x.parts) - x.expected) < 1e-9, 'somma = expected');
+});
+
+test('Centrocampisti: avversario spento, anche con alta propensione al bonus', () => {
+  const c = motore({ voti: [5, 6, 7].map(g => vg(g, { barella: voto('Inter', 6.5, 1, 0) })) });
+  const barella = predici(c, { name: 'Barella', team: 'Inter', role: 'C', quotation: 25, fmReal: 7.6, mv: 6.5, pgv: 3 });
+  assert.equal(barella.parts.oppAdj, 0); assert.equal(barella.oppAdj, 0);
+  assert.equal(barella.parts.homeAdj, 0.15, 'casa e trasferta restano');
+  assert.ok(Math.abs(somma(barella.parts) - barella.expected) < 1e-9);
 });

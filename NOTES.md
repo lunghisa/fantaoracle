@@ -178,6 +178,16 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     Resta vero che l'indice dei portieri sta intorno a 6.1 e il loro fantavoto
     medio a 5.0: non cambia nessuna scelta (se ne schiera uno) ma pesa sul MAE.
 
+17. **Avversario spento per centrocampisti e attaccanti (10/11/2026, decisione di
+    Sacha).** Con i rating ricostruiti giornata per giornata (G4–G11), "difesa
+    avversaria debole" non spiega niente del fantavoto di chi attacca: corr
+    0.01 su 898 centrocampisti, −0.01 su 444 attaccanti, uguale nelle due metà
+    della serie. Il fattore valeva al massimo ±0.25 (±0.3 con l'amplificazione
+    per chi ha alta propensione al bonus, tolta anche quella). Resta per
+    difensori (±0.25) e portieri (±0.5). La Guida alla giornata, che misura
+    cosa ogni difesa concede, resta: non entra nell'indice. Se un giorno la si
+    volesse far entrare, va prima misurata allo stesso modo.
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già

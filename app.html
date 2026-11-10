@@ -4609,7 +4609,7 @@ body::before { opacity:.2; }
       </details>
       <details class="card pro-details pro-method">
         <summary>Come leggere le previsioni</summary>
-        <p>Gli indici combinano andamento, avversario e fattore casa/trasferta. I voti Fantacalcio caricati dall’admin aggiornano la stessa base per tutte le leghe. Non sono punteggi futuri.</p>
+        <p>Gli indici combinano andamento, fattore casa/trasferta e, per portieri e difensori, la forza dell’attacco avversario. I voti Fantacalcio caricati dall’admin aggiornano la stessa base per tutte le leghe. Non sono punteggi futuri.</p>
         <p>Il motore usa le regole Classic; Mantra non è ancora supportato. Le previsioni sono stime statistiche, non garanzie: la scelta finale resta tua.</p>
       </details>
     </div>
@@ -6510,7 +6510,8 @@ function resetListinoToBuiltin() {
 // Modello: punteggio atteso per la prossima giornata =
 //   base (fantamedia reale FM, fallback fm indicativa)
 //   ⊕ forma (media ultimi voti reali registrati, peso 35%)
-//   ⊕ forza avversario (rating attacco/difesa derivati dal listone)
+//   ⊕ forza avversario (rating attacco dal listone; dal 10/11/2026 solo per P e D,
+//     doppia per i portieri, che non hanno la forma)
 //   ⊕ casa/trasferta (±0.15)
 //   ⊕ bias appreso per ruolo (auto-correzione dai voti reali)
 //   ⊖ malus infortunio (news real-time)
@@ -6876,23 +6877,23 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   if (ctx) {
     conf += 15;
     const opp = ratings[ctx.oppNorm];
-    if (opp) {
-      // Attaccanti/centrocampisti rendono di più contro difese deboli;
-      // portieri/difensori rendono di più contro attacchi deboli.
-      const rel = (p.role === 'A' || p.role === 'C')
-        ? (ratings._avgDef - opp.def)
-        : (ratings._avgAtt - opp.att);
+    // AVVERSARIO solo per portieri e difensori (10/11/2026, decisione di
+    // Sacha: "togli l'avversario per centrocampisti e attaccanti"). Con i
+    // rating ricostruiti giornata per giornata, G4-G11, "difesa avversaria
+    // debole" non spiega niente del fantavoto di chi attacca: corr 0.01 su
+    // 898 centrocampisti e -0.01 su 444 attaccanti, uguale nelle due meta.
+    // Per chi difende il segnale c'e (attacco avversario debole: corr 0.08 sui
+    // difensori, 0.12 sui portieri e -0.25 sui loro gol subiti). Con
+    // l'avversario se ne va anche l'amplificazione per chi ha alta
+    // propensione al bonus. La Guida alla giornata resta: e una lente a parte.
+    if (opp && (p.role === 'P' || p.role === 'D')) {
+      const rel = ratings._avgAtt - opp.att;
       // Dimezzato il 30/10 (da ±0.5 a ±0.25, decisione di Sacha): nella
       // misura per fattore di G8 e G9 l'avversario costava 0.02 di MAE
       // in entrambe le giornate. Da ricontrollare in G10.
       // Portieri: peso e tetto doppi (vedi sopra, 10/11).
       const tettoAvv = portiere ? 0.5 : 0.25;
       oppAdj = Math.max(-tettoAvv, Math.min(tettoAvv, rel * (portiere ? 0.9 : 0.45)));
-      // Gli attaccanti con alta propensione al bonus hanno più upside contro
-      // difese deboli: amplifico il vantaggio (ma non il rischio in negativo).
-      if (oppAdj > 0 && (p.role === 'A' || p.role === 'C') && bonusProp >= 0.9) {
-        oppAdj = Math.min(0.3, oppAdj * 1.3);
-      }
       if (oppAdj >= 0.06) factors.push('avversario abbordabile: ' + ctx.opponent);
       else if (oppAdj <= -0.06) factors.push('avversario ostico: ' + ctx.opponent);
     }
@@ -14164,7 +14165,7 @@ function setMode(mode) {
       ex.className = 'mode-explain oracle';
       const idxOracle = findCurrentGiornataIdx();
       const gNum = idxOracle >= 0 ? calendario.giornate[idxOracle].num : null;
-      ex.innerHTML = '<span><strong>🔮 ORACLE:</strong> indici orientativi per la ' + (gNum ? 'giornata ' + gNum : 'prossima giornata') + ' — andamento + avversario + casa/trasferta. Non sono fantapunti previsti.</span>';
+      ex.innerHTML = '<span><strong>🔮 ORACLE:</strong> indici orientativi per la ' + (gNum ? 'giornata ' + gNum : 'prossima giornata') + ' — andamento + casa/trasferta, avversario per portieri e difensori. Non sono fantapunti previsti.</span>';
     } else {
       ex.className = 'mode-explain';
       ex.innerHTML = '<span>Carica la tua rosa dalla Dashboard: appena c\'è, il campo mostra le previsioni dell\'Oracle.</span>';
