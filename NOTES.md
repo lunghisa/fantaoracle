@@ -141,6 +141,26 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     (utente 0669ebfb), non su quello admin: per questo si misura dal cloud e
     non dal browser che preme il ❄. La formazione schierata davvero non è
     nell'app: si confronta a mano.
+    Dal 10/11 lo snapshot tiene separati `consigliata` (proposta dell'Oracle) e
+    campo (`lineup`/`bench`, che con un modulo scelto a mano è una scelta
+    dell'utente): la misura usa `consigliata` e mostra il campo a parte.
+
+15. **Modificatore difesa nella scelta del modulo (10/11/2026, decisione di
+    Sacha).** Prima il confronto moduli accreditava 0.15 × la fascia stimata
+    dalle medie voto, tetto 0.9: in Premier 0.15–0.30 punti, quando il
+    modificatore vero vale in media 1.3–1.6 a partita con quattro difensori
+    (G11: Sacha in 4-3-3 +4, Oracle in 3-4-3 zero). Ora in
+    `assets/league-rules.js` il credito è il valore atteso (`expectedDefense`,
+    costanti in `DEFENSE_MODEL`, tarate su 32.000 difese simulate dalle 11
+    giornate giocate) meno 0.3 per ogni difensore oltre il terzo: nelle foto
+    G6–G11 l'indice sottostima centrocampisti e attaccanti di circa 0.3 rispetto
+    ai difensori, e senza quel netto il motore andrebbe sempre a quattro.
+    Credito tipico: Premier +0.8/+1.0, Fagioli +0.25/+0.35. La stima puntuale
+    conta poco (la media voto reale torna verso 6.17, pendenza 0.18): non ha
+    senso scegliere i difensori per alzare la fascia stimata. Controprova sulle
+    due rose di Sacha, G6–G11: Premier +1.0 a giornata, Fagioli −0.7, dodici
+    casi dominati dal rumore; la base della modifica è la taratura, non questa.
+    Da ricontrollare a fine andata con più giornate.
 
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone

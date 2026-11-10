@@ -8323,11 +8323,11 @@ function renderOracleModulo() {
     + '<div class="oracle-modulo-big">' + best.modulo + '</div>'
     + '<div class="modulo-status" style="justify-content:center">' + choiceStatus + '</div>'
     + '<div style="font-family:\'DM Mono\',monospace;font-size:13px;color:var(--oracle);margin-top:10px">' + (best.formTotal / Math.max(1,best.filled)).toFixed(1) + '/10 · indice medio orientativo</div>'
-    + (rules ? '<div style="font-size:12px;color:var(--gold);margin-top:8px">Difesa secondo le medie storiche: ' + (best.modifier.available ? '+' + best.modifier.bonus : 'non disponibile: mancano voti base') + '</div>' : '')
+    + (rules ? '<div style="font-size:12px;color:var(--gold);margin-top:8px">Modificatore difesa atteso: ' + (best.modifier.available ? (best.modifier.atteso > 0 ? '+' + best.modifier.atteso.toFixed(1) + ' a partita, in media' : 'nessuno, servono quattro difensori') : 'non stimabile: mancano voti base') + '</div>' : '')
     + coperturaPanchinaHtml(best)
     + (missing > 0 ? '<div style="font-size:11px;color:var(--orange);margin-top:6px">⚠️ Mancano ' + missing + ' giocatori per completarlo</div>' : '')
     + '<button class="oracle-cta gold" style="margin-top:16px;width:100%" onclick="applyOracleFormation()">APPLICA AL CAMPO →</button>'
-    + '<div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">Oracle confronta gli indici dei giocatori e considera il modificatore come preferenza contenuta nella scelta del modulo. Non è una previsione di fantapunti.</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">Oracle confronta gli indici dei giocatori e pesa il modificatore difesa per quanto vale in media a partita, tolto il costo di schierare un difensore in più. Non è una previsione di fantapunti.</div>'
     + '</div>';
 }
 

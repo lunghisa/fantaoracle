@@ -36,8 +36,37 @@ test('Oracle sceglie giocatori diversi quando migliora il modificatore',()=>{
  for(let i=0;i<5;i++)roster.push({name:'C'+i,role:'C',score:6,mv:6});
  for(let i=0;i<3;i++)roster.push({name:'A'+i,role:'A',score:6,mv:6});
  const best=R.best(roster,{'4-3-3':formations['4-3-3']},{...rules,modules:['4-3-3']},p=>p.score,p=>p.mv);
- assert.equal(best.modifier.bonus,6);assert(!best.picks.some(p=>p.name==='Bonus'));assert(Math.abs(best.total-67.1)<1e-9);
+ assert.equal(best.modifier.bonus,6);assert(!best.picks.some(p=>p.name==='Bonus'));
+ // 66.2 di indice + credito del modificatore: valore atteso con media prevista 7, meno 0.3 per il quarto difensore
+ const atteso=R.expectedDefense({available:true,mean:7},4,rules);assert(Math.abs(best.modifier.atteso-atteso)<1e-9);assert(Math.abs(best.total-(66.2+atteso-0.3))<1e-9);
  const normal=R.best(roster,{'4-3-3':formations['4-3-3']},null,p=>p.score,p=>p.mv);assert(normal.picks.some(p=>p.name==='Bonus'));
+});
+// 10/11/2026, decisione di Sacha: il modificatore pesa nella scelta del modulo per
+// il suo valore atteso reale (tarato su 11 giornate), non piu 0.15 x fascia con tetto 0.9.
+test('Modificatore atteso: zero senza quattro difensori o senza voti, cresce con la media, in Fagioli vale circa la metà',()=>{
+ assert.equal(R.expectedDefense({available:true,bonus:0},3,R.premier),0);
+ assert.equal(R.expectedDefense({available:false,bonus:0},4,R.premier),0);
+ assert.equal(R.expectedDefense({available:true,mean:6.2},4,null),0);
+ const p4=R.expectedDefense({available:true,mean:6.2},4,R.premier),p5=R.expectedDefense({available:true,mean:6.2},5,R.premier),f4=R.expectedDefense({available:true,mean:6.2},4,R.fagioli);
+ assert(p4>1.1&&p4<1.4,'Premier, 4 difensori nella media: '+p4);assert(p5>p4,'con 5 difensori i migliori tre pesano di più');
+ assert(f4>0.5&&f4<0.75,'Fagioli: '+f4);
+ assert(R.expectedDefense({available:true,mean:6.5},4,R.premier)>p4);
+ // la stima puntuale conta poco: da 6.0 a 6.5 di media prevista il valore atteso sale meno di mezzo punto
+ assert(R.expectedDefense({available:true,mean:6.5},4,R.premier)-R.expectedDefense({available:true,mean:6},4,R.premier)<0.5);
+});
+test('Scelta del modulo: in Premier il quarto difensore vale un centrocampista migliore di mezzo punto, in Fagioli no',()=>{
+ const roster=[{name:'P',role:'P',score:6,mv:6.2}];
+ for(let i=0;i<5;i++)roster.push({name:'D'+i,role:'D',score:5.8,mv:6.2});
+ for(let i=0;i<5;i++)roster.push({name:'C'+i,role:'C',score:6.3,mv:6});
+ for(let i=0;i<3;i++)roster.push({name:'A'+i,role:'A',score:6.5,mv:6});
+ const moduli={'3-4-3':formations['3-4-3'],'4-3-3':formations['4-3-3']};
+ const scegli=r=>R.best(roster,moduli,r?{...r,modules:['3-4-3','4-3-3']}:null,p=>p.score,p=>p.mv);
+ const premier=scegli(R.premier),fagioli=scegli(R.fagioli),senza=scegli(null);
+ assert.equal(premier.modulo,'4-3-3','credito netto ~0.9 contro 0.5 di indice');
+ assert(premier.leagueAdjustment>0.8&&premier.leagueAdjustment<1.1,String(premier.leagueAdjustment));
+ assert.equal(fagioli.modulo,'3-4-3','credito netto ~0.3: non basta');
+ assert.equal(fagioli.leagueAdjustment,0);assert.equal(fagioli.modifier.atteso,0);
+ assert.equal(senza.modulo,'3-4-3');
 });
 test('Soglie e limite pareggio escludono la fascia sotto 66',()=>{
  assert.deepEqual(R.matchScore(65,60,rules),{home:0,away:0});assert.deepEqual(R.matchScore(70,66,rules),{home:2,away:1});

@@ -103,6 +103,36 @@
     let bonus=0;rules.defenseBands.forEach(([min,b])=>{if(mean>=min)bonus=b;});
     return {bonus,mean,available:true};
   }
+  // VALORE ATTESO del modificatore, in fantapunti (10/11/2026, decisione di Sacha:
+  // "fai pesare di piu il modificatore difesa nella scelta del modulo").
+  // Fino al 10/11 il confronto moduli accreditava 0.15 x la fascia stimata dalle
+  // medie voto, con tetto 0.9: in Premier 0.15-0.30 punti. Taratura su 11
+  // giornate 2026/27 (32.000 difese simulate: portiere + 4 o 5 difensori con
+  // almeno 3 voti e media >= 5.9): il modificatore reale vale in media 1.3-1.6
+  // punti a partita in Premier con 4 difensori (1.7-1.9 con 5), la meta in
+  // Fagioli, e dipende poco dalla stima: la media voto reale della difesa torna
+  // verso 6.17 (pendenza 0.18 sulla media prevista, scarto 0.26).
+  // Il modello: media attesa = base + pendenza x (media prevista - centro), poi
+  // probabilita normale di superare ogni soglia. Resta un 15% sotto il reale
+  // (coda destra piu grassa della normale): prudenza voluta, perche nelle
+  // simulazioni tutti i difensori prendono voto.
+  // costoDifensore: nelle foto G6-G11 l'indice sottostima centrocampisti e
+  // attaccanti di ~0.3 punti rispetto ai difensori (reale - indice: D +0.30,
+  // C +0.6, A +0.61): ogni difensore oltre il terzo costa quei 0.3 punti che
+  // l'indice non vede, e il credito del modificatore e al netto.
+  const DEFENSE_MODEL=Object.freeze({centro:6.2,base4:6.17,base5:6.26,pendenza:0.18,sd:0.26,costoDifensore:0.3});
+  function normCdf(z) {
+    const t=1/(1+0.2316419*Math.abs(z)),d=0.3989423*Math.exp(-z*z/2);
+    const p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
+    return z>0?1-p:p;
+  }
+  function expectedDefense(modifier,defenders,rules) {
+    if(!rules||!modifier||!modifier.available||typeof modifier.mean!=='number'||defenders<4)return 0;
+    const m=(defenders>=5?DEFENSE_MODEL.base5:DEFENSE_MODEL.base4)+DEFENSE_MODEL.pendenza*(modifier.mean-DEFENSE_MODEL.centro);
+    let prev=0,tot=0;
+    rules.defenseBands.forEach(([min,b])=>{tot+=(b-prev)*normCdf((m-min)/DEFENSE_MODEL.sd);prev=b;});
+    return tot;
+  }
   function matchScore(home,away,rules) {
     if(!rules||![home,away].every(Number.isFinite))return null;
     const goals=n=>n<rules.firstGoal?0:1+Math.floor((n-rules.firstGoal)/rules.goalStep);
@@ -151,15 +181,18 @@
         const picks=p.concat(d,others),filled=picks.length,needed=11;
         const modifier=defense(picks,rules,voteOf);
         const formTotal=picks.reduce((s,x)=>s+scoreOf(x),0);
-        // Preferenza limitata a 0.9 sull'intera formazione, separata dalla forma.
-        const leagueAdjustment=Math.min(0.9,modifier.bonus*0.15);
+        // Credito del modificatore: valore atteso in fantapunti, al netto del
+        // costo dei difensori in piu (vedi DEFENSE_MODEL), separato dalla forma.
+        const defenders=picks.filter(x=>x.role==='D').length;
+        const atteso=expectedDefense(modifier,defenders,rules);
+        const leagueAdjustment=Math.max(0,atteso-DEFENSE_MODEL.costoDifensore*(defenders-3));
         const cov=copertura(picks,by,riskOf);
         const total=formTotal-(needed-filled)*6+leagueAdjustment-(cov?cov.penalita:0);
-        if(!result||total>result.total)result={modulo,total,formTotal,leagueAdjustment,filled,needed,picks,modifier,copertura:cov};
+        if(!result||total>result.total)result={modulo,total,formTotal,leagueAdjustment,filled,needed,picks,modifier:Object.assign({},modifier,{atteso}),copertura:cov};
       }
     }
     return result;
   }
-  const api={formSignal,premier,fagioli,eventsForRecord,resolve,score,defense,matchScore,best,readEvents};
+  const api={formSignal,premier,fagioli,eventsForRecord,resolve,score,defense,expectedDefense,matchScore,best,readEvents};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.FantaLeagueRules=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
