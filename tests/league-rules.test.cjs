@@ -54,7 +54,7 @@ test('App: applicare Oracle mantiene i giocatori effettivamente ottimizzati sul 
  const picks=Array.from({length:11},(_,i)=>({name:'Chosen'+i,role:i===0?'P':i<5?'D':i<8?'C':'A'}));
  const bench={name:'Bench',role:'D'};
  const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:()=>null,oracleState:{manualModulo:'3-4-3'},oracleSaveState(){},currentMode:'oracle',runOracleEngine(){},oracleBestFormation:()=>({modulo:'4-3-3',total:72,picks}),players:{starters:picks,bench:[bench]},setModulo(){},saveRosterToStorage(){},showPage(){},showToast(){},document:{getElementById:()=>null,querySelectorAll:()=>[]},setTimeout(){}};
- vm.createContext(c);vm.runInContext(fn('installOracleFormation'),c);vm.runInContext(fn('applyOracleFormation'),c);c.applyOracleFormation();assert.equal(c.oracleState.manualModulo,null);
+ vm.createContext(c);vm.runInContext(fn('ordinaPanchinaOracle'),c);vm.runInContext(fn('installOracleFormation'),c);vm.runInContext(fn('applyOracleFormation'),c);c.applyOracleFormation();assert.equal(c.oracleState.manualModulo,null);
  assert.deepEqual(c.players.starters,picks);assert.equal(c.players.bench[0],bench);assert.equal(c.players._lineupByRole.D.length,4);
 });
 test('App: forma uguale per Premier, Fagioli e lega standard; nessuna calibrazione in fantapunti',()=>{
@@ -155,7 +155,7 @@ test('Assist: segnale sportivo positivo e limitato, indipendente dal valore in p
 test('Allineamento apertura: modulo automatico e undici seguono il consiglio; manuale resta per lega',()=>{
  const pick={name:'Test',role:'P'};
  const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:()=>null,activeLeagueRules:()=>R.premier,oracleState:{},formations:{'4-3-3':{},'3-4-3':{}},currentModulo:'3-4-3',oracleBestFormation:()=>({modulo:'4-3-3',picks:[pick]}),players:{starters:[],bench:[pick]},document:{getElementById:()=>null,querySelectorAll:()=>[]},setModulo(m){c.currentModulo=m;}};
- vm.createContext(c);for(const n of ['installOracleFormation','alignOracleFormation'])vm.runInContext(fn(n),c);
+ vm.createContext(c);for(const n of ['ordinaPanchinaOracle','installOracleFormation','alignOracleFormation'])vm.runInContext(fn(n),c);
  c.alignOracleFormation();assert.equal(c.currentModulo,'4-3-3');assert.equal(c.players.starters[0],pick);
  c.oracleState.manualModulo='3-4-3';c.alignOracleFormation();assert.equal(c.currentModulo,'3-4-3');
  c.oracleState={};c.alignOracleFormation();assert.equal(c.currentModulo,'4-3-3');
@@ -198,7 +198,7 @@ test('Panchina Oracle ordinata: sani per indice, poi gli out, infortunati in fon
  panca.forEach(p=>p.role='C');
  const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:n=>n==='InfortunatoForte'?{stato:'infortunato'}:null,
   currentModulo:'',players:{starters:xi,bench:panca},document:{getElementById:()=>null,querySelectorAll:()=>[]}};
- vm.createContext(c);vm.runInContext(fn('installOracleFormation'),c);
+ vm.createContext(c);vm.runInContext(fn('ordinaPanchinaOracle'),c);vm.runInContext(fn('installOracleFormation'),c);
  c.installOracleFormation({modulo:'4-3-3',picks:xi});
  assert.equal(c.players.bench.map(p=>p.name).join(','),'BuonoSano,ScarsoSano,BuonoMaOut,InfortunatoForte');
 });
@@ -210,7 +210,7 @@ test('Panchina Oracle raggruppata A,C,D,P con la priorita dentro ogni ruolo',()=
   mk('AttSano','A',6.2),mk('CenInfortunato','C',7.9),mk('CenSano','C',6.0)];
  const c={getAlertedPlayerNames:()=>new Set(),infermeriaDi:n=>n==='CenInfortunato'?{stato:'infortunato'}:null,
   currentModulo:'',players:{starters:xi,bench:panca},document:{getElementById:()=>null,querySelectorAll:()=>[]}};
- vm.createContext(c);vm.runInContext(fn('installOracleFormation'),c);
+ vm.createContext(c);vm.runInContext(fn('ordinaPanchinaOracle'),c);vm.runInContext(fn('installOracleFormation'),c);
  c.installOracleFormation({modulo:'4-3-3',picks:xi});
  assert.equal(c.players.bench.map(p=>p.name).join(','),
   'AttSano,AttOut,CenSano,DifOk,PortiereTop,CenInfortunato');

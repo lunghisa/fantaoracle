@@ -90,16 +90,23 @@ test('Undici ingenuo: fantamedia tra i disponibili, infortunati e panchinari del
   assert.equal(ing.panchina[0].role, 'A', 'panchina in ordine A, C, D, P come quella Oracle');
 });
 
-test('Misura del martedì: legge gli snapshot di tutte le leghe, salta quelli senza panchina o scritti a giochi iniziati', async () => {
+test('Misura del martedì: legge gli snapshot di tutte le leghe, misura la proposta Oracle e a parte il campo scelto dall\'utente', async () => {
   const c = ctx();
   vm.runInContext(fn('ottimoAPosteriori'), c);
   const snapOk = { dateISO: '2026-11-06T17:39:15Z', dopoCalcio: false, modulo: '4-3-3', moduli: ['4-3-3', '3-4-3', '3-5-2'], sostituzioni: 5,
-    lineup: titolari, bench: panchina, ingenua: { modulo: '4-3-3', titolari, panchina } };
+    lineup: titolari, bench: panchina, consigliata: { modulo: '4-3-3', titolari, panchina }, ingenua: { modulo: '4-3-3', titolari, panchina } };
+  // campo scelto dall'utente: Lucca (5.5) al posto di Lontani (6), la proposta Oracle resta l'altra
+  const scambia = (lista, a, b) => lista.map(x => x.key === a ? g(b, x.role) : x);
+  const snapManuale = Object.assign({}, snapOk, { manuale: true, modulo: '4-3-3', lineup: scambia(titolari, 'lontani', 'lucca'), bench: scambia(panchina, 'lucca', 'lontani') });
+  // foto del 9/11, senza proposta separata: il campo potrebbe essere una scelta dell'utente, non si misura
+  const snapVecchio = Object.assign({}, snapOk); delete snapVecchio.consigliata;
   const stati = [
     { league_id: 'L1', user_id: 'U1', state: { snapshots: { 11: snapOk, 10: { lineup: titolari, modulo: '4-3-3' } } } },
     { league_id: 'L2', user_id: 'U2', state: { snapshots: { 11: Object.assign({}, snapOk, { dopoCalcio: true }) } } },
+    { league_id: 'L3', user_id: 'U3', state: { snapshots: { 11: snapManuale } } },
+    { league_id: 'L4', user_id: 'U4', state: { snapshots: { 11: snapVecchio } } },
   ];
-  const leghe = [{ id: 'L1', league_name: 'Fagioli Per Tutti', team_name: 'SSC Dinomite' }, { id: 'L2', league_name: 'Premier', team_name: 'X' }];
+  const leghe = [{ id: 'L1', league_name: 'Fagioli Per Tutti', team_name: 'SSC Dinomite' }, { id: 'L2', league_name: 'Premier', team_name: 'X' }, { id: 'L3', league_name: 'Zeta', team_name: 'Y' }, { id: 'L4', league_name: 'Vecchia', team_name: 'W' }];
   const client = { from: t => ({ select: () => {
     const data = t === 'oracle_states' ? stati : leghe;
     return Promise.resolve({ data, error: null });
@@ -110,7 +117,11 @@ test('Misura del martedì: legge gli snapshot di tutte le leghe, salta quelli se
   vm.runInContext(src, c);
   const votesRow = {}; Object.keys(voti).forEach(k => { votesRow[k] = { v: voti[k] }; });
   const out = await c.misuraFormazioniLeghe([{ giornata: 10, votes: votesRow }, { giornata: 11, votes: votesRow }], client);
-  assert.equal(out.length, 1, 'solo L1/G11: G10 senza panchina, L2 scritto dopo il calcio');
+  assert.equal(out.length, 2, 'L1 e L3: G10 senza panchina, L2 scritto dopo il calcio, L4 senza proposta Oracle separata');
+  assert.equal(out[0].campo, null, 'campo uguale alla proposta: niente colonna a parte');
+  assert.equal(out[1].lega, 'Zeta · Y');
+  assert.equal(out[1].oracle.punti, 64, 'la colonna Oracle resta la proposta, non il campo dell\'utente');
+  assert.equal(out[1].campo.punti, 63.5);
   assert.equal(out[0].lega, 'Fagioli Per Tutti · SSC Dinomite');
   assert.equal(out[0].g, 11);
   assert.equal(out[0].oracle.punti, 64);
