@@ -6512,7 +6512,7 @@ function resetListinoToBuiltin() {
 //   ⊕ forma (media ultimi voti reali registrati, peso 35%)
 //   ⊕ forza avversario (rating attacco dal listone; dal 10/11/2026 solo per P e D,
 //     doppia per i portieri, che non hanno la forma)
-//   ⊕ casa/trasferta (±0.15)
+//   ⊕ casa/trasferta (±0.075, dimezzato il 10/11/2026)
 //   ⊕ bias appreso per ruolo (auto-correzione dai voti reali)
 //   ⊖ malus infortunio (news real-time)
 // Tutto offline, per-lega (nsKey), zero dipendenze esterne.
@@ -6897,7 +6897,10 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
       if (oppAdj >= 0.06) factors.push('avversario abbordabile: ' + ctx.opponent);
       else if (oppAdj <= -0.06) factors.push('avversario ostico: ' + ctx.opponent);
     }
-    homeAdj = ctx.home ? 0.15 : -0.15;
+    // Dimezzato il 10/11/2026 (da ±0.15 a ±0.075, decisione di Sacha): sui
+    // voti G4-G11 lo scarto reale casa/fuori sta fra 0.11 e 0.27 punti,
+    // il motore ne metteva 0.30. Ora ne mette 0.15.
+    homeAdj = ctx.home ? 0.075 : -0.075;
     // L'avversario va SEMPRE nominato, non solo quando l'aggiustamento
     // pesa: "contro chi gioca" e la prima cosa che un fantallenatore cerca.
     factors.push((ctx.home ? '🏠 in casa vs ' : '✈️ in trasferta vs ') + ctx.opponent);
@@ -15390,7 +15393,7 @@ function misuraPerFattore(coppie, voci) {
 // Ricostruisce, per ogni giornata con voti pubblicati, una previsione BASE
 // con i soli ingredienti STORICIZZATI nel cloud: voti admin delle giornate
 // precedenti (base + forma, stessi pesi del motore: 0.65/0.35), consenso
-// fonti della giornata (global_consigli, +0.1 ai consigliati), casa/trasferta (±0.15),
+// fonti della giornata (global_consigli, +0.1 ai consigliati), casa/trasferta (±0.075),
 // rigorista (+0.35 dal listone attivo). Poi la confronta con l'andamento
 // reale della giornata, sulla STESSA scala del motore (formSignal).
 // NON è la previsione completa che vedevano gli utenti: probabili,
@@ -15446,7 +15449,7 @@ async function misuraOracleRetro() {
         let exp = ultime.length >= 2 ? base * 0.65 + (ultime.reduce((a, b) => a + b, 0) / ultime.length) * 0.35 : base;
         const team = (G.votes[key] && G.votes[key].team) || '';
         const casa = casaDi(team, G.giornata);
-        if (casa !== null) exp += casa ? 0.15 : -0.15;
+        if (casa !== null) exp += casa ? 0.075 : -0.075;
         const cns = (consigliPerG[G.giornata] || {})[key];
         exp += consAdjDi(cns);
         if (rigoristi.has(key)) exp += 0.35;

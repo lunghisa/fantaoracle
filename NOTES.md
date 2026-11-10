@@ -188,6 +188,15 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     cosa ogni difesa concede, resta: non entra nell'indice. Se un giorno la si
     volesse far entrare, va prima misurata allo stesso modo.
 
+18. **Casa e trasferta a metà peso (10/11/2026, decisione di Sacha).** Da
+    ±0.15 a ±0.075: fra casa e fuori il motore metteva 0.30 punti, lo scarto
+    reale sui voti G4–G11 sta fra 0.11 e 0.27. Ora ne mette 0.15. La misura
+    per fattore lo dava "indifferente" in tutte le giornate, quindi dal
+    cambio non ci si aspetta un MAE diverso: solo un ordine meno spostato
+    dal calendario. Stesso valore nella misura retro (`misuraOracleRetro`),
+    che ricostruisce la previsione con i pesi del motore: se si cambia uno,
+    cambiare l'altro.
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già

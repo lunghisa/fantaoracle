@@ -61,7 +61,7 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   assert.equal(lautaro.parts.oppAdj, 0, 'attaccante: avversario spento');
   assert.ok(!lautaro.factors.some(f => /avversario abbordabile|avversario ostico/.test(f)), 'nessuna riga avversario nei fattori');
   assert.ok(lautaro.factors.some(f => /in casa vs Lecce/.test(f)), 'la partita resta nominata');
-  assert.equal(lautaro.parts.homeAdj, 0.15);
+  assert.equal(lautaro.parts.homeAdj, 0.075, 'casa: dimezzata il 10/11');
   assert.equal(lautaro.parts.csAdj, 0, 'clean sheet spento il 26/10');
   // ballottaggio al 55% → p 0.79 (ritaratura 3/11 su G9/G10): il numero e la media pesata con il voto mancato
   assert.equal(lautaro.pVoto, 0.79); assert.equal(lautaro.titStatus, 'doubt');
@@ -71,7 +71,7 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   assert.equal(lautaro.parts.consenso, 0.1, 'consigliato: +0.1 dal 30/10');
   assert.equal(lautaro.parts.infAdj, 0);
   // il numero pubblicato resta quello di prima: base + correzioni, 2 decimali
-  const seGioca = lautaro.parts.base + lautaro.parts.forma + lautaro.parts.oppAdj + 0.15 + 0.35 + 0.1;
+  const seGioca = lautaro.parts.base + lautaro.parts.forma + lautaro.parts.oppAdj + 0.075 + 0.35 + 0.1;
   assert.ok(Math.abs(lautaro.expSeGioca - seGioca) < 0.011, 'se gioca = base + correzioni');
 
   const bastoni = predici(c, { name: 'Bastoni', team: 'Inter', role: 'D', quotation: 18, fmReal: 6.7, mv: 6.2, pgv: 3 });
@@ -89,7 +89,7 @@ test('La somma delle parti e la previsione pubblicata, con tutti i fattori acces
   const krstovic = predici(c, { name: 'Krstovic', team: 'Lecce', role: 'A', quotation: 14, fmReal: 6.4, mv: 6.0, pgv: 3 }, { Krstovic: { status: 'out', perc: 20 } });
   assert.ok(Math.abs(somma(krstovic.parts) - krstovic.expected) < 1e-9);
   assert.equal(krstovic.parts.oppAdj, 0, 'attaccante contro l\'Inter: avversario spento');
-  assert.equal(krstovic.parts.homeAdj, -0.15);
+  assert.equal(krstovic.parts.homeAdj, -0.075);
   // panchina al 20% → p 0.27: niente piu -1.0 fisso
   assert.equal(krstovic.pVoto, 0.27);
   assert.ok(Math.abs(krstovic.parts.titAdj - 0.73 * (5 - krstovic.expSeGioca)) < 0.02);
@@ -116,7 +116,7 @@ test('Foto: compattaParts tiene 3 decimali e scarta gli zeri; togliere una parte
   const r = predici(c, { name: 'Nuovo', team: 'Inter', role: 'A', quotation: 20, fmReal: 7.1, mv: 6.5, pgv: 8, rigorista: true });
   const foto = c.compattaParts(r.parts);
   assert.equal(foto.csAdj, undefined); assert.equal(foto.titAdj, undefined); assert.equal(foto.bias, undefined);
-  assert.equal(foto.rigorista, 0.35); assert.equal(foto.homeAdj, 0.15);
+  assert.equal(foto.rigorista, 0.35); assert.equal(foto.homeAdj, 0.075);
   assert.ok(Math.abs(somma(foto) - r.expected) < 0.005 * Object.keys(r.parts).length);
   assert.ok(Math.abs((r.expected - foto.rigorista) - (r.expected - 0.35)) < 1e-9);
   assert.equal(Object.keys(c.compattaParts(null)).length, 0);
@@ -245,6 +245,6 @@ test('Centrocampisti: avversario spento, anche con alta propensione al bonus', (
   const c = motore({ voti: [5, 6, 7].map(g => vg(g, { barella: voto('Inter', 6.5, 1, 0) })) });
   const barella = predici(c, { name: 'Barella', team: 'Inter', role: 'C', quotation: 25, fmReal: 7.6, mv: 6.5, pgv: 3 });
   assert.equal(barella.parts.oppAdj, 0); assert.equal(barella.oppAdj, 0);
-  assert.equal(barella.parts.homeAdj, 0.15, 'casa e trasferta restano');
+  assert.equal(barella.parts.homeAdj, 0.075, 'casa e trasferta restano, a meta peso');
   assert.ok(Math.abs(somma(barella.parts) - barella.expected) < 1e-9);
 });
