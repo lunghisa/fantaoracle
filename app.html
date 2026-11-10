@@ -6836,8 +6836,21 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
   // del retro-calcolo, non QUALE fattore sbaglia, perche exp e una somma.
   let exp = base;
   let formaAdj = 0;
+  // PORTIERI (10/11/2026, decisione di Sacha dopo la misura per ruolo): la
+  // "forma" e il voto degli ultimi tre turni, ma il fantavoto di un portiere
+  // lo fanno i gol subiti. Sulle foto G8-G11 (69 portieri titolari) la forma
+  // andava CONTRO il risultato (corr -0.25) e l'avversario era l'unico
+  // fattore utile (corr +0.30, pendenza 3.4: pesava troppo poco). Sui gol
+  // subiti, G4-G11: attacco avversario corr -0.25 su 132 casi. Quindi per i
+  // portieri niente forma e avversario doppio (0.9 x, tetto 0.5): l'indice
+  // passa da corr 0.11 a 0.22 e migliora in tutte e quattro le giornate.
+  // Per i difensori la stessa analisi non ha trovato niente da guadagnare:
+  // restano com'erano.
+  const portiere = p.role === 'P';
   const recent = samples.slice(0,3).map(v => v.score);
-  if (recent.length >= 2) {
+  if (recent.length >= 2 && portiere) {
+    conf += 15;
+  } else if (recent.length >= 2) {
     const formAvg = recent.reduce((a,b) => a+b, 0) / recent.length;
     exp = base * 0.65 + formAvg * 0.35;
     formaAdj = exp - base;
@@ -6872,7 +6885,9 @@ function oraclePredictPlayer(p, ratings, alerted, titSig) {
       // Dimezzato il 30/10 (da ±0.5 a ±0.25, decisione di Sacha): nella
       // misura per fattore di G8 e G9 l'avversario costava 0.02 di MAE
       // in entrambe le giornate. Da ricontrollare in G10.
-      oppAdj = Math.max(-0.25, Math.min(0.25, rel * 0.45));
+      // Portieri: peso e tetto doppi (vedi sopra, 10/11).
+      const tettoAvv = portiere ? 0.5 : 0.25;
+      oppAdj = Math.max(-tettoAvv, Math.min(tettoAvv, rel * (portiere ? 0.9 : 0.45)));
       // Gli attaccanti con alta propensione al bonus hanno più upside contro
       // difese deboli: amplifico il vantaggio (ma non il rischio in negativo).
       if (oppAdj > 0 && (p.role === 'A' || p.role === 'C') && bonusProp >= 0.9) {

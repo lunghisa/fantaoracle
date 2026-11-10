@@ -162,6 +162,22 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     casi dominati dal rumore; la base della modifica è la taratura, non questa.
     Da ricontrollare a fine andata con più giornate.
 
+16. **Portieri e difensori: cosa l'indice sa distinguere (10/11/2026).** Misura
+    per ruolo sulle foto: chi ha l'indice più alto prende poi più punti? Per
+    attaccanti e centrocampisti sì (pendenza reale su indice 0.72 e 0.55), per
+    i difensori poco (0.19), per i portieri no (0.04). Provati modelli con
+    forza della squadra, attacco avversario, casa, media propria su G4–G11:
+    per i difensori nessuno batte "tutti uguali" fuori campione, e dimezzare
+    le correzioni non cambia l'ordine (corr 0.12 → 0.12): **lasciati com'erano,
+    non è un difetto, c'è poco da distinguere**. Per i portieri la forma (voto
+    degli ultimi tre turni) andava contro il risultato e l'avversario era
+    l'unico fattore utile ma pesava poco: **dal 10/11 i portieri non hanno la
+    forma e l'avversario pesa il doppio** (0.9 ×, tetto ±0.5). Sulle foto
+    G8–G11, 69 portieri titolari: corr 0.11 → 0.22, meglio in tutte e quattro
+    le giornate. Campione piccolo: ricontrollare con la misura del martedì.
+    Resta vero che l'indice dei portieri sta intorno a 6.1 e il loro fantavoto
+    medio a 5.0: non cambia nessuna scelta (se ne schiera uno) ma pesa sul MAE.
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già

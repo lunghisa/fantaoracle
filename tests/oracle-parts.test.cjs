@@ -218,3 +218,22 @@ test('Calibrazione pv nella misura: per fascia, prevista contro chi ha preso vot
   assert.equal(c.calibrazionePVoto(voci.map(v => ({ key: v.key })), votati), null);
   assert.equal(c.calibrazionePVoto(voci.slice(0, 10), votati), null, 'sotto 50 giocatori non si calibra');
 });
+
+// 10/11/2026: per i portieri niente forma e avversario doppio (misura per ruolo
+// sulle foto G8-G11: la forma andava contro il risultato, l'avversario era
+// l'unico fattore utile). I difensori restano com'erano.
+test('Portieri: la forma non entra, l\'avversario pesa il doppio; difensori invariati', () => {
+  // voti in crescita: per un giocatore di movimento la forma sale
+  const serie = (team, a, b, c3) => [vg(5, {}), vg(6, {}), vg(7, {})].map((d, i) => vg(d.giornata, {
+    sommer: voto('Inter', [a, b, c3][i]), bastoni: voto('Inter', [a, b, c3][i]), falcone: voto('Lecce', [a, b, c3][i]) }));
+  const c = motore({ voti: [vg(4, { sommer: voto('Inter', 5), bastoni: voto('Inter', 5), falcone: voto('Lecce', 5) })].concat(serie('Inter', 6.5, 7, 7.5)) });
+  const sommer = predici(c, { name: 'Sommer', team: 'Inter', role: 'P', quotation: 15 });
+  const bastoni = predici(c, { name: 'Bastoni', team: 'Inter', role: 'D', quotation: 15 });
+  const falcone = predici(c, { name: 'Falcone', team: 'Lecce', role: 'P', quotation: 10 });
+  assert.equal(sommer.parts.forma, 0, 'portiere: nessuna forma');
+  assert.ok(bastoni.parts.forma > 0.1, 'difensore: la forma resta (' + bastoni.parts.forma + ')');
+  assert.equal(bastoni.parts.oppAdj, 0.25, 'difensore contro il Lecce: tetto 0.25');
+  assert.equal(sommer.parts.oppAdj, 0.5, 'portiere contro il Lecce: tetto 0.5');
+  assert.equal(falcone.parts.oppAdj, -0.5, 'portiere contro l\'Inter: -0.5');
+  for (const x of [sommer, bastoni, falcone]) assert.ok(Math.abs(somma(x.parts) - x.expected) < 1e-9, 'somma = expected');
+});
