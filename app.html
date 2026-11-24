@@ -5360,6 +5360,51 @@ function nsKey(baseKey) {
 }
 
 // Switch a un'altra lega: ricarica tutto lo stato
+// Il modulo e un globale unico (currentModulo), la rosa e per lega. Quando
+// cambia la lega attiva il modulo va riallineato alla rosa appena caricata:
+// fino al 24/11/2026 restava quello della lega precedente, renderField
+// trovava la formazione "disallineata" e la ribilanciava su un modulo che
+// non era il suo (un titolare fuori, un altro dentro, senza che nessuno lo
+// avesse chiesto), e la spinta al cloud scriveva quel modulo sulla lega
+// sbagliata (visto il 10/11: Premier 3-4-3 diventata 4-3-3 nel cloud).
+// Regola: undici completo → il modulo e quello dei ruoli schierati; undici
+// incompleto → il modulo scelto a mano se regge, altrimenti quello attuale
+// se regge, altrimenti il primo che regge; rosa vuota → 4-3-3.
+function moduloDellaRosaCaricata() {
+  const pieno = p => p && p.name && p.name !== '---' && !p.isEmpty;
+  const titolari = (players.starters || []).filter(pieno);
+  if (titolari.length === 0) return '4-3-3';
+  const regge = m => {
+    const f = formations[m];
+    if (!f) return false;
+    let i = 0, ok = true;
+    f.rows.forEach(row => row.forEach(ruolo => {
+      const p = players.starters[i++];
+      if (pieno(p) && p.role && p.role !== ruolo) ok = false;
+    }));
+    return ok;
+  };
+  if (titolari.length === 11) {
+    const n = r => titolari.filter(p => p.role === r).length;
+    const daiRuoli = n('D') + '-' + n('C') + '-' + n('A');
+    if (n('P') === 1 && formations[daiRuoli]) return daiRuoli;
+  }
+  const manuale = oracleState && oracleState.manualModulo;
+  if (manuale && regge(manuale)) return manuale;
+  if (regge(currentModulo)) return currentModulo;
+  return Object.keys(formations).find(regge) || currentModulo;
+}
+function allineaModuloAllaRosa() {
+  const m = moduloDellaRosaCaricata();
+  if (!formations[m]) return;
+  currentModulo = m;
+  try {
+    const lbl = document.getElementById('moduloLabel');
+    if (lbl) lbl.textContent = m;
+    document.querySelectorAll('.modulo-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === m));
+  } catch (e) {}
+}
+
 function switchToLeague(leagueId) {
   if (!leagueId || leagueId === activeLeagueId) { closeLeagueMenu(); return; }
   const target = leagues.find(l => l.id === leagueId);
@@ -5374,6 +5419,7 @@ function switchToLeague(leagueId) {
   loadListinoFromStorage();
   loadRosterFromStorage();
   oracleLoadState();   // storico Oracle per-lega
+  allineaModuloAllaRosa(); // il modulo segue la lega, non resta quello di prima
   // I voti pubblicati valgono per tutte le leghe, ma lo storico e per-lega:
   // quella appena attivata potrebbe non averli ancora ricevuti.
   try { if (votiGlobaliInMemoria) applicaVotiGlobali(votiGlobaliInMemoria); } catch (e) {}
@@ -5531,6 +5577,7 @@ async function deleteLeague(leagueId) {
     loadListinoFromStorage();
     loadRosterFromStorage();
     oracleLoadState();
+    allineaModuloAllaRosa();
     updateListinoBadge();
     updateLeagueBanner();
     renderField(); renderLists();

@@ -213,6 +213,20 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     pubblicato sabato alle 10:19 e non venerdì, e chi ha aperto l'Oracle prima
     ha visto numeri senza consenso.
 
+20. **Al cambio lega il modulo restava quello della lega precedente (corretto
+    il 24/11/2026).** `currentModulo` è un globale unico, la rosa è per lega,
+    e `switchToLeague` ricaricava la rosa senza toccare il modulo. Due danni:
+    `renderField` trovava la formazione disallineata e la ribilanciava sul
+    modulo sbagliato (`rebalanceForFormation` rifà l'undici coi migliori per
+    ruolo: un titolare scelto a mano poteva sparire), e la spinta al cloud
+    scriveva quel modulo in `leagues.modulo` della lega attiva (10/11: Premier
+    3-4-3 diventata 4-3-3). Ora `allineaModuloAllaRosa()` gira dopo ogni
+    cambio della lega attiva (cambio lega, eliminazione della lega attiva):
+    undici completo → modulo dai ruoli schierati; incompleto → quello scelto
+    a mano se regge, poi quello attuale, poi il primo che regge; rosa vuota
+    → 4-3-3. Non toccato l'avvio dell'app: lì il modulo arriva dal cloud al
+    login (scenari B e C di `syncOnLogin`).
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già
