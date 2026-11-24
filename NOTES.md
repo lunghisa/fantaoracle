@@ -197,6 +197,22 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     che ricostruisce la previsione con i pesi del motore: se si cambia uno,
     cambiare l'altro.
 
+19. **Dopo un cambio rosa l'Oracle valutava i nuovi da sconosciuti (corretto il
+    24/11/2026).** `titolaritaSignals` teneva in cache i segnali con una chiave
+    fatta di news, probabili e NUMERO dei giocatori in rosa. Uno scambio alla
+    pari non cambiava la chiave: i nuovi arrivati restavano senza segnale e
+    `pVotoDi` li trattava da "assenti dalle probabili" (voto al 30% circa).
+    G12, lega Fagioli: rosa caricata sabato 21/11 alle 10:13, Belahyane
+    (titolare al 100%) valutato 5.45 invece di 6.52, Zalewski 5.45 invece di
+    6.36; l'undici proposto ha fatto 71, con i dati giusti 74. Ora la chiave
+    contiene i nomi. Secondo difetto nello stesso punto: dopo il caricamento
+    di un file di lega i rigoristi e la forma preseason (che cura l'admin)
+    arrivavano solo al login successivo; ora il travaso si fa subito
+    (`arricchisciConDatiAdmin` prima di `saveListinoToStorage`).
+    Resta un fatto operativo, non di codice: il consenso G12 è stato
+    pubblicato sabato alle 10:19 e non venerdì, e chi ha aperto l'Oracle prima
+    ha visto numeri senza consenso.
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già

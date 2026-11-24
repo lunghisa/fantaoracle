@@ -6408,7 +6408,13 @@ function parseListinoWithSheetJS(data, fileName, opts) {
     registerLeagueFromUpload(extracted, slugifyLeague(extracted));
     setLeagueName(extracted);
   }
-  
+
+  // Il file di lega non porta rigoristi e forma preseason: li cura l'admin
+  // nel listone globale. Fino al 24/11/2026 il travaso avveniva solo al
+  // login, quindi dopo un caricamento a sessione aperta l'Oracle calcolava
+  // senza il +0.35 dei rigoristi (Calhanoglu, G12 in Fagioli).
+  try { if (listinoGlobaleInMemoria) arricchisciConDatiAdmin(listinoGlobaleInMemoria); } catch (e) {}
+
   saveListinoToStorage();
 
   // Nome della lega dal nome del file. Si applica anche se la lega si chiama
@@ -14891,11 +14897,17 @@ function getTitolaritaSignals() {
   return result;
 }
 
-// Memo leggero: ricalcola solo se cambiano news o dimensione rosa
+// Memo leggero: ricalcola solo se cambiano news, probabili o la rosa.
+// La rosa entra nella chiave coi NOMI, non col numero dei giocatori: uno
+// scambio alla pari (5 fuori, 5 dentro) lasciava la chiave uguale e la cache
+// restituiva i segnali della rosa vecchia. I nuovi restavano senza segnale e
+// il motore li trattava da "assenti dalle probabili" (voto al 30% circa):
+// G12 in Fagioli, 21/11/2026, Belahyane titolare al 100% valutato 5.45
+// invece di 6.52, e con lui gli altri quattro acquisti.
 let _titCache = { sig: {}, key: null };
 function titolaritaSignals() {
   const key = (newsState.lastUpdate ? newsState.lastUpdate.getTime() : 0)
-    + '|' + (players.starters.length + players.bench.length)
+    + '|' + [...players.starters, ...players.bench].map(p => (p && p.name) || '').join(',')
     + '|' + (probabiliState.ts || 0);
   if (_titCache.key === key) return _titCache.sig;
   // I pallini restano SOLO dalle news: il consenso fonti e un ingrediente
