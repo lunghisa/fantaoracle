@@ -227,6 +227,20 @@ L'Oracle è passato da mockup a motore reale, in più passi:
     → 4-3-3. Non toccato l'avvio dell'app: lì il modulo arriva dal cloud al
     login (scenari B e C di `syncOnLogin`).
 
+21. **Rigoristi nel file di lega: due buchi chiusi il 24/11/2026.** Rigoristi
+    e forma preseason vivono nel listone globale dell'admin e vengono
+    travasati nel file di lega dell'utente (`arricchisciConDatiAdmin`).
+    (a) Il travaso girava solo per la lega attiva al login, o quando l'admin
+    ripubblica: l'altra lega restava senza. Ora gira anche in
+    `switchToLeague`, appena una lega diventa attiva, e subito dopo il
+    caricamento di un file (voce 19). (b) La spinta del file al cloud aveva
+    una firma fatta di nome del file, data e numero di giocatori: il travaso
+    non cambia nessuno dei tre e restava nel browser. Ora la firma
+    (`firmaListinoPersonale`) contiene anche rigoristi e forma. Caso reale:
+    Fagioli, dopo la rosa caricata il 21/11, senza rigoristi nel cloud;
+    rimessi a mano il 24/11 con una scrittura diretta sul database (copia
+    dei due campi dal file di Premier, 20 rigoristi).
+
 10. **Rigoristi designati.** Pannello in Admin → Listone ("🎯 RIGORISTI
     DESIGNATI"): righe `Squadra: Nome`. Il salvataggio aggiorna il listone
     attivo su Supabase (flag `rigorista` dentro il campo `players` già

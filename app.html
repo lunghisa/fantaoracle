@@ -5417,6 +5417,17 @@ function switchToLeague(leagueId) {
   try { renderCompSwitcher(); } catch (e) {}
   // Ricarica dalla nuova lega
   loadListinoFromStorage();
+  // Rigoristi e forma preseason li cura l'admin e al login vengono travasati
+  // solo nel file della lega attiva in quel momento. L'altra lega restava
+  // senza finche non capitava attiva a un login successivo: qui li riceve
+  // appena diventa attiva (24/11/2026, Fagioli senza rigoristi dopo il
+  // caricamento della rosa nuova). Se qualcosa cambia va anche spinto al cloud.
+  try {
+    if (listinoGlobaleInMemoria && listone.source === 'uploaded' && arricchisciConDatiAdmin(listinoGlobaleInMemoria) > 0) {
+      saveListinoToStorage();
+      if (typeof scheduleCloudSync === 'function') scheduleCloudSync();
+    }
+  } catch (e) {}
   loadRosterFromStorage();
   oracleLoadState();   // storico Oracle per-lega
   allineaModuloAllaRosa(); // il modulo segue la lega, non resta quello di prima
@@ -11001,6 +11012,17 @@ async function syncRosterSafely(client,leagueId,rows) {
   }
 }
 
+// Firma del file di lega: decide se va rispedito al cloud. Fino al 24/11/2026
+// guardava solo nome del file, data e numero di giocatori, e il travaso di
+// rigoristi e forma (che non cambia nessuno dei tre) restava nel browser:
+// nel cloud il file di Fagioli era senza rigoristi. Ora li contiene.
+function firmaListinoPersonale(l) {
+  const pl = (l && Array.isArray(l.players)) ? l.players : [];
+  const rigoristi = pl.filter(p => p && p.rigorista).map(p => p.name + '/' + (p.team || '')).join(',');
+  const forma = pl.filter(p => p && p.formaPreseason).map(p => p.name + ':' + p.formaPreseason).join(',');
+  return ((l && l.uploadedName) || '') + '|' + ((l && l.uploadedDate) || '') + '|' + pl.length + '|' + rigoristi + '|' + forma;
+}
+
 async function pushAllToCloudInterno() {
   cloudSyncState.status = 'syncing';
   updateCloudIndicator();
@@ -11143,9 +11165,7 @@ async function pushAllToCloudInterno() {
       for (const ll of localSnap) {
         const cloudId = idMap[ll.id];
         if (!cloudId || !ll.listinoPersonale) continue;
-        const firma = (ll.listinoPersonale.uploadedName || '') + '|'
-                    + (ll.listinoPersonale.uploadedDate || '') + '|'
-                    + ll.listinoPersonale.players.length;
+        const firma = firmaListinoPersonale(ll.listinoPersonale);
         if (listinoSpedito[cloudId] === firma) continue;
         const { error: lErr } = await supabaseClient
           .from('leagues')
